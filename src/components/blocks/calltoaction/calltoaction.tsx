@@ -16,13 +16,13 @@ export default function CallToActionSection() {
 
           <div className="mt-12 flex flex-wrap justify-center gap-4">
             <Button asChild size="lg">
-              <LocaleLink href="/">
+              <LocaleLink href="/ai/image">
                 <span>{t('primaryButton')}</span>
               </LocaleLink>
             </Button>
 
             <Button asChild size="lg" variant="outline">
-              <LocaleLink href="/">
+              <LocaleLink href="/#pricing">
                 <span>{t('secondaryButton')}</span>
               </LocaleLink>
             </Button>

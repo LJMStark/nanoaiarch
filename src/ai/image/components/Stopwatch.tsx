@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 
-export function Stopwatch({ startTime }: { startTime: number }) {
+export function Stopwatch({ startTime }: { startTime?: number }) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
+    if (!startTime) return;
+
     const interval = setInterval(() => {
       setElapsed(Date.now() - startTime);
     }, 100);
@@ -11,8 +13,10 @@ export function Stopwatch({ startTime }: { startTime: number }) {
     return () => clearInterval(interval);
   }, [startTime]);
 
+  if (!startTime) return null;
+
   return (
-    <div className="text-lg text-zinc-500 font-mono">
+    <div className="font-mono text-lg text-zinc-500">
       {(elapsed / 1000).toFixed(1)}s
     </div>
   );

@@ -1,8 +1,8 @@
 {
   "Metadata": {
-    "name": "MkSaaS Demo",
-    "title": "MkSaaS - The Best AI SaaS Boilerplate",
-    "description": "MkSaaS is the best AI SaaS boilerplate. Make AI SaaS in days, simply and effortlessly"
+    "name": "Nano Banana",
+    "title": "Nano Banana - AI Image Generator & Editor",
+    "description": "Create and edit stunning images with AI. Generate images from text prompts or edit existing photos using natural language. Powered by Google's Gemini."
   },
   "Common": {
     "premium": "Premium",
@@ -445,7 +445,7 @@
       }
     },
     "footer": {
-      "tagline": "Make AI SaaS in days, simply and effortlessly",
+      "tagline": "Create and edit stunning images with AI",
       "product": {
         "title": "Product",
         "items": {
@@ -780,249 +780,121 @@
     }
   },
   "HomePage": {
-    "title": "MkSaaS",
-    "description": "Make AI SaaS in days, simply and effortlessly",
+    "title": "Arch AI",
+    "description": "AI-Powered Architectural Visualization for Architects, Interior Designers & Urban Planners",
     "hero": {
-      "title": "Make AI SaaS in days, simply and effortlessly",
-      "description": "The is a demo website built with MkSaaS, a Next.js SaaS boilerplate to help you build your AI SaaS faster and better.",
-      "introduction": "Introducing MkSaaS Boilerplate",
-      "primary": "Get Started",
-      "secondary": "See Demo"
+      "title": "Turn Sketches into Stunning Renders",
+      "description": "Transform architectural sketches, white models, and floor plans into photorealistic visualizations. Powered by advanced AI with 9 professional styles and 26+ templates.",
+      "introduction": "Try Arch AI Now",
+      "primary": "Start Creating",
+      "secondary": "View Pricing"
     },
-    "logocloud": {
-      "title": "Your favorite companies are our partners"
-    },
-    "integration": {
-      "title": "Integrations",
-      "subtitle": "Integrate with your favorite tools",
-      "description": "Connect seamlessly with popular platforms and services to enhance your workflow.",
-      "learnMore": "Learn More",
+    "showcase": {
+      "title": "Templates",
+      "subtitle": "Professional Visualization Templates",
+      "description": "26+ scene-based templates covering the entire architectural design workflow",
       "items": {
-        "item-1": {
-          "title": "Google Gemini",
-          "description": "Amet praesentium deserunt ex commodi tempore fuga voluptatem."
+        "style-transfer": {
+          "title": "Style Transfer",
+          "description": "Transform architectural images into different styles - modern, traditional, or artistic"
         },
-        "item-2": {
-          "title": "Replit",
-          "description": "Amet praesentium deserunt ex commodi tempore fuga voluptatem."
+        "model-render": {
+          "title": "Model to Render",
+          "description": "Convert white models and block models into photorealistic visualizations"
         },
-        "item-3": {
-          "title": "MagicUI",
-          "description": "Amet praesentium deserunt ex commodi tempore fuga voluptatem."
+        "floor-plan": {
+          "title": "Floor Plan",
+          "description": "Generate colored floor plans and functional zoning diagrams"
         },
-        "item-4": {
-          "title": "VSCodium",
-          "description": "Amet praesentium deserunt ex commodi tempore fuga voluptatem."
+        "facade": {
+          "title": "Facade Design",
+          "description": "Create facade designs, material replacements, and renovation concepts"
         },
-        "item-5": {
-          "title": "MediaWiki",
-          "description": "Amet praesentium deserunt ex commodi tempore fuga voluptatem."
+        "interior": {
+          "title": "Interior Design",
+          "description": "Generate interior perspectives and room visualizations"
         },
-        "item-6": {
-          "title": "Google PaLM",
-          "description": "Amet praesentium deserunt ex commodi tempore fuga voluptatem."
+        "analysis": {
+          "title": "Analysis Diagrams",
+          "description": "Create Sasaki-style analysis, sunlight studies, and circulation diagrams"
         }
       }
-    },
-    "integration2": {
-      "title": "Integrate with your favorite tools",
-      "description": "Connect seamlessly with popular platforms and services to enhance your workflow.",
-      "primaryButton": "Get Started",
-      "secondaryButton": "See Demo"
     },
     "features": {
       "title": "Features",
-      "subtitle": "The features of your product",
-      "description": "Write the description of your product here",
+      "subtitle": "Professional Visualization Tools",
+      "description": "Everything architects and designers need in one powerful AI platform",
       "items": {
         "item-1": {
-          "title": "Product Feature One",
-          "description": "Please write the detailed description of feature one here, make it as detailed as possible, make it more attractive to users"
+          "title": "9 Architectural Styles",
+          "description": "From Modern Minimalist to Parametric, Brutalist to Watercolor - choose the perfect style for your project"
         },
         "item-2": {
-          "title": "Product Feature Two",
-          "description": "Please write the detailed description of feature two here, make it as detailed as possible, make it more attractive to users"
+          "title": "Smart Image Enhancement",
+          "description": "AI-powered prompt enhancement with professional architectural terminology for better results"
         },
         "item-3": {
-          "title": "Product Feature Three",
-          "description": "Please write the detailed description of feature three here, make it as detailed as possible, make it more attractive to users"
+          "title": "Multiple Aspect Ratios",
+          "description": "Support for 1:1, 16:9, 4:3, 3:4, and 9:16 - perfect for any presentation format"
         },
         "item-4": {
-          "title": "Product Feature Four",
-          "description": "Please write the detailed description of feature four here, make it as detailed as possible, make it more attractive to users"
-        }
-      }
-    },
-    "features2": {
-      "title": "Features2",
-      "subtitle": "The features of your product",
-      "description": "Write the description of your product here",
-      "feature-1": "Product Feature One",
-      "feature-2": "Product Feature Two",
-      "feature-3": "Product Feature Three",
-      "feature-4": "Product Feature Four"
-    },
-    "features3": {
-      "title": "Features3",
-      "subtitle": "The features of your product",
-      "description": "Write the description of your product here",
-      "items": {
-        "item-1": {
-          "title": "Product Feature One",
-          "description": "Please write the detailed description of feature one here"
-        },
-        "item-2": {
-          "title": "Product Feature Two",
-          "description": "Please write the detailed description of feature two here"
-        },
-        "item-3": {
-          "title": "Product Feature Three",
-          "description": "Please write the detailed description of feature three here"
-        },
-        "item-4": {
-          "title": "Product Feature Four",
-          "description": "Please write the detailed description of feature four here"
-        },
-        "item-5": {
-          "title": "Product Feature Five",
-          "description": "Please write the detailed description of feature five here"
-        },
-        "item-6": {
-          "title": "Product Feature Six",
-          "description": "Please write the detailed description of feature six here"
+          "title": "Edit & Iterate",
+          "description": "Upload reference images and edit with natural language to refine your visualizations"
         }
       }
     },
     "pricing": {
       "title": "Pricing",
-      "subtitle": "Pricing",
-      "description": "Choose the plan that works best for you"
+      "subtitle": "Simple, Transparent Pricing",
+      "description": "Choose the plan that fits your workflow"
     },
     "faqs": {
       "title": "FAQ",
       "subtitle": "Frequently Asked Questions",
       "items": {
         "item-1": {
-          "question": "Do you offer a free trial?",
-          "answer": "Yes, we offer a 7-day free trial."
+          "question": "What types of architectural visualizations can I create?",
+          "answer": "Arch AI supports style transfers, white model to render conversions, floor plan coloring, facade design, section diagrams, analysis diagrams (Sasaki style, sunlight, circulation), interior perspectives, and more."
         },
         "item-2": {
-          "question": "How do I cancel my subscription?",
-          "answer": "You can cancel your subscription by visiting the billing page."
+          "question": "What image formats are supported?",
+          "answer": "We support PNG, JPEG, WebP, and GIF for input images. Output images are generated in high-quality PNG format."
         },
         "item-3": {
-          "question": "Can I change my plan?",
-          "answer": "Yes, you can change your plan at any time by visiting the billing page."
+          "question": "How do credits work?",
+          "answer": "Each generation costs credits based on the model used. Nano Banana uses 1 credit, Nano Banana Pro uses 3 credits. You can purchase credit packs or subscribe for monthly credits."
         },
         "item-4": {
-          "question": "What is the refund policy?",
-          "answer": "We offer a 30-day money-back guarantee if you are not happy with our product."
+          "question": "Can I use the generated images commercially?",
+          "answer": "Yes! All images generated with Arch AI can be used for commercial projects, client presentations, and publications."
         },
         "item-5": {
-          "question": "Can't find what you're looking for?",
-          "answer": "Please contact our customer support team at support@mksaas.com"
-        }
-      }
-    },
-    "testimonials": {
-      "title": "Testimonials",
-      "subtitle": "What our customers are saying",
-      "items": {
-        "item-1": {
-          "name": "Jonathan Yombo",
-          "role": "Software Engineer",
-          "image": "https://randomuser.me/api/portraits/men/1.jpg",
-          "quote": "MkSaaS is really extraordinary and very practical, no need to break your head. A real gold mine."
-        },
-        "item-2": {
-          "name": "Yves Kalume",
-          "role": "GDE - Android",
-          "image": "https://randomuser.me/api/portraits/men/6.jpg",
-          "quote": "With no experience in webdesign I just redesigned my entire website in a few minutes with tailwindcss thanks to MkSaaS."
-        },
-        "item-3": {
-          "name": "Yucel Faruksahan",
-          "role": "Tailkits Creator",
-          "image": "https://randomuser.me/api/portraits/men/7.jpg",
-          "quote": "Great work on MkSaaS template. This is one of the best personal website that I have seen so far :)"
-        },
-        "item-4": {
-          "name": "Anonymous author",
-          "role": "Product Manager",
-          "image": "https://randomuser.me/api/portraits/men/8.jpg",
-          "quote": "I downloaded the one of MkSaaS template which is very clear to understand at the start and you could modify the codes/blocks to fit perfectly on your purpose of the page."
-        },
-        "item-5": {
-          "name": "Shekinah Tshiokufila",
-          "role": "Senior Software Engineer",
-          "image": "https://randomuser.me/api/portraits/men/4.jpg",
-          "quote": "MkSaaS is redefining the standard of web design, with these blocks it provides an easy and efficient way for those who love beauty but may lack the time to implement it."
-        },
-        "item-6": {
-          "name": "Oketa Fred",
-          "role": "Fullstack Developer",
-          "image": "https://randomuser.me/api/portraits/men/2.jpg",
-          "quote": "I absolutely love MkSaaS! The component blocks are beautifully designed and easy to use, which makes creating a great-looking website a breeze."
-        },
-        "item-7": {
-          "name": "Zeki",
-          "role": "Founder of ChatExtend",
-          "image": "https://randomuser.me/api/portraits/men/5.jpg",
-          "quote": "MkSaaS is the perfect fusion of simplicity and versatility, enabling us to create UIs that are as stunning as they are user-friendly."
-        },
-        "item-8": {
-          "name": "Joseph Kitheka",
-          "role": "Fullstack Developer",
-          "image": "https://randomuser.me/api/portraits/men/9.jpg",
-          "quote": "MkSaaS has transformed the way I develop web applications. Their extensive collection of UI components, blocks, and templates has significantly accelerated my workflow."
-        },
-        "item-9": {
-          "name": "Khatab Wedaa",
-          "role": "MerakiUI Creator",
-          "image": "https://randomuser.me/api/portraits/men/10.jpg",
-          "quote": "MkSaaS is an elegant, clean, and responsive tailwind css components it's very helpful to start fast with your project."
-        },
-        "item-10": {
-          "name": "Rodrigo Aguilar",
-          "role": "TailwindAwesome Creator",
-          "image": "https://randomuser.me/api/portraits/men/11.jpg",
-          "quote": "I love MkSaaS ❤️. The component blocks are well-structured, simple to use, and beautifully designed. It makes it really easy to have a good-looking website in no time."
-        },
-        "item-11": {
-          "name": "Eric Ampire",
-          "role": "@GoogleDevExpert for Android",
-          "image": "https://randomuser.me/api/portraits/men/12.jpg",
-          "quote": "MkSaaS templates are the perfect solution for anyone who wants to create a beautiful and functional website without any web design experience."
-        },
-        "item-12": {
-          "name": "Roland Tubonge",
-          "role": "Software Engineer",
-          "image": "https://randomuser.me/api/portraits/men/13.jpg",
-          "quote": "MkSaaS is so well designed that even with a very poor knowledge of web design you can do miracles. Let yourself be seduced!"
+          "question": "Need help or have questions?",
+          "answer": "Contact our support team at support@nanobanana.com - we're here to help you create stunning visualizations."
         }
       }
     },
     "stats": {
       "title": "Stats",
-      "subtitle": "MkSaaS in numbers",
-      "description": "MkSaaS lets you make AI SaaS in days, simply and effortlessly",
+      "subtitle": "Trusted by Architects Worldwide",
+      "description": "Join thousands of design professionals using AI to accelerate their visualization workflow",
       "items": {
         "item-1": {
-          "title": "Stars on GitHub"
+          "title": "Images Generated"
         },
         "item-2": {
-          "title": "Active Users"
+          "title": "Templates Available"
         },
         "item-3": {
-          "title": "Powered Apps"
+          "title": "Architectural Styles"
         }
       }
     },
     "calltoaction": {
-      "title": "Start Building",
-      "description": "MkSaaS lets you make AI SaaS in days, simply and effortlessly",
-      "primaryButton": "Get Started",
-      "secondaryButton": "See Demo"
+      "title": "Start Visualizing Today",
+      "description": "Transform your architectural concepts into stunning visuals in seconds",
+      "primaryButton": "Try for Free",
+      "secondaryButton": "View Pricing"
     }
   },
   "AITextPage": {
@@ -1072,6 +944,203 @@
         "title": "Structured Results",
         "description": "Get organized, easy-to-read results with clear sections and actionable insights"
       }
+    }
+  },
+  "ArchPage": {
+    "hero": {
+      "badge": "Arch AI - Professional Visualization",
+      "title": "Architectural Visualization Reimagined",
+      "subtitle": "Transform sketches into renders, generate facade designs, create analysis diagrams with AI-powered architectural visualization.",
+      "stats": {
+        "generated": "Generated",
+        "accuracy": "Accuracy",
+        "templates": "Templates",
+        "styles": "Styles",
+        "ratios": "Ratios"
+      },
+      "quote": "Architecture is the thoughtful making of space."
+    },
+    "sidebar": {
+      "navigation": "Navigation",
+      "workspace": "Workspace",
+      "gallery": "Gallery",
+      "model": "Model",
+      "recent": "Recent",
+      "settings": "Settings",
+      "noHistory": "No recent generations"
+    },
+    "controls": {
+      "style": "Style",
+      "clearStyle": "No style filter",
+      "aspectRatio": "Aspect Ratio",
+      "generate": "Generate",
+      "generating": "Generating...",
+      "credits": "{count} credits",
+      "prompt": "Describe your architectural vision..."
+    },
+    "styles": {
+      "modernMinimalist": "Modern Minimalist",
+      "brutalist": "Brutalist",
+      "ecoGreen": "Eco-Green",
+      "parametric": "Parametric",
+      "newChinese": "New Chinese",
+      "cyberpunk": "Cyberpunk",
+      "watercolor": "Watercolor",
+      "blueprint": "Blueprint",
+      "whiteModel": "White Model"
+    },
+    "aspectRatios": {
+      "square": "Square",
+      "landscape": "Landscape",
+      "standard": "Standard",
+      "portrait": "Portrait",
+      "vertical": "Vertical"
+    },
+    "categories": {
+      "all": "All Templates",
+      "renderStyle": "Render Style",
+      "renderStyleDesc": "Transform rendering styles",
+      "modelToRender": "Model to Render",
+      "modelToRenderDesc": "Convert 3D models to photorealistic renders",
+      "sketchToRender": "Sketch to Render",
+      "sketchToRenderDesc": "Transform hand drawings to renders",
+      "masterplan": "Master Plan",
+      "masterplanDesc": "Urban planning and site visualizations",
+      "facade": "Facade Design",
+      "facadeDesc": "Building exterior and elevation design",
+      "section": "Section",
+      "sectionDesc": "Architectural section diagrams",
+      "analysis": "Analysis",
+      "analysisDesc": "Site and building analysis diagrams",
+      "floorPlan": "Floor Plan",
+      "floorPlanDesc": "Plan view visualizations",
+      "renovation": "Renovation",
+      "renovationDesc": "Building renovation and adaptive reuse",
+      "perspective": "Perspective",
+      "perspectiveDesc": "Interior and exterior perspectives"
+    },
+    "templates": {
+      "styleTransferModern": {
+        "title": "Modern Style Transfer",
+        "description": "Transform any building into modern minimalist style"
+      },
+      "styleTransferTraditional": {
+        "title": "Traditional Style Transfer",
+        "description": "Apply traditional Chinese architectural elements"
+      },
+      "styleTransferArtistic": {
+        "title": "Artistic Rendering",
+        "description": "Convert to watercolor or sketch style"
+      },
+      "whiteModelRender": {
+        "title": "White Model to Render",
+        "description": "Convert massing models into photorealistic renders"
+      },
+      "blockModelRender": {
+        "title": "Block Model Render",
+        "description": "Transform volumetric models into detailed renders"
+      },
+      "rhinoToRender": {
+        "title": "Rhino/SketchUp Render",
+        "description": "Convert 3D software screenshots to photorealistic images"
+      },
+      "sketchToRender": {
+        "title": "Sketch to Render",
+        "description": "Transform hand drawings into photorealistic renders"
+      },
+      "diagramToRender": {
+        "title": "Diagram to Render",
+        "description": "Convert concept diagrams to detailed visualizations"
+      },
+      "masterplanAerial": {
+        "title": "Masterplan Aerial",
+        "description": "Generate bird's eye views from site plans"
+      },
+      "satelliteToRender": {
+        "title": "Satellite to Render",
+        "description": "Overlay proposed developments on aerial images"
+      },
+      "siteAnalysisTexture": {
+        "title": "Site Texture Analysis",
+        "description": "Generate urban texture analysis diagrams"
+      },
+      "facadeGenerate": {
+        "title": "Facade Design",
+        "description": "Generate contemporary facade designs"
+      },
+      "materialReplace": {
+        "title": "Material Replacement",
+        "description": "Replace facade materials while keeping form"
+      },
+      "facadeRenovation": {
+        "title": "Facade Renovation",
+        "description": "Modernize existing building facades"
+      },
+      "sectionDiagram": {
+        "title": "Section Diagram",
+        "description": "Create detailed building sections"
+      },
+      "sectionPerspective": {
+        "title": "Section Perspective",
+        "description": "Generate sectional perspective views"
+      },
+      "sasakiAnalysis": {
+        "title": "Sasaki Analysis",
+        "description": "Create Sasaki-style site analysis diagrams"
+      },
+      "sunlightAnalysis": {
+        "title": "Sunlight Analysis",
+        "description": "Generate solar exposure and shadow studies"
+      },
+      "circulationAnalysis": {
+        "title": "Circulation Analysis",
+        "description": "Visualize movement and flow patterns"
+      },
+      "windAnalysis": {
+        "title": "Wind Analysis",
+        "description": "Generate wind flow analysis diagrams"
+      },
+      "floorplanColor": {
+        "title": "Floor Plan Coloring",
+        "description": "Add functional color coding to floor plans"
+      },
+      "masterplanColor": {
+        "title": "Masterplan Coloring",
+        "description": "Color-code site plans by function"
+      },
+      "renovationModern": {
+        "title": "Modern Renovation",
+        "description": "Modernize existing buildings"
+      },
+      "renovationCommercial": {
+        "title": "Commercial Renovation",
+        "description": "Convert buildings to commercial use"
+      },
+      "interiorPerspective": {
+        "title": "Interior Perspective",
+        "description": "Generate interior architectural views"
+      },
+      "axonometricView": {
+        "title": "Axonometric View",
+        "description": "Create exploded axonometric diagrams"
+      }
+    },
+    "modal": {
+      "preview": "Preview",
+      "referenceImage": "Reference Image",
+      "editPrompt": "Edit Prompt",
+      "apply": "Apply Template",
+      "inputRequired": "This template requires an input image"
+    },
+    "gallery": {
+      "empty": "No templates found",
+      "emptyDescription": "Try changing the category filter"
+    },
+    "canvas": {
+      "generating": "Generating...",
+      "error": "Generation Failed",
+      "download": "Download",
+      "share": "Share"
     }
   },
   "AIImagePage": {

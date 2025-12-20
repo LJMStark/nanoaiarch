@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="banana-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE135"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA500"/>
+    </linearGradient>
+    <linearGradient id="glow-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE135" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#FFA500" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background glow -->
+  <circle cx="100" cy="100" r="90" fill="url(#glow-gradient)"/>
+
+  <!-- Main banana shape -->
+  <path d="M60 140 Q40 100 60 60 Q80 30 120 40 Q160 50 170 90 Q175 130 140 150 Q100 165 60 140Z"
+        fill="url(#banana-gradient)"
+        stroke="#E6A700"
+        stroke-width="2"/>
+
+  <!-- Banana highlight -->
+  <path d="M70 130 Q55 100 70 70 Q85 45 115 52 Q145 60 152 90 Q155 115 130 130 Q100 145 70 130Z"
+        fill="#FFE970"
+        opacity="0.4"/>
+
+  <!-- AI sparkle dots -->
+  <circle cx="85" cy="85" r="4" fill="#FFFFFF"/>
+  <circle cx="115" cy="75" r="3" fill="#FFFFFF"/>
+  <circle cx="130" cy="100" r="3.5" fill="#FFFFFF"/>
+  <circle cx="100" cy="115" r="2.5" fill="#FFFFFF"/>
+
+  <!-- Stem -->
+  <path d="M118 42 Q125 30 135 35"
+        stroke="#8B7355"
+        stroke-width="6"
+        stroke-linecap="round"
+        fill="none"/>
+</svg>

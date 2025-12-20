@@ -1,8 +1,8 @@
 {
   "Metadata": {
-    "name": "MkSaaS Demo",
-    "title": "MkSaaS - 最好的 AI SaaS 模板",
-    "description": "MkSaaS 是构建 AI SaaS 的最佳模板，使用 MkSaaS 可以在几天内轻松构建您的 AI SaaS，简单且毫不费力。"
+    "name": "Nano Banana",
+    "title": "Nano Banana - AI 图像生成与编辑",
+    "description": "使用 AI 创建和编辑精美图像。通过文本提示生成图像，或使用自然语言编辑现有照片。由 Google Gemini 驱动。"
   },
   "Common": {
     "premium": "付费文章",
@@ -445,7 +445,7 @@
       }
     },
     "footer": {
-      "tagline": "使用 MkSaaS 在几天内轻松构建您的 AI SaaS",
+      "tagline": "用 AI 创建和编辑精美图像",
       "product": {
         "title": "产品",
         "items": {
@@ -780,249 +780,121 @@
     }
   },
   "HomePage": {
-    "title": "MkSaaS",
-    "description": "使用 MkSaaS 在几天内轻松构建您的 AI SaaS 产品",
+    "title": "Arch AI",
+    "description": "AI 驱动的建筑可视化工具，专为建筑师、室内设计师和城市规划师打造",
     "hero": {
-      "title": "使用 MkSaaS 轻松构建您的 AI SaaS 产品",
-      "description": "MkSaaS 是构建 AI SaaS 的最佳模板，内置 AI、身份验证、全球支付、博客、文档、邮件订阅、SEO、多彩主题、丰富组件等。",
-      "introduction": "介绍 MkSaaS 模板",
-      "primary": "开始使用",
-      "secondary": "查看演示"
+      "title": "草图秒变效果图",
+      "description": "将建筑草图、白模和平面图转化为照片级写实可视化效果。基于先进 AI 技术，提供 9 种专业风格和 26+ 模版。",
+      "introduction": "立即体验 Arch AI",
+      "primary": "开始创作",
+      "secondary": "查看价格"
     },
-    "logocloud": {
-      "title": "您最爱公司都是我们的合作伙伴"
-    },
-    "integration": {
-      "title": "集成",
-      "subtitle": "与您最喜欢的工具集成",
-      "description": "无缝连接流行的平台和服务，以增强您的工作流程。",
-      "learnMore": "了解更多",
+    "showcase": {
+      "title": "模版",
+      "subtitle": "专业可视化模版",
+      "description": "26+ 场景化模版，覆盖建筑设计全流程",
       "items": {
-        "item-1": {
-          "title": "Google Gemini",
-          "description": "这里是Google Gemini的描述，详细介绍Google Gemini的功能和优势。"
+        "style-transfer": {
+          "title": "风格迁移",
+          "description": "将建筑图像转换为不同风格 - 现代、传统或艺术风格"
         },
-        "item-2": {
-          "title": "Replit",
-          "description": "这里是Replit的描述，详细介绍Replit的功能和优势。"
+        "model-render": {
+          "title": "模型转效果图",
+          "description": "将白模和体块模型转换为照片级写实可视化效果"
         },
-        "item-3": {
-          "title": "MagicUI",
-          "description": "这里是MagicUI的描述，详细介绍MagicUI的功能和优势。"
+        "floor-plan": {
+          "title": "平面图",
+          "description": "生成彩色平面图和功能分区图"
         },
-        "item-4": {
-          "title": "VSCodium",
-          "description": "这里是VSCodium的描述，详细介绍VSCodium的功能和优势。"
+        "facade": {
+          "title": "立面设计",
+          "description": "创建立面设计、材质替换和改造概念"
         },
-        "item-5": {
-          "title": "MediaWiki",
-          "description": "这里是MediaWiki的描述，详细介绍MediaWiki的功能和优势。"
+        "interior": {
+          "title": "室内设计",
+          "description": "生成室内透视图和空间可视化效果"
         },
-        "item-6": {
-          "title": "Google PaLM",
-          "description": "这里是Google PaLM的描述，详细介绍Google PaLM的功能和优势。"
+        "analysis": {
+          "title": "分析图",
+          "description": "创建 Sasaki 风格分析图、日照分析和流线分析"
         }
       }
-    },
-    "integration2": {
-      "title": "与您最喜欢的工具集成",
-      "description": "无缝连接流行的平台和服务，以增强您的工作流程。",
-      "primaryButton": "开始使用",
-      "secondaryButton": "查看演示"
     },
     "features": {
       "title": "功能",
-      "subtitle": "您的 SaaS 产品功能",
-      "description": "请在这里介绍您的 SaaS 产品的特色功能的信息",
+      "subtitle": "专业可视化工具",
+      "description": "建筑师和设计师所需的一切，尽在一个强大的 AI 平台",
       "items": {
         "item-1": {
-          "title": "产品特色功能一",
-          "description": "请在这里详细描述您的产品特色功能一，尽可能详细，使其更吸引用户，提高落地页的转化率"
+          "title": "9 种建筑风格",
+          "description": "从现代极简到参数化，从粗野主义到水彩渲染 - 为您的项目选择完美风格"
         },
         "item-2": {
-          "title": "产品特色功能二",
-          "description": "请在这里详细描述您的产品特色功能二，尽可能详细，使其更吸引用户，提高落地页的转化率"
+          "title": "智能提示词增强",
+          "description": "AI 驱动的提示词增强，融合专业建筑术语，获得更好效果"
         },
         "item-3": {
-          "title": "产品特色功能三",
-          "description": "请在这里详细描述您的产品特色功能三，尽可能详细，使其更吸引用户，提高落地页的转化率"
+          "title": "多种画幅比例",
+          "description": "支持 1:1、16:9、4:3、3:4 和 9:16 - 适配任何演示格式"
         },
         "item-4": {
-          "title": "产品特色功能四",
-          "description": "请在这里详细描述您的产品特色功能四，尽可能详细，使其更吸引用户，提高落地页的转化率"
-        }
-      }
-    },
-    "features2": {
-      "title": "功能2",
-      "subtitle": "您的 SaaS 产品功能",
-      "description": "请在这里介绍您的 SaaS 产品的特色功能的信息",
-      "feature-1": "特色功能特点一",
-      "feature-2": "特色功能特点二",
-      "feature-3": "特色功能特点三",
-      "feature-4": "特色功能特点四"
-    },
-    "features3": {
-      "title": "功能3",
-      "subtitle": "您的 SaaS 产品功能",
-      "description": "请在这里介绍您的 SaaS 产品的特色功能的信息",
-      "items": {
-        "item-1": {
-          "title": "产品特色功能一",
-          "description": "请在这里详细描述您的产品特色功能一，尽可能详细，使其更吸引用户"
-        },
-        "item-2": {
-          "title": "产品特色功能二",
-          "description": "请在这里详细描述您的产品特色功能二，尽可能详细，使其更吸引用户"
-        },
-        "item-3": {
-          "title": "产品特色功能三",
-          "description": "请在这里详细描述您的产品特色功能三，尽可能详细，使其更吸引用户"
-        },
-        "item-4": {
-          "title": "产品特色功能四",
-          "description": "请在这里详细描述您的产品特色功能四，尽可能详细，使其更吸引用户"
-        },
-        "item-5": {
-          "title": "产品特色功能五",
-          "description": "请在这里详细描述您的产品特色功能五，尽可能详细，使其更吸引用户"
-        },
-        "item-6": {
-          "title": "产品特色功能六",
-          "description": "请在这里详细描述您的产品特色功能六，尽可能详细，使其更吸引用户"
+          "title": "编辑迭代",
+          "description": "上传参考图像，使用自然语言进行编辑，不断优化您的可视化效果"
         }
       }
     },
     "pricing": {
       "title": "价格",
-      "subtitle": "价格",
-      "description": "选择最适合您的付费计划"
+      "subtitle": "简单透明的定价",
+      "description": "选择适合您工作流程的计划"
     },
     "faqs": {
       "title": "常见问题",
       "subtitle": "如果您有任何问题，请随时联系我们",
       "items": {
         "item-1": {
-          "question": "你们提供免费试用吗？",
-          "answer": "是的，我们提供7天的免费试用。"
+          "question": "可以创建哪些类型的建筑可视化？",
+          "answer": "Arch AI 支持风格迁移、白模转效果图、平面图填色、立面设计、剖面图、分析图（Sasaki 风格、日照分析、流线分析）、室内透视等多种类型。"
         },
         "item-2": {
-          "question": "如何取消我的订阅？",
-          "answer": "您可以通过访问账单页面取消您的订阅。"
+          "question": "支持哪些图片格式？",
+          "answer": "我们支持 PNG、JPEG、WebP 和 GIF 格式的输入图像。输出图像为高质量 PNG 格式。"
         },
         "item-3": {
-          "question": "我可以更改我的计划吗？",
-          "answer": "是的，您可以随时通过访问账单页面更改您的计划。"
+          "question": "积分如何使用？",
+          "answer": "每次生成会根据使用的模型消耗积分。Nano Banana 每次消耗 1 积分，Nano Banana Pro 每次消耗 3 积分。您可以购买积分包或订阅获取月度积分。"
         },
         "item-4": {
-          "question": "你们的退款政策是什么？",
-          "answer": "是的，我们提供30天的退款保证。"
+          "question": "生成的图像可以商用吗？",
+          "answer": "可以！使用 Arch AI 生成的所有图像都可用于商业项目、客户演示和出版物。"
         },
         "item-5": {
-          "question": "找不到您想问的问题？",
-          "answer": "请联系我们的客户支持团队，邮箱地址：support@mksaas.com"
-        }
-      }
-    },
-    "testimonials": {
-      "title": "客户评价",
-      "subtitle": "我们的客户对我们的评价",
-      "items": {
-        "item-1": {
-          "name": "Jonathan Yombo",
-          "role": "软件工程师",
-          "image": "https://randomuser.me/api/portraits/men/1.jpg",
-          "quote": "MkSaaS 非常出色且实用，无需费心，一个真正的金矿。"
-        },
-        "item-2": {
-          "name": "Yves Kalume",
-          "role": "Android GDE",
-          "image": "https://randomuser.me/api/portraits/men/6.jpg",
-          "quote": "没有网页设计经验，我只需几分钟就可以用 Tailwindcss 重新设计我的整个网站，感谢 MkSaaS。"
-        },
-        "item-3": {
-          "name": "Yucel Faruksahan",
-          "role": "Tailkits 创建者",
-          "image": "https://randomuser.me/api/portraits/men/7.jpg",
-          "quote": "MkSaaS 模板做得很好，这是我见过最好的 SaaS 模板，没有之一 :)"
-        },
-        "item-4": {
-          "name": "Anonymous author",
-          "role": "产品经理",
-          "image": "https://randomuser.me/api/portraits/men/8.jpg",
-          "quote": "我不熟悉 Tailwind，我想自己做一些页面，我在网上搜索了很多英雄页面和区块。然而，大多数都没有给我一个清晰的想法，或者需要一些 HTML/CSS 编码背景来从原始文件中做一些更改，或者太贵了。我下载了其中一个 MkSaaS 模板，它非常容易理解，你可以在开始时修改代码/区块以完美地适应你的页面目的。"
-        },
-        "item-5": {
-          "name": "Shekinah Tshiokufila",
-          "role": "高级软件工程师",
-          "image": "https://randomuser.me/api/portraits/men/4.jpg",
-          "quote": "MkSaaS 正在重新定义网页设计标准，这些区块为那些喜欢美丽但可能缺乏时间实现它的人提供了简单且高效的方式。我只能推荐这个不可思议的奇迹。"
-        },
-        "item-6": {
-          "name": "Oketa Fred",
-          "role": "全栈开发工程师",
-          "image": "https://randomuser.me/api/portraits/men/2.jpg",
-          "quote": "我绝对喜欢 MkSaaS！这些组件区块设计精美且易于使用，使创建一个出色的网站变得轻而易举。"
-        },
-        "item-7": {
-          "name": "Zeki",
-          "role": "ChatExtend 创始人",
-          "image": "https://randomuser.me/api/portraits/men/5.jpg",
-          "quote": "使用 MkSaaS 就像解锁了一个秘密的设计超能力。它是简单性和多功能性的完美融合，使我们能够创建既令人惊叹又用户友好的界面。"
-        },
-        "item-8": {
-          "name": "Joseph Kitheka",
-          "role": "全栈开发工程师",
-          "image": "https://randomuser.me/api/portraits/men/9.jpg",
-          "quote": "MkSaaS 改变了我的网页开发方式。他们的 UI 组件、区块和模板极大地加速了我的工作流程。定制每个方面的灵活性使我能够创建独特的用户体验。MkSaaS 是现代网页开发的游戏规则改变者！"
-        },
-        "item-9": {
-          "name": "Khatab Wedaa",
-          "role": "MerakiUI 创建者",
-          "image": "https://randomuser.me/api/portraits/men/10.jpg",
-          "quote": "MkSaaS 是一个优雅、干净且响应式的 SaaS 模板，它非常有助于快速开始您的项目。"
-        },
-        "item-10": {
-          "name": "Rodrigo Aguilar",
-          "role": "TailwindAwesome 创建者",
-          "image": "https://randomuser.me/api/portraits/men/11.jpg",
-          "quote": "我爱 MkSaaS ❤️。这些组件区块结构良好，易于使用，设计精美。它使创建一个出色的网站变得非常容易。"
-        },
-        "item-11": {
-          "name": "Eric Ampire",
-          "role": "Google 开发者专家",
-          "image": "https://randomuser.me/api/portraits/men/12.jpg",
-          "quote": "MkSaaS 模板是任何想要创建一个美丽且功能齐全的网站但没有网页设计经验的人的完美解决方案。这些模板易于使用，可定制，并且响应迅速。我强烈推荐 MkSaaS 模板给任何想要创建网站的人。"
-        },
-        "item-12": {
-          "name": "Roland Tubonge",
-          "role": "软件工程师",
-          "image": "https://randomuser.me/api/portraits/men/13.jpg",
-          "quote": "MkSaaS 设计得如此出色，即使没有网页设计经验，您也可以创造奇迹。让自己被吸引！"
+          "question": "需要帮助或有问题？",
+          "answer": "联系我们的支持团队 support@nanobanana.com - 我们随时为您提供帮助。"
         }
       }
     },
     "stats": {
       "title": "统计",
-      "subtitle": "MkSaaS 相关的数字",
-      "description": "MkSaaS 可让您在几天内轻松构建您的 AI SaaS",
+      "subtitle": "全球建筑师的信赖之选",
+      "description": "加入数千名设计专业人士，使用 AI 加速可视化工作流程",
       "items": {
         "item-1": {
-          "title": "GitHub 上的星星"
+          "title": "已生成图像"
         },
         "item-2": {
-          "title": "使用 MkSaaS 的活跃用户"
+          "title": "可用模版"
         },
         "item-3": {
-          "title": "使用 MkSaaS 启动的应用"
+          "title": "建筑风格"
         }
       }
     },
     "calltoaction": {
-      "title": "开始构建",
-      "description": "MkSaaS 可让您在几天内轻松构建您的 AI SaaS",
-      "primaryButton": "开始使用",
-      "secondaryButton": "查看演示"
+      "title": "立即开始可视化",
+      "description": "几秒钟内将您的建筑概念转化为惊艳视觉效果",
+      "primaryButton": "免费试用",
+      "secondaryButton": "查看价格"
     }
   },
   "AITextPage": {
@@ -1072,6 +944,203 @@
         "title": "结构化结果",
         "description": "获得有组织、易于阅读的结果，包含清晰的部分和可操作的见解"
       }
+    }
+  },
+  "ArchPage": {
+    "hero": {
+      "badge": "Arch AI - 专业可视化",
+      "title": "建筑可视化 重新定义",
+      "subtitle": "将草图转化为效果图，生成立面设计，创建分析图表，AI 驱动的建筑可视化工具。",
+      "stats": {
+        "generated": "已生成",
+        "accuracy": "准确率",
+        "templates": "模版数",
+        "styles": "风格数",
+        "ratios": "画幅数"
+      },
+      "quote": "建筑是对空间的深思熟虑。"
+    },
+    "sidebar": {
+      "navigation": "导航",
+      "workspace": "工作台",
+      "gallery": "模版库",
+      "model": "模型",
+      "recent": "最近",
+      "settings": "设置",
+      "noHistory": "暂无生成记录"
+    },
+    "controls": {
+      "style": "风格",
+      "clearStyle": "无风格筛选",
+      "aspectRatio": "画幅比例",
+      "generate": "生成",
+      "generating": "生成中...",
+      "credits": "{count} 积分",
+      "prompt": "描述您的建筑设想..."
+    },
+    "styles": {
+      "modernMinimalist": "现代极简",
+      "brutalist": "粗野主义",
+      "ecoGreen": "生态绿建",
+      "parametric": "参数化",
+      "newChinese": "新中式",
+      "cyberpunk": "赛博朋克",
+      "watercolor": "水彩渲染",
+      "blueprint": "工程蓝图",
+      "whiteModel": "白模渲染"
+    },
+    "aspectRatios": {
+      "square": "正方形",
+      "landscape": "横屏",
+      "standard": "标准",
+      "portrait": "竖屏",
+      "vertical": "竖版"
+    },
+    "categories": {
+      "all": "全部模版",
+      "renderStyle": "渲染风格",
+      "renderStyleDesc": "转换渲染风格",
+      "modelToRender": "模型转效果图",
+      "modelToRenderDesc": "将 3D 模型转换为照片级效果图",
+      "sketchToRender": "草图转效果图",
+      "sketchToRenderDesc": "将手绘转换为效果图",
+      "masterplan": "总平面",
+      "masterplanDesc": "城市规划与场地可视化",
+      "facade": "立面设计",
+      "facadeDesc": "建筑外立面与立面图设计",
+      "section": "剖面",
+      "sectionDesc": "建筑剖面图",
+      "analysis": "分析图",
+      "analysisDesc": "场地与建筑分析图表",
+      "floorPlan": "平面图",
+      "floorPlanDesc": "平面视图可视化",
+      "renovation": "改造",
+      "renovationDesc": "建筑改造与功能转换",
+      "perspective": "透视",
+      "perspectiveDesc": "室内外透视图"
+    },
+    "templates": {
+      "styleTransferModern": {
+        "title": "现代风格迁移",
+        "description": "将任何建筑转换为现代极简风格"
+      },
+      "styleTransferTraditional": {
+        "title": "传统风格迁移",
+        "description": "应用中式传统建筑元素"
+      },
+      "styleTransferArtistic": {
+        "title": "艺术风格渲染",
+        "description": "转换为水彩或素描风格"
+      },
+      "whiteModelRender": {
+        "title": "白模转效果图",
+        "description": "将体量模型转换为照片级效果图"
+      },
+      "blockModelRender": {
+        "title": "体块模型渲染",
+        "description": "将体块模型转换为详细效果图"
+      },
+      "rhinoToRender": {
+        "title": "Rhino/SketchUp 渲染",
+        "description": "将 3D 软件截图转换为照片级图像"
+      },
+      "sketchToRender": {
+        "title": "草图转效果图",
+        "description": "将手绘转换为照片级效果图"
+      },
+      "diagramToRender": {
+        "title": "概念图转效果图",
+        "description": "将概念图转换为详细可视化"
+      },
+      "masterplanAerial": {
+        "title": "总图鸟瞰",
+        "description": "从总平面图生成鸟瞰视角"
+      },
+      "satelliteToRender": {
+        "title": "卫星图叠加",
+        "description": "在航拍图像上叠加规划方案"
+      },
+      "siteAnalysisTexture": {
+        "title": "场地肌理分析",
+        "description": "生成城市肌理分析图"
+      },
+      "facadeGenerate": {
+        "title": "立面设计",
+        "description": "生成当代立面设计"
+      },
+      "materialReplace": {
+        "title": "材质替换",
+        "description": "保持形态替换立面材质"
+      },
+      "facadeRenovation": {
+        "title": "立面翻新",
+        "description": "现代化既有建筑立面"
+      },
+      "sectionDiagram": {
+        "title": "剖面图",
+        "description": "创建详细建筑剖面"
+      },
+      "sectionPerspective": {
+        "title": "剖透视",
+        "description": "生成剖面透视图"
+      },
+      "sasakiAnalysis": {
+        "title": "Sasaki 分析图",
+        "description": "创建 Sasaki 风格场地分析图"
+      },
+      "sunlightAnalysis": {
+        "title": "日照分析",
+        "description": "生成日照与阴影分析"
+      },
+      "circulationAnalysis": {
+        "title": "流线分析",
+        "description": "可视化人流动线模式"
+      },
+      "windAnalysis": {
+        "title": "风环境分析",
+        "description": "生成风流分析图"
+      },
+      "floorplanColor": {
+        "title": "户型图填色",
+        "description": "为平面图添加功能色彩"
+      },
+      "masterplanColor": {
+        "title": "总图填色",
+        "description": "按功能为总图上色"
+      },
+      "renovationModern": {
+        "title": "现代化改造",
+        "description": "既有建筑现代化"
+      },
+      "renovationCommercial": {
+        "title": "商业改造",
+        "description": "将建筑转换为商业用途"
+      },
+      "interiorPerspective": {
+        "title": "室内透视",
+        "description": "生成室内建筑视角"
+      },
+      "axonometricView": {
+        "title": "轴测图",
+        "description": "创建爆炸轴测图"
+      }
+    },
+    "modal": {
+      "preview": "预览",
+      "referenceImage": "参考图像",
+      "editPrompt": "编辑提示词",
+      "apply": "应用模版",
+      "inputRequired": "此模版需要上传参考图像"
+    },
+    "gallery": {
+      "empty": "未找到模版",
+      "emptyDescription": "请尝试更改分类筛选"
+    },
+    "canvas": {
+      "generating": "生成中...",
+      "error": "生成失败",
+      "download": "下载",
+      "share": "分享"
     }
   },
   "AIImagePage": {

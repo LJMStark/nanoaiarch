@@ -1,105 +1,61 @@
-export type ProviderKey = 'replicate' | 'openai' | 'fireworks' | 'fal';
-export type ModelMode = 'performance' | 'quality';
+// Nano Banana 专用配置 - 仅使用 Gemini 模型
+export type ProviderKey = 'gemini';
+export type ModelMode = 'fast' | 'quality';
 
+// Gemini 模型 ID
+export const GEMINI_MODEL_IDS = {
+  // Nano Banana - Gemini 2.5 Flash Image (快速)
+  'nano-banana': 'gemini-2.5-flash-preview-05-20',
+  // Gemini 2.0 Flash (高质量)
+  'nano-banana-pro': 'gemini-2.0-flash-exp',
+} as const;
+
+export type GeminiModelId = keyof typeof GEMINI_MODEL_IDS;
+
+// Provider 配置
 export const PROVIDERS: Record<
   ProviderKey,
   {
     displayName: string;
     iconPath: string;
     color: string;
-    models: string[];
+    models: GeminiModelId[];
   }
 > = {
-  // https://ai-sdk.dev/providers/ai-sdk-providers/replicate#image-models
-  replicate: {
-    displayName: 'Replicate',
-    iconPath: '/provider-icons/replicate.svg',
-    color: 'from-purple-500 to-blue-500',
-    models: [
-      'black-forest-labs/flux-1.1-pro',
-      'black-forest-labs/flux-1.1-pro-ultra',
-      'black-forest-labs/flux-dev',
-      'black-forest-labs/flux-pro',
-      'black-forest-labs/flux-schnell',
-      'ideogram-ai/ideogram-v2',
-      'ideogram-ai/ideogram-v2-turbo',
-      'luma/photon',
-      'luma/photon-flash',
-      'recraft-ai/recraft-v3',
-      // 'recraft-ai/recraft-v3-svg', // added by Fox
-      // 'stability-ai/stable-diffusion-3.5-medium', // added by Fox
-      'stability-ai/stable-diffusion-3.5-large',
-      'stability-ai/stable-diffusion-3.5-large-turbo',
-    ],
-  },
-  // https://ai-sdk.dev/providers/ai-sdk-providers/openai#image-models
-  openai: {
-    displayName: 'OpenAI',
-    iconPath: '/provider-icons/openai.svg',
-    color: 'from-blue-500 to-cyan-500',
-    models: [
-      // 'gpt-image-1', // added by Fox
-      'dall-e-2',
-      'dall-e-3',
-    ],
-  },
-  // https://ai-sdk.dev/providers/ai-sdk-providers/fireworks#image-models
-  fireworks: {
-    displayName: 'Fireworks',
-    iconPath: '/provider-icons/fireworks.svg',
-    color: 'from-orange-500 to-red-500',
-    models: [
-      'accounts/fireworks/models/flux-1-dev-fp8',
-      'accounts/fireworks/models/flux-1-schnell-fp8',
-      'accounts/fireworks/models/playground-v2-5-1024px-aesthetic',
-      'accounts/fireworks/models/japanese-stable-diffusion-xl',
-      'accounts/fireworks/models/playground-v2-1024px-aesthetic',
-      'accounts/fireworks/models/SSD-1B',
-      'accounts/fireworks/models/stable-diffusion-xl-1024-v1-0',
-    ],
-  },
-  // https://ai-sdk.dev/providers/ai-sdk-providers/fal#image-models
-  fal: {
-    displayName: 'Fal',
-    iconPath: '/provider-icons/fal.svg',
-    color: 'from-orange-500 to-red-500',
-    models: [
-      'fal-ai/flux/dev', // added by Fox
-      'fal-ai/flux-pro/kontext',
-      'fal-ai/flux-pro/kontext/max',
-      'fal-ai/flux-lora',
-      'fal-ai/fast-sdxl',
-      'fal-ai/flux-pro/v1.1-ultra',
-      'fal-ai/ideogram/v2',
-      'fal-ai/recraft-v3',
-      'fal-ai/hyper-sdxl',
-      // 'fal-ai/stable-diffusion-3.5-large',
-    ],
+  gemini: {
+    displayName: 'Nano Banana',
+    iconPath: '/provider-icons/gemini.svg',
+    color: 'from-yellow-400 to-orange-500',
+    models: ['nano-banana', 'nano-banana-pro'],
   },
 };
 
-export const MODEL_CONFIGS: Record<ModelMode, Record<ProviderKey, string>> = {
-  performance: {
-    replicate: 'black-forest-labs/flux-1.1-pro',
-    openai: 'dall-e-3',
-    fireworks: 'accounts/fireworks/models/flux-1-schnell-fp8',
-    fal: 'fal-ai/flux/dev',
-  },
-  quality: {
-    replicate: 'stability-ai/stable-diffusion-3.5-large',
-    openai: 'dall-e-3',
-    fireworks: 'accounts/fireworks/models/flux-1-dev-fp8',
-    fal: 'fal-ai/flux-pro/v1.1-ultra',
-  },
+// 模型显示名称
+export const MODEL_DISPLAY_NAMES: Record<GeminiModelId, string> = {
+  'nano-banana': 'Nano Banana',
+  'nano-banana-pro': 'Nano Banana Pro',
 };
 
-export const PROVIDER_ORDER: ProviderKey[] = [
-  'replicate',
-  'openai',
-  'fireworks',
-  'fal',
-];
+// 模型描述
+export const MODEL_DESCRIPTIONS: Record<GeminiModelId, string> = {
+  'nano-banana': 'Fast and efficient image generation',
+  'nano-banana-pro': 'Higher quality with advanced reasoning',
+};
 
+// 模型模式配置
+export const MODEL_CONFIGS: Record<ModelMode, GeminiModelId> = {
+  fast: 'nano-banana',
+  quality: 'nano-banana-pro',
+};
+
+// 默认配置
+export const DEFAULT_MODEL: GeminiModelId = 'nano-banana';
+export const DEFAULT_PROVIDER: ProviderKey = 'gemini';
+
+// Provider 顺序（只有一个）
+export const PROVIDER_ORDER: ProviderKey[] = ['gemini'];
+
+// 初始化 Provider 记录的辅助函数
 export const initializeProviderRecord = <T>(defaultValue?: T) =>
   Object.fromEntries(
     PROVIDER_ORDER.map((key) => [key, defaultValue])

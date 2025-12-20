@@ -1,27 +1,72 @@
-export const imageHelpers = {
-  base64ToBlob: (base64Data: string, type = 'image/png'): Blob => {
-    const byteString = atob(base64Data);
-    const arrayBuffer = new ArrayBuffer(byteString.length);
-    const uint8Array = new Uint8Array(arrayBuffer);
+// 将 base64 转换为 Blob
+export function base64ToBlob(base64Data: string, type = 'image/png'): Blob {
+  const byteString = atob(base64Data);
+  const arrayBuffer = new ArrayBuffer(byteString.length);
+  const uint8Array = new Uint8Array(arrayBuffer);
 
-    for (let i = 0; i < byteString.length; i++) {
-      uint8Array[i] = byteString.charCodeAt(i);
+  for (let i = 0; i < byteString.length; i++) {
+    uint8Array[i] = byteString.charCodeAt(i);
+  }
+
+  return new Blob([uint8Array], { type });
+}
+
+// 生成图片文件名
+export function generateImageFileName(prefix: string): string {
+  const uniqueId = Math.random().toString(36).substring(2, 8);
+  return `${prefix}-${uniqueId}`.replace(/[^a-z0-9-]/gi, '');
+}
+
+// 下载图片
+export async function downloadImage(imageData: string, prefix = 'image'): Promise<void> {
+  const fileName = generateImageFileName(prefix);
+  const blob = base64ToBlob(imageData);
+  const blobUrl = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = blobUrl;
+  link.download = `${fileName}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(blobUrl);
+}
+
+// 分享图片
+export async function shareImage(imageData: string, title?: string): Promise<void> {
+  const fileName = generateImageFileName('arch-ai');
+  const blob = base64ToBlob(imageData);
+  const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
+
+  try {
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: title || 'Arch AI Generated Image',
+      });
+    } else {
+      // 如果不支持分享，则下载
+      await downloadImage(imageData, 'arch-ai');
     }
+  } catch (error) {
+    // 分享被取消或出错，则下载
+    console.error('Error sharing:', error);
+    await downloadImage(imageData, 'arch-ai');
+  }
+}
 
-    return new Blob([uint8Array], { type });
-  },
+// 格式化模型 ID
+export function formatModelId(modelId: string): string {
+  return modelId.split('/').pop() || modelId;
+}
 
-  generateImageFileName: (provider: string): string => {
-    const uniqueId = Math.random().toString(36).substring(2, 8);
-    return `${provider}-${uniqueId}`.replace(/[^a-z0-9-]/gi, '');
-  },
-
-  shareOrDownload: async (
-    imageData: string,
-    provider: string
-  ): Promise<void> => {
-    const fileName = imageHelpers.generateImageFileName(provider);
-    const blob = imageHelpers.base64ToBlob(imageData);
+// 保留旧的 imageHelpers 对象以兼容现有代码
+export const imageHelpers = {
+  base64ToBlob,
+  generateImageFileName,
+  shareOrDownload: async (imageData: string, provider: string): Promise<void> => {
+    const fileName = generateImageFileName(provider);
+    const blob = base64ToBlob(imageData);
     const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
 
     try {
@@ -34,7 +79,6 @@ export const imageHelpers = {
         throw new Error('Share API not available');
       }
     } catch (error) {
-      // Fall back to download for any error (including share cancellation)
       console.error('Error sharing/downloading:', error);
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -46,8 +90,5 @@ export const imageHelpers = {
       URL.revokeObjectURL(blobUrl);
     }
   },
-
-  formatModelId: (modelId: string): string => {
-    return modelId.split('/').pop() || modelId;
-  },
+  formatModelId,
 };

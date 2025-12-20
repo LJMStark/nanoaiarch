@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0.6" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bgGrad)"/>
+
+  <!-- Grid pattern -->
+  <g stroke="#334155" stroke-width="0.5" opacity="0.3">
+    <line x1="0" y1="50" x2="400" y2="50"/>
+    <line x1="0" y1="100" x2="400" y2="100"/>
+    <line x1="0" y1="150" x2="400" y2="150"/>
+    <line x1="0" y1="200" x2="400" y2="200"/>
+    <line x1="0" y1="250" x2="400" y2="250"/>
+    <line x1="50" y1="0" x2="50" y2="300"/>
+    <line x1="100" y1="0" x2="100" y2="300"/>
+    <line x1="150" y1="0" x2="150" y2="300"/>
+    <line x1="200" y1="0" x2="200" y2="300"/>
+    <line x1="250" y1="0" x2="250" y2="300"/>
+    <line x1="300" y1="0" x2="300" y2="300"/>
+    <line x1="350" y1="0" x2="350" y2="300"/>
+  </g>
+
+  <!-- Building silhouette -->
+  <g fill="url(#accentGrad)">
+    <!-- Main building -->
+    <rect x="100" y="80" width="80" height="140" rx="2"/>
+    <!-- Tower -->
+    <rect x="200" y="50" width="60" height="170" rx="2"/>
+    <!-- Low building -->
+    <rect x="280" y="130" width="70" height="90" rx="2"/>
+  </g>
+
+  <!-- Building details -->
+  <g fill="#1e293b" opacity="0.5">
+    <!-- Windows on main building -->
+    <rect x="110" y="90" width="15" height="20" rx="1"/>
+    <rect x="130" y="90" width="15" height="20" rx="1"/>
+    <rect x="150" y="90" width="15" height="20" rx="1"/>
+    <rect x="110" y="120" width="15" height="20" rx="1"/>
+    <rect x="130" y="120" width="15" height="20" rx="1"/>
+    <rect x="150" y="120" width="15" height="20" rx="1"/>
+    <rect x="110" y="150" width="15" height="20" rx="1"/>
+    <rect x="130" y="150" width="15" height="20" rx="1"/>
+    <rect x="150" y="150" width="15" height="20" rx="1"/>
+    <rect x="110" y="180" width="15" height="20" rx="1"/>
+    <rect x="130" y="180" width="15" height="20" rx="1"/>
+    <rect x="150" y="180" width="15" height="20" rx="1"/>
+
+    <!-- Windows on tower -->
+    <rect x="210" y="60" width="12" height="18" rx="1"/>
+    <rect x="230" y="60" width="12" height="18" rx="1"/>
+    <rect x="210" y="85" width="12" height="18" rx="1"/>
+    <rect x="230" y="85" width="12" height="18" rx="1"/>
+    <rect x="210" y="110" width="12" height="18" rx="1"/>
+    <rect x="230" y="110" width="12" height="18" rx="1"/>
+    <rect x="210" y="135" width="12" height="18" rx="1"/>
+    <rect x="230" y="135" width="12" height="18" rx="1"/>
+    <rect x="210" y="160" width="12" height="18" rx="1"/>
+    <rect x="230" y="160" width="12" height="18" rx="1"/>
+    <rect x="210" y="185" width="12" height="18" rx="1"/>
+    <rect x="230" y="185" width="12" height="18" rx="1"/>
+
+    <!-- Windows on low building -->
+    <rect x="290" y="140" width="18" height="25" rx="1"/>
+    <rect x="315" y="140" width="18" height="25" rx="1"/>
+    <rect x="290" y="175" width="18" height="25" rx="1"/>
+    <rect x="315" y="175" width="18" height="25" rx="1"/>
+  </g>
+
+  <!-- Ground line -->
+  <rect x="50" y="220" width="300" height="2" fill="#475569" opacity="0.5"/>
+
+  <!-- Decorative elements -->
+  <circle cx="50" cy="50" r="20" fill="#8b5cf6" opacity="0.1"/>
+  <circle cx="350" cy="250" r="30" fill="#3b82f6" opacity="0.1"/>
+
+  <!-- Text -->
+  <text x="200" y="260" font-family="system-ui, sans-serif" font-size="14" fill="#64748b" text-anchor="middle" font-weight="500">
+    Template Preview
+  </text>
+</svg>

@@ -9,10 +9,10 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
-  ChartBarIncreasingIcon,
-  Database,
-  Fingerprint,
-  IdCard,
+  Brush,
+  Layers,
+  Maximize2,
+  Pencil,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
@@ -80,7 +80,7 @@ export default function FeaturesSection() {
               <AccordionItem value="item-1">
                 <AccordionTrigger>
                   <div className="flex items-center gap-2 text-base">
-                    <Database className="size-4" />
+                    <Brush className="size-4" />
                     {t('items.item-1.title')}
                   </div>
                 </AccordionTrigger>
@@ -91,7 +91,7 @@ export default function FeaturesSection() {
               <AccordionItem value="item-2">
                 <AccordionTrigger>
                   <div className="flex items-center gap-2 text-base">
-                    <Fingerprint className="size-4" />
+                    <Layers className="size-4" />
                     {t('items.item-2.title')}
                   </div>
                 </AccordionTrigger>
@@ -102,7 +102,7 @@ export default function FeaturesSection() {
               <AccordionItem value="item-3">
                 <AccordionTrigger>
                   <div className="flex items-center gap-2 text-base">
-                    <IdCard className="size-4" />
+                    <Maximize2 className="size-4" />
                     {t('items.item-3.title')}
                   </div>
                 </AccordionTrigger>
@@ -113,7 +113,7 @@ export default function FeaturesSection() {
               <AccordionItem value="item-4">
                 <AccordionTrigger>
                   <div className="flex items-center gap-2 text-base">
-                    <ChartBarIncreasingIcon className="size-4" />
+                    <Pencil className="size-4" />
                     {t('items.item-4.title')}
                   </div>
                 </AccordionTrigger>

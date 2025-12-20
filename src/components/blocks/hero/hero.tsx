@@ -29,9 +29,9 @@ const transitionVariants = {
 
 export default function HeroSection() {
   const t = useTranslations('HomePage.hero');
-  const linkIntroduction = 'https://x.com/mksaascom';
-  const linkPrimary = '/#pricing';
-  const linkSecondary = 'https://demo.mksaas.com';
+  const linkIntroduction = '/ai/image';
+  const linkPrimary = '/ai/image';
+  const linkSecondary = '/#pricing';
 
   return (
     <>

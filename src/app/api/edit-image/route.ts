@@ -1,41 +1,31 @@
-import type { GenerateImageRequest } from '@/ai/image/lib/api-types';
+import type { EditImageRequest } from '@/ai/image/lib/api-types';
 import {
   TIMEOUT_MILLIS,
   generateRequestId,
   mapModelIdToGeminiKey,
-  validatePrompt,
   withTimeout,
 } from '@/ai/image/lib/api-utils';
 import { getCreditCost } from '@/ai/image/lib/credit-costs';
-import { generateImageWithGemini } from '@/ai/image/lib/gemini-client';
+import { editImageWithConversation } from '@/ai/image/lib/gemini-client';
 import type { GeminiModelId } from '@/ai/image/lib/provider-config';
 import { consumeCredits, hasEnoughCredits } from '@/credits/credits';
 import { auth } from '@/lib/auth';
 import { type NextRequest, NextResponse } from 'next/server';
 
+/**
+ * 对话式图像编辑 API
+ * 支持多轮对话上下文，用于迭代编辑图像
+ */
 export async function POST(req: NextRequest) {
   const requestId = generateRequestId();
-  const { prompt, modelId, referenceImage } =
-    (await req.json()) as GenerateImageRequest;
+  const { messages, modelId } = (await req.json()) as EditImageRequest;
 
   try {
     // 验证请求参数
-    if (!modelId) {
-      const error = 'Model ID is required';
+    if (!messages || messages.length === 0 || !modelId) {
+      const error = 'Invalid request parameters';
       console.error(`${error} [requestId=${requestId}]`);
       return NextResponse.json({ error }, { status: 400 });
-    }
-
-    // 验证 prompt
-    const promptValidation = validatePrompt(prompt);
-    if (!promptValidation.valid) {
-      console.error(
-        `Invalid prompt [requestId=${requestId}]: ${promptValidation.error}`
-      );
-      return NextResponse.json(
-        { error: promptValidation.error },
-        { status: 400 }
-      );
     }
 
     // 验证用户身份
@@ -46,7 +36,7 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       console.error(`Unauthorized request [requestId=${requestId}]`);
       return NextResponse.json(
-        { error: 'Please sign in to generate images' },
+        { error: 'Please sign in to edit images' },
         { status: 401 }
       );
     }
@@ -77,24 +67,27 @@ export async function POST(req: NextRequest) {
     const startstamp = performance.now();
 
     console.log(
-      `Starting image generation [requestId=${requestId}, userId=${userId}, model=${modelId}, geminiKey=${geminiModelKey}, creditCost=${creditCost}]`
+      `Starting image edit [requestId=${requestId}, userId=${userId}, model=${modelId}, messageCount=${messages.length}, creditCost=${creditCost}]`
     );
 
-    // 使用 Gemini 客户端生成图像
-    const generatePromise = generateImageWithGemini({
-      prompt,
+    // 使用对话式编辑
+    const editPromise = editImageWithConversation({
+      messages: messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+        image: msg.image,
+      })),
       modelKey: geminiModelKey,
-      referenceImage,
     }).then(async (result) => {
       const elapsed = ((performance.now() - startstamp) / 1000).toFixed(1);
 
       if (result.success && result.image) {
-        // 生成成功后消耗 credits
+        // 编辑成功后消耗 credits
         try {
           await consumeCredits({
             userId,
             amount: creditCost,
-            description: `Image generation: ${modelId}`,
+            description: `Image edit: ${modelId}`,
           });
           console.log(
             `Consumed ${creditCost} credits [requestId=${requestId}, userId=${userId}]`
@@ -104,11 +97,10 @@ export async function POST(req: NextRequest) {
             `Failed to consume credits [requestId=${requestId}, userId=${userId}]: `,
             creditError
           );
-          // 即使扣费失败也返回图片，但记录错误（避免用户体验受影响）
         }
 
         console.log(
-          `Completed image request [requestId=${requestId}, model=${modelId}, elapsed=${elapsed}s]`
+          `Completed image edit [requestId=${requestId}, model=${modelId}, elapsed=${elapsed}s]`
         );
         return {
           image: result.image,
@@ -118,27 +110,26 @@ export async function POST(req: NextRequest) {
       }
 
       console.error(
-        `Image generation failed [requestId=${requestId}, model=${modelId}, elapsed=${elapsed}s]: ${result.error}`
+        `Image edit failed [requestId=${requestId}, model=${modelId}, elapsed=${elapsed}s]: ${result.error}`
       );
       return {
-        error: result.error || 'Failed to generate image',
+        error: result.error || 'Failed to edit image',
       };
     });
 
-    const result = await withTimeout(generatePromise, TIMEOUT_MILLIS);
+    const result = await withTimeout(editPromise, TIMEOUT_MILLIS);
 
     return NextResponse.json(result, {
       status: 'image' in result && result.image ? 200 : 500,
     });
   } catch (error) {
-    // 记录完整错误详情，但返回通用错误消息以避免泄露敏感信息
     console.error(
-      `Error generating image [requestId=${requestId}, model=${modelId}]: `,
+      `Error editing image [requestId=${requestId}, model=${modelId}]: `,
       error
     );
     return NextResponse.json(
       {
-        error: 'Failed to generate image. Please try again later.',
+        error: 'Failed to edit image. Please try again later.',
       },
       { status: 500 }
     );
