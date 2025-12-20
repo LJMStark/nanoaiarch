@@ -1,45 +1,39 @@
 'use client';
 
-// Main architectural playground - redesigned to match main site style
-// 主建筑 Playground 容器 - 重新设计以匹配主站风格
+// Arch AI Playground - Bento Grid Layout
+// Arch AI Playground - Bento 网格布局设计
 
-import { Ripple } from '@/components/magicui/ripple';
-import { AnimatedGroup } from '@/components/tailark/motion/animated-group';
-import { TextEffect } from '@/components/tailark/motion/text-effect';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Building2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
-import { useCallback, useState } from 'react';
-import type { ArchTemplate, AspectRatioId, StylePresetId } from '../lib/arch-types';
+import { useCallback, useMemo } from 'react';
+import type { ArchTemplate, AspectRatioId, StylePresetId, TemplateCategoryId } from '../lib/arch-types';
+import { TEMPLATE_CATEGORY_LIST, getTemplateCategory } from '../lib/template-categories';
+import { getTemplatesByCategory, ARCH_TEMPLATES } from '../lib/templates';
 import { useArchGeneration } from '../hooks/use-arch-generation';
-import { FloatingControlBar } from './FloatingControlBar';
-import { GenerationCanvas } from './GenerationCanvas';
+import {
+  AllCategoriesCard,
+  BentoGrid,
+  BentoTemplateCard,
+  CategoryCard,
+  HeroBentoCard,
+  QuickActionCard,
+  StatsCard,
+} from './bento';
+import { GenerationModal } from './GenerationModal';
 import { TemplateDetailModal } from './TemplateDetailModal';
-import { TemplateGallery } from './TemplateGallery';
 
-const transitionVariants = {
-  item: {
-    hidden: {
-      opacity: 0,
-      y: 12,
-      scale: 0.95,
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        type: 'spring',
-        bounce: 0.3,
-        duration: 1.5,
-      },
-    },
-  },
-};
-
+/**
+ * ArchPlayground - Main playground component with Bento Grid layout
+ *
+ * Layout Structure:
+ * - Top Row: Hero Card (7 cols) + Quick Action Card (5 cols)
+ * - Second Row: Category Cards (2 cols each) + Stats Card (4 cols)
+ * - Template Grid: Bento grid of templates based on selected category
+ */
 export function ArchPlayground() {
   const t = useTranslations('ArchPage');
+  const tRoot = useTranslations(); // Root translator for full key paths
 
   // Use the arch generation hook
   const {
@@ -53,13 +47,11 @@ export function ArchPlayground() {
     referenceImage,
     lastCreditsUsed,
     setMode,
-    setSelectedModel,
     setReferenceImage,
     stylePreset,
     aspectRatio,
     selectedTemplate,
     templateCategory,
-    showHero,
     showTemplateModal,
     promptValue,
     setStylePreset,
@@ -72,6 +64,22 @@ export function ArchPlayground() {
     editWithEnhancement,
   } = useArchGeneration();
 
+  // Get featured template for hero card
+  const featuredTemplate = useMemo(() => {
+    return ARCH_TEMPLATES.find((t) => t.featured) || ARCH_TEMPLATES[0];
+  }, []);
+
+  // Get templates for current category
+  const templates = useMemo(() => {
+    return getTemplatesByCategory(templateCategory);
+  }, [templateCategory]);
+
+  // Total template count
+  const totalTemplateCount = ARCH_TEMPLATES.length;
+
+  // Generation modal state
+  const showGenerationModal = isLoading || !!image || !!error;
+
   // Handle submit
   const handleSubmit = useCallback(async () => {
     if (!promptValue.trim()) return;
@@ -82,6 +90,14 @@ export function ArchPlayground() {
       await generateWithEnhancement(promptValue);
     }
   }, [promptValue, mode, referenceImage, editWithEnhancement, generateWithEnhancement]);
+
+  // Handle template click from hero
+  const handleHeroTemplateClick = useCallback(
+    (template: ArchTemplate) => {
+      selectTemplate(template);
+    },
+    [selectTemplate]
+  );
 
   // Handle template apply from modal
   const handleTemplateApply = useCallback(
@@ -100,145 +116,198 @@ export function ArchPlayground() {
     [setPromptValue, setStylePreset, setAspectRatio, setShowTemplateModal, setMode]
   );
 
+  // Handle category change
+  const handleCategoryChange = useCallback(
+    (category: TemplateCategoryId | 'all') => {
+      setTemplateCategory(category);
+    },
+    [setTemplateCategory]
+  );
+
+  // Handle regenerate in modal
+  const handleRegenerate = useCallback(() => {
+    if (promptValue.trim()) {
+      handleSubmit();
+    }
+  }, [promptValue, handleSubmit]);
+
+  // Close generation modal
+  const handleCloseGenerationModal = useCallback((open: boolean) => {
+    // Only allow closing if not loading
+    if (!isLoading && !open) {
+      // Clear the results to close modal
+      // This would need to be implemented in the hook
+    }
+  }, [isLoading]);
+
   return (
     <>
-      <main className="overflow-hidden">
-        {/* Background effects - same as hero section */}
-        <div
-          aria-hidden
-          className="absolute inset-0 isolate hidden opacity-65 contain-strict lg:block"
-        >
-          <div className="w-140 h-320 -translate-y-87.5 absolute left-0 top-0 -rotate-45 rounded-full bg-[radial-gradient(68.54%_68.72%_at_55.02%_31.46%,hsla(0,0%,85%,.08)_0,hsla(0,0%,55%,.02)_50%,hsla(0,0%,45%,0)_80%)]" />
-          <div className="h-320 absolute left-0 top-0 w-60 -rotate-45 rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.06)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)] [translate:5%_-50%]" />
-          <div className="h-320 -translate-y-87.5 absolute left-0 top-0 w-60 -rotate-45 bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.04)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)]" />
-        </div>
+      <main className="min-h-screen overflow-hidden">
+        {/* Background decorations */}
+        <BackgroundDecorations />
 
-        {/* Hero section - shown when no content */}
-        {showHero && !image && !isLoading && !error && (
-          <section className="relative pt-12 pb-8">
-            <div className="mx-auto max-w-7xl px-6">
-              <Ripple />
+        {/* Main content */}
+        <div className="relative z-10 px-4 py-8 lg:py-12">
+          <div className="mx-auto max-w-7xl">
+            {/* Page header - minimal */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 lg:mb-8"
+            >
+              <h1 className="text-2xl lg:text-3xl font-bold font-bricolage-grotesque">
+                Arch AI
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('hero.subtitle')}
+              </p>
+            </motion.div>
 
-              <div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
-                {/* Introduction badge */}
-                <AnimatedGroup variants={transitionVariants}>
-                  <div className="hover:bg-accent group mx-auto flex w-fit items-center gap-2 rounded-full border p-1 pl-4">
-                    <Building2 className="h-4 w-4 text-primary" />
-                    <span className="text-foreground text-sm">
-                      {t('hero.badge')}
-                    </span>
-                    <div className="size-6 overflow-hidden rounded-full bg-primary/10">
-                      <ArrowRight className="m-auto mt-1.5 size-3 text-primary" />
-                    </div>
-                  </div>
-                </AnimatedGroup>
+            {/* Bento Grid Layout */}
+            <BentoGrid className="mb-8">
+              {/* Row 1: Hero + Quick Action */}
+              <HeroBentoCard
+                featuredTemplate={featuredTemplate}
+                onTemplateClick={handleHeroTemplateClick}
+              />
+              <QuickActionCard
+                promptValue={promptValue}
+                onPromptChange={setPromptValue}
+                onSubmit={handleSubmit}
+                referenceImage={referenceImage}
+                onImageUpload={setReferenceImage}
+                onImageClear={() => setReferenceImage(null)}
+                stylePreset={stylePreset}
+                onStyleChange={setStylePreset}
+                aspectRatio={aspectRatio}
+                onAspectRatioChange={setAspectRatio}
+                selectedModel={selectedModel}
+                isLoading={isLoading}
+              />
 
-                {/* Title */}
-                <TextEffect
-                  per="line"
-                  preset="fade-in-blur"
-                  speedSegment={0.3}
-                  as="h1"
-                  className="mt-8 text-balance text-4xl md:text-5xl lg:text-6xl font-bricolage-grotesque"
-                >
-                  {t('hero.title')}
-                </TextEffect>
+              {/* Row 2: Categories (3) + Stats */}
+              <AllCategoriesCard
+                isSelected={templateCategory === 'all'}
+                onClick={() => handleCategoryChange('all')}
+                totalCount={totalTemplateCount}
+                animationDelay={0.15}
+              />
+              {TEMPLATE_CATEGORY_LIST.slice(0, 2).map((cat, index) => (
+                <CategoryCard
+                  key={cat.id}
+                  category={cat}
+                  isSelected={templateCategory === cat.id}
+                  onClick={() => handleCategoryChange(cat.id)}
+                  animationDelay={0.2 + index * 0.05}
+                />
+              ))}
+              <StatsCard
+                templateCount={totalTemplateCount}
+                styleCount={9}
+                ratioCount={5}
+                animationDelay={0.3}
+              />
+            </BentoGrid>
 
-                {/* Subtitle */}
-                <TextEffect
-                  per="line"
-                  preset="fade-in-blur"
-                  speedSegment={0.3}
-                  delay={0.5}
-                  as="p"
-                  className="mx-auto mt-6 max-w-3xl text-balance text-lg text-muted-foreground"
-                >
-                  {t('hero.subtitle')}
-                </TextEffect>
-
-                {/* Stats */}
-                <AnimatedGroup
-                  variants={{
-                    container: {
-                      visible: {
-                        transition: {
-                          staggerChildren: 0.1,
-                          delayChildren: 0.75,
-                        },
-                      },
-                    },
-                    ...transitionVariants,
-                  }}
-                  className="mt-12 flex flex-wrap items-center justify-center gap-8 md:gap-16"
-                >
-                  <StatItem value="26+" label={t('hero.stats.templates')} />
-                  <StatItem value="9" label={t('hero.stats.styles')} />
-                  <StatItem value="5" label={t('hero.stats.ratios')} />
-                </AnimatedGroup>
+            {/* Category filter - show remaining categories */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="mb-6"
+            >
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {TEMPLATE_CATEGORY_LIST.slice(2).map((cat) => {
+                  const Icon = cat.icon;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => handleCategoryChange(cat.id)}
+                      className={cn(
+                        'flex items-center gap-2 px-3 py-1.5 rounded-full',
+                        'text-xs font-medium whitespace-nowrap',
+                        'transition-colors border',
+                        templateCategory === cat.id
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-muted/50 hover:bg-muted text-muted-foreground border-transparent'
+                      )}
+                    >
+                      <Icon
+                        className="h-3.5 w-3.5"
+                        style={{ color: templateCategory === cat.id ? undefined : cat.color }}
+                      />
+                      <span>{tRoot(cat.labelKey as any)}</span>
+                    </button>
+                  );
+                })}
               </div>
-            </div>
-          </section>
-        )}
+            </motion.div>
 
-        {/* Main content area */}
-        <section className="px-4 pb-32">
-          <div className="mx-auto max-w-6xl">
-            {/* Template gallery - shown when no generation */}
-            {showHero && !image && !isLoading && !error && (
-              <AnimatedGroup
-                variants={{
-                  container: {
-                    visible: {
-                      transition: {
-                        staggerChildren: 0.05,
-                        delayChildren: 1,
-                      },
-                    },
-                  },
-                  ...transitionVariants,
-                }}
+            {/* Templates section header */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.45 }}
+              className="flex items-center justify-between mb-4"
+            >
+              <h2 className="text-lg font-semibold">
+                {templateCategory === 'all'
+                  ? t('categories.all')
+                  : tRoot(getTemplateCategory(templateCategory).labelKey as any)}
+              </h2>
+              <span className="text-sm text-muted-foreground">
+                {templates.length} templates
+              </span>
+            </motion.div>
+
+            {/* Templates Bento Grid */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={templateCategory}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
               >
-                <TemplateGallery
-                  category={templateCategory}
-                  onCategoryChange={setTemplateCategory}
-                  onTemplateClick={selectTemplate}
-                  className="mt-8"
-                />
-              </AnimatedGroup>
-            )}
+                <BentoGrid>
+                  {templates.map((template, index) => (
+                    <BentoTemplateCard
+                      key={template.id}
+                      template={template}
+                      onClick={() => selectTemplate(template)}
+                      animationDelay={0.5 + index * 0.03}
+                    />
+                  ))}
+                </BentoGrid>
+              </motion.div>
+            </AnimatePresence>
 
-            {/* Generation canvas - shown when generating or has result */}
-            {(image || isLoading || error) && (
-              <div className="pt-12">
-                <GenerationCanvas
-                  image={image}
-                  error={error}
-                  timing={timing}
-                  isLoading={isLoading}
-                  activePrompt={activePrompt}
-                  lastCreditsUsed={lastCreditsUsed}
-                />
+            {/* Empty state */}
+            {templates.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                  <svg
+                    className="w-8 h-8 text-muted-foreground/50"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                </div>
+                <h3 className="font-medium text-lg mb-1">{t('gallery.empty')}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t('gallery.emptyDescription')}
+                </p>
               </div>
             )}
           </div>
-        </section>
-
-        {/* Floating control bar */}
-        <FloatingControlBar
-          promptValue={promptValue}
-          onPromptChange={setPromptValue}
-          onSubmit={handleSubmit}
-          mode={mode}
-          selectedModel={selectedModel}
-          referenceImage={referenceImage}
-          onImageUpload={setReferenceImage}
-          onImageClear={() => setReferenceImage(null)}
-          stylePreset={stylePreset}
-          onStyleChange={setStylePreset}
-          aspectRatio={aspectRatio}
-          onAspectRatioChange={setAspectRatio}
-          isLoading={isLoading}
-        />
+        </div>
       </main>
 
       {/* Template detail modal */}
@@ -248,16 +317,58 @@ export function ArchPlayground() {
         onOpenChange={setShowTemplateModal}
         onApply={handleTemplateApply}
       />
+
+      {/* Generation modal */}
+      <GenerationModal
+        open={showGenerationModal}
+        onOpenChange={handleCloseGenerationModal}
+        image={image}
+        error={error}
+        timing={timing}
+        isLoading={isLoading}
+        activePrompt={activePrompt}
+        lastCreditsUsed={lastCreditsUsed}
+        onRegenerate={handleRegenerate}
+      />
     </>
   );
 }
 
-// Stat item component
-function StatItem({ value, label }: { value: string; label: string }) {
+// Background decorations component
+// 背景装饰组件
+function BackgroundDecorations() {
   return (
-    <div className="text-center">
-      <div className="text-3xl md:text-4xl font-bold text-primary">{value}</div>
-      <p className="text-sm text-muted-foreground mt-1">{label}</p>
+    <div
+      aria-hidden
+      className="fixed inset-0 overflow-hidden pointer-events-none"
+    >
+      {/* Top left gradient orb */}
+      <div
+        className={cn(
+          'absolute -top-40 -left-40 w-80 h-80',
+          'rounded-full blur-3xl opacity-20',
+          'bg-gradient-to-br from-primary/50 to-transparent'
+        )}
+      />
+      {/* Bottom right gradient orb */}
+      <div
+        className={cn(
+          'absolute -bottom-40 -right-40 w-96 h-96',
+          'rounded-full blur-3xl opacity-10',
+          'bg-gradient-to-tl from-violet-500/50 to-transparent'
+        )}
+      />
+      {/* Grid pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.02] dark:opacity-[0.03]"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '60px 60px',
+        }}
+      />
     </div>
   );
 }

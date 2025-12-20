@@ -8,7 +8,6 @@ import {
   routing,
 } from './i18n/routing';
 import type { Session } from './lib/auth-types';
-import { getBaseUrl } from './lib/urls/urls';
 import {
   DEFAULT_LOGIN_REDIRECT,
   protectedRoutes,
@@ -16,6 +15,16 @@ import {
 } from './routes';
 
 const intlMiddleware = createMiddleware(routing);
+
+/**
+ * Get the base URL from the request headers
+ * This ensures we use the correct port even if it changes
+ */
+function getBaseUrlFromRequest(req: NextRequest): string {
+  const proto = req.headers.get('x-forwarded-proto') || 'http';
+  const host = req.headers.get('host') || 'localhost:3000';
+  return `${proto}://${host}`;
+}
 
 /**
  * 1. Next.js middleware
@@ -55,16 +64,23 @@ export default async function middleware(req: NextRequest) {
 
   // do not use getSession() here, it will cause error related to edge runtime
   // const session = await getSession();
-  const { data: session } = await betterFetch<Session>(
-    '/api/auth/get-session',
-    {
-      baseURL: getBaseUrl(),
-      headers: {
-        cookie: req.headers.get('cookie') || '', // Forward the cookies from the request
-      },
-    }
-  );
-  const isLoggedIn = !!session;
+  let isLoggedIn = false;
+  try {
+    const { data: session } = await betterFetch<Session>(
+      '/api/auth/get-session',
+      {
+        baseURL: getBaseUrlFromRequest(req),
+        headers: {
+          cookie: req.headers.get('cookie') || '', // Forward the cookies from the request
+        },
+      }
+    );
+    isLoggedIn = !!session;
+  } catch (error) {
+    // Fetch failed - likely during initial server startup or port mismatch
+    // Treat as not logged in and continue with intl middleware
+    console.warn('Session fetch failed, treating as not logged in:', error);
+  }
   // console.log('middleware, isLoggedIn', isLoggedIn);
 
   // Get the pathname of the request (e.g. /zh/dashboard to /dashboard)
