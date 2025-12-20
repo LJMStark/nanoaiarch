@@ -37,14 +37,15 @@ export function StylePresetSelect({ value, onChange, className }: StylePresetSel
           className={cn(
             'h-9 gap-2 border-input/50 bg-background/50 backdrop-blur-sm',
             'hover:bg-background/80 hover:border-input',
+            'justify-start',
             className
           )}
         >
           <Icon className="h-4 w-4" style={{ color: selectedPreset?.color }} />
-          <span className="max-w-[100px] truncate">
+          <span className="truncate">
             {selectedPreset ? t(selectedPreset.labelKey as any) : t('ArchPage.controls.style')}
           </span>
-          <ChevronDown className="h-3 w-3 opacity-50" />
+          <ChevronDown className="h-3 w-3 opacity-50 flex-shrink-0" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

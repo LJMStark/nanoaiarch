@@ -1,19 +1,17 @@
 'use client';
 
 // Template detail modal with preview and editable prompt
-// 模版详情模态框，包含预览和可编辑提示词
-// 响应式横版布局设计
+// 模版详情模态框 - 55-45 横版布局设计
+// 左侧大尺寸预览，右侧简洁控制区
 
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { ArrowRight, ImageIcon, Sparkles, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, ImageIcon, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
@@ -37,12 +35,13 @@ export function TemplateDetailModal({
 }: TemplateDetailModalProps) {
   const t = useTranslations();
 
-  // Local state for editing
+  // Local state
   const [editedPrompt, setEditedPrompt] = useState('');
   const [selectedStyle, setSelectedStyle] = useState<StylePresetId | null>(null);
   const [selectedRatio, setSelectedRatio] = useState<AspectRatioId>('16:9');
   const [previewImageError, setPreviewImageError] = useState(false);
   const [inputImageError, setInputImageError] = useState(false);
+  const [promptExpanded, setPromptExpanded] = useState(false);
 
   // Reset state when template changes
   useEffect(() => {
@@ -52,6 +51,7 @@ export function TemplateDetailModal({
       setSelectedRatio(template.defaultAspectRatio ?? '16:9');
       setPreviewImageError(false);
       setInputImageError(false);
+      setPromptExpanded(false);
     }
   }, [template]);
 
@@ -68,45 +68,104 @@ export function TemplateDetailModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          // 始终横版布局，响应式宽度
-          'w-[95vw] max-w-5xl',
-          // 固定高度，适应不同屏幕
-          'h-auto max-h-[85vh]',
-          // 移除默认 padding，自定义布局
+          // 响应式宽度
+          'w-[95vw] max-w-4xl',
+          // 高度自适应
+          'h-auto max-h-[90vh]',
+          // 移除默认 padding
           'p-0 overflow-hidden',
-          // 圆角和边框
-          'rounded-2xl border-border/50'
+          // 样式
+          'rounded-2xl border-border/50 bg-background'
         )}
       >
-        {/* 横版布局容器 - 始终水平排列 */}
-        <div className="flex flex-row h-full">
-          {/* 左侧：预览图区域 - 固定宽度比例 */}
-          <div className="w-2/5 min-w-[200px] relative bg-muted/50 flex-shrink-0">
-            {/* 预览图容器 */}
-            <div className="absolute inset-0">
-              {previewImageError ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                  <ImageIcon className="h-12 w-12 text-muted-foreground/30" />
+        {/* 主容器 - 横版布局，移动端垂直 */}
+        <div className="flex flex-col lg:flex-row h-full max-h-[90vh]">
+
+          {/* 左侧：预览区域 - 55% */}
+          <div className="lg:w-[55%] relative bg-muted/30 flex-shrink-0">
+            {/* 移动端：固定高度 | 桌面：填满高度 */}
+            <div className="relative h-[240px] sm:h-[300px] lg:h-full lg:min-h-[480px]">
+
+              {/* Before/After 对比展示 */}
+              {template.requiresInput ? (
+                <div className="absolute inset-0 flex items-center justify-center p-6 gap-4">
+                  {/* Before 图片 */}
+                  <div className="flex-1 h-full max-h-[280px] lg:max-h-[360px] relative">
+                    <div className="absolute inset-0 rounded-xl overflow-hidden border border-border/30 bg-muted/50">
+                      {template.inputImage && !inputImageError ? (
+                        <Image
+                          src={template.inputImage}
+                          alt="Input"
+                          fill
+                          className="object-cover"
+                          onError={() => setInputImageError(true)}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <ImageIcon className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                          <span className="text-xs text-muted-foreground/50">Your Image</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-muted text-[10px] text-muted-foreground">
+                      INPUT
+                    </div>
+                  </div>
+
+                  {/* 箭头 */}
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <ArrowRight className="h-4 w-4 text-primary" />
+                  </div>
+
+                  {/* After 图片 */}
+                  <div className="flex-1 h-full max-h-[280px] lg:max-h-[360px] relative">
+                    <div className="absolute inset-0 rounded-xl overflow-hidden border border-border/30 shadow-lg">
+                      {!previewImageError ? (
+                        <Image
+                          src={template.previewImage}
+                          alt={t(template.titleKey as any)}
+                          fill
+                          className="object-cover"
+                          onError={() => setPreviewImageError(true)}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                          <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-primary text-[10px] text-primary-foreground font-medium">
+                      OUTPUT
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <Image
-                  src={template.previewImage}
-                  alt={t(template.titleKey as any)}
-                  fill
-                  className="object-cover"
-                  onError={() => setPreviewImageError(true)}
-                />
+                // 单图预览（不需要输入的模板）
+                <div className="absolute inset-0 p-6">
+                  <div className="relative w-full h-full rounded-xl overflow-hidden border border-border/30 shadow-lg">
+                    {!previewImageError ? (
+                      <Image
+                        src={template.previewImage}
+                        alt={t(template.titleKey as any)}
+                        fill
+                        className="object-cover"
+                        onError={() => setPreviewImageError(true)}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                        <ImageIcon className="h-12 w-12 text-muted-foreground/30" />
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
-
-              {/* 渐变遮罩 */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-background/20" />
 
               {/* 分类徽章 */}
               <div
                 className={cn(
-                  'absolute top-3 left-3',
-                  'flex items-center gap-1.5 px-2.5 py-1',
-                  'rounded-full bg-black/60 backdrop-blur-sm',
+                  'absolute top-4 left-4 z-10',
+                  'flex items-center gap-1.5 px-3 py-1.5',
+                  'rounded-full bg-black/70 backdrop-blur-sm',
                   'text-xs font-medium text-white'
                 )}
               >
@@ -116,75 +175,63 @@ export function TemplateDetailModal({
             </div>
           </div>
 
-          {/* 右侧：内容区域 */}
-          <div className="flex-1 flex flex-col p-4 sm:p-5 overflow-y-auto min-w-0">
-            {/* 头部：标题和描述 */}
-            <DialogHeader className="mb-3 flex-shrink-0">
-              <DialogTitle className="text-lg sm:text-xl font-semibold pr-8">
+          {/* 右侧：控制区域 - 45% */}
+          <div className="flex-1 flex flex-col p-5 lg:p-6 overflow-y-auto">
+
+            {/* 标题和描述 */}
+            <div className="mb-5">
+              <h2 className="text-xl lg:text-2xl font-semibold mb-2">
                 {t(template.titleKey as any)}
-              </DialogTitle>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
+              </h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {t(template.descriptionKey as any)}
               </p>
-            </DialogHeader>
-
-            {/* 输入图片预览（如果模板需要输入） */}
-            {template.requiresInput && (
-              <div className="mb-3 flex-shrink-0">
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                  {t('ArchPage.modal.referenceImage')}
-                </label>
-                <div className="relative h-20 sm:h-24 rounded-lg overflow-hidden bg-muted border border-dashed border-border/50">
-                  {template.inputImage && !inputImageError ? (
-                    <>
-                      <Image
-                        src={template.inputImage}
-                        alt="Reference input"
-                        fill
-                        className="object-cover opacity-60"
-                        onError={() => setInputImageError(true)}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="bg-black/60 backdrop-blur-sm rounded-full p-1.5">
-                          <ArrowRight className="h-4 w-4 text-white" />
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <ImageIcon className="h-6 w-6 text-muted-foreground/40 mx-auto mb-1" />
-                        <span className="text-[10px] text-muted-foreground">
-                          {t('ArchPage.modal.inputRequired')}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* 可编辑提示词 */}
-            <div className="mb-3 flex-1 min-h-0">
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                {t('ArchPage.modal.editPrompt')}
-              </label>
-              <Textarea
-                value={editedPrompt}
-                onChange={(e) => setEditedPrompt(e.target.value)}
-                className={cn(
-                  'h-full min-h-[80px] max-h-[150px] resize-none',
-                  'text-sm bg-muted/30 border-border/50',
-                  'focus:border-primary/50 focus:ring-1 focus:ring-primary/20'
-                )}
-                placeholder={t('ArchPage.controls.prompt')}
-              />
             </div>
 
-            {/* 样式和比例选择 - 紧凑横向排列 */}
-            <div className="flex items-center gap-3 mb-3 flex-shrink-0">
-              <div className="flex-1 min-w-0">
-                <label className="text-[10px] font-medium text-muted-foreground mb-1 block">
+            {/* Prompt 区域 - 可折叠 */}
+            <div className="mb-5">
+              <button
+                type="button"
+                onClick={() => setPromptExpanded(!promptExpanded)}
+                className="flex items-center justify-between w-full text-left mb-2 group"
+              >
+                <span className="text-sm font-medium text-muted-foreground">
+                  {t('ArchPage.modal.editPrompt')}
+                </span>
+                <span className="text-muted-foreground/60 group-hover:text-muted-foreground transition-colors">
+                  {promptExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </span>
+              </button>
+
+              <div
+                className={cn(
+                  'transition-all duration-200 overflow-hidden',
+                  promptExpanded ? 'max-h-[200px]' : 'max-h-[80px]'
+                )}
+              >
+                <Textarea
+                  value={editedPrompt}
+                  onChange={(e) => setEditedPrompt(e.target.value)}
+                  onFocus={() => setPromptExpanded(true)}
+                  className={cn(
+                    'resize-none text-sm',
+                    'bg-muted/30 border-border/50',
+                    'focus:border-primary/50 focus:ring-1 focus:ring-primary/20',
+                    promptExpanded ? 'h-[180px]' : 'h-[72px]'
+                  )}
+                  placeholder={t('ArchPage.controls.prompt')}
+                />
+              </div>
+            </div>
+
+            {/* 样式和比例选择 - 使用 grid 布局 */}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              <div className="col-span-2">
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                   {t('ArchPage.controls.style')}
                 </label>
                 <StylePresetSelect
@@ -193,8 +240,8 @@ export function TemplateDetailModal({
                   className="w-full"
                 />
               </div>
-              <div className="flex-1 min-w-0">
-                <label className="text-[10px] font-medium text-muted-foreground mb-1 block">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                   {t('ArchPage.controls.aspectRatio')}
                 </label>
                 <AspectRatioSelect
@@ -206,24 +253,29 @@ export function TemplateDetailModal({
             </div>
 
             {/* 标签 */}
-            <div className="flex flex-wrap gap-1.5 mb-3 flex-shrink-0">
-              {template.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2 py-0.5 text-[10px] rounded-full bg-muted text-muted-foreground"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
+            {template.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-5">
+                {template.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-2.5 py-1 text-xs rounded-full bg-muted/50 text-muted-foreground"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* 占位区域，将按钮推到底部 */}
+            <div className="flex-1" />
 
             {/* 应用按钮 */}
             <Button
               onClick={handleApply}
-              className="w-full gap-2 flex-shrink-0"
-              size="default"
+              size="lg"
+              className="w-full gap-2 h-12 text-base"
             >
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-5 w-5" />
               {t('ArchPage.modal.apply')}
             </Button>
           </div>
