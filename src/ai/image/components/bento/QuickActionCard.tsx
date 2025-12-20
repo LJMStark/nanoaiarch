@@ -142,18 +142,18 @@ export function QuickActionCard({
 
       {/* Content area */}
       <div className="flex-1 flex flex-col gap-3">
-        {/* Prompt input row */}
-        <div className="flex gap-2">
+        {/* Prompt input row - expanded to fill space */}
+        <div className="flex gap-2 flex-1">
           {/* Image upload / preview */}
           <div className="flex-shrink-0">
             {referenceImage ? (
               <div className="relative group">
-                <div className="w-14 h-14 rounded-xl overflow-hidden border border-border/50">
+                <div className="w-12 h-12 rounded-lg overflow-hidden border border-border/50">
                   <Image
                     src={`data:image/png;base64,${referenceImage}`}
                     alt="Reference"
-                    width={56}
-                    height={56}
+                    width={48}
+                    height={48}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -177,7 +177,7 @@ export function QuickActionCard({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
-                  'w-14 h-14 rounded-xl',
+                  'w-12 h-12 rounded-lg',
                   'border-2 border-dashed border-border/50',
                   'flex items-center justify-center',
                   'hover:border-primary/50 hover:bg-primary/5',
@@ -189,18 +189,18 @@ export function QuickActionCard({
             )}
           </div>
 
-          {/* Textarea */}
+          {/* Textarea - expanded height */}
           <Textarea
             value={promptValue}
             onChange={(e) => onPromptChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t('controls.prompt')}
             className={cn(
-              'flex-1 min-h-[56px] max-h-[100px] resize-none',
+              'flex-1 min-h-[100px] h-full resize-none',
               'bg-background/50 dark:bg-background/30',
               'border-border/50',
               'placeholder:text-muted-foreground/60',
-              'text-sm rounded-xl'
+              'text-sm rounded-lg'
             )}
             disabled={isLoading}
           />
