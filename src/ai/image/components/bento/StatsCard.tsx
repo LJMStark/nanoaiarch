@@ -33,11 +33,7 @@ export function StatsCard({
       animationDelay={animationDelay}
       hoverGlow={false}
       hoverScale={false}
-      className={cn(
-        BENTO_PRESETS.stats,
-        '!p-2 lg:!p-3',
-        className
-      )}
+      className={cn(BENTO_PRESETS.stats, '!p-2 lg:!p-3', className)}
     >
       <div className="flex items-center justify-around w-full h-full">
         <Stat value={`${templateCount}+`} label="模板" color="text-primary" />
@@ -48,7 +44,11 @@ export function StatsCard({
   );
 }
 
-function Stat({ value, label, color }: { value: string; label: string; color: string }) {
+function Stat({
+  value,
+  label,
+  color,
+}: { value: string; label: string; color: string }) {
   return (
     <div className="text-center">
       <div className={cn('text-lg lg:text-xl font-bold', color)}>{value}</div>
@@ -65,7 +65,9 @@ export function StatsRow({
   className,
 }: StatsCardProps) {
   return (
-    <div className={cn('flex items-center justify-center gap-6 py-3', className)}>
+    <div
+      className={cn('flex items-center justify-center gap-6 py-3', className)}
+    >
       <Stat value={`${templateCount}+`} label="模板" color="text-primary" />
       <Stat value={String(styleCount)} label="风格" color="text-blue-500" />
       <Stat value={String(ratioCount)} label="比例" color="text-green-500" />

@@ -5,19 +5,19 @@
 // 上方预览区 + 下方控制区
 
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { ArrowRight, ImageIcon, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import type { ArchTemplate, AspectRatioId, StylePresetId } from '../lib/arch-types';
+import type {
+  ArchTemplate,
+  AspectRatioId,
+  StylePresetId,
+} from '../lib/arch-types';
 import { getTemplateCategory } from '../lib/template-categories';
 import { AspectRatioSelect } from './AspectRatioSelect';
 import { StylePresetSelect } from './StylePresetSelect';
@@ -26,7 +26,12 @@ interface TemplateDetailModalProps {
   template: ArchTemplate | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onApply: (template: ArchTemplate, prompt: string, style: StylePresetId | null, ratio: AspectRatioId) => void;
+  onApply: (
+    template: ArchTemplate,
+    prompt: string,
+    style: StylePresetId | null,
+    ratio: AspectRatioId
+  ) => void;
 }
 
 export function TemplateDetailModal({
@@ -39,7 +44,9 @@ export function TemplateDetailModal({
 
   // Local state
   const [editedPrompt, setEditedPrompt] = useState('');
-  const [selectedStyle, setSelectedStyle] = useState<StylePresetId | null>(null);
+  const [selectedStyle, setSelectedStyle] = useState<StylePresetId | null>(
+    null
+  );
   const [selectedRatio, setSelectedRatio] = useState<AspectRatioId>('16:9');
   const [previewImageError, setPreviewImageError] = useState(false);
   const [inputImageError, setInputImageError] = useState(false);
@@ -89,7 +96,10 @@ export function TemplateDetailModal({
               'text-xs font-medium text-white'
             )}
           >
-            <CategoryIcon className="h-3 w-3" style={{ color: category.color }} />
+            <CategoryIcon
+              className="h-3 w-3"
+              style={{ color: category.color }}
+            />
             <span>{t(category.labelKey as any)}</span>
           </div>
 
@@ -111,11 +121,15 @@ export function TemplateDetailModal({
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <ImageIcon className="h-8 w-8 text-muted-foreground/30 mb-1" />
-                      <span className="text-xs text-muted-foreground/50">Your Image</span>
+                      <span className="text-xs text-muted-foreground/50">
+                        Your Image
+                      </span>
                     </div>
                   )}
                 </div>
-                <p className="text-center text-xs text-muted-foreground mt-2">INPUT</p>
+                <p className="text-center text-xs text-muted-foreground mt-2">
+                  INPUT
+                </p>
               </div>
 
               {/* Arrow */}
@@ -142,7 +156,9 @@ export function TemplateDetailModal({
                     </div>
                   )}
                 </div>
-                <p className="text-center text-xs font-medium text-primary mt-2">OUTPUT</p>
+                <p className="text-center text-xs font-medium text-primary mt-2">
+                  OUTPUT
+                </p>
               </div>
             </div>
           ) : (
@@ -237,10 +253,7 @@ export function TemplateDetailModal({
           )}
 
           {/* 应用按钮 */}
-          <Button
-            onClick={handleApply}
-            className="w-full gap-2 h-11"
-          >
+          <Button onClick={handleApply} className="w-full gap-2 h-11">
             <Sparkles className="h-4 w-4" />
             {t('ArchPage.modal.apply')}
           </Button>

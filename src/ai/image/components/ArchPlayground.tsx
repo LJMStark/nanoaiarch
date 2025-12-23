@@ -7,10 +7,20 @@ import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useMemo } from 'react';
-import type { ArchTemplate, AspectRatioId, StylePresetId, TemplateCategoryId } from '../lib/arch-types';
-import { TEMPLATE_CATEGORY_LIST, getTemplateCategory } from '../lib/template-categories';
-import { getTemplatesByCategory, ARCH_TEMPLATES } from '../lib/templates';
 import { useArchGeneration } from '../hooks/use-arch-generation';
+import type {
+  ArchTemplate,
+  AspectRatioId,
+  StylePresetId,
+  TemplateCategoryId,
+} from '../lib/arch-types';
+import {
+  TEMPLATE_CATEGORY_LIST,
+  getTemplateCategory,
+} from '../lib/template-categories';
+import { ARCH_TEMPLATES, getTemplatesByCategory } from '../lib/templates';
+import { GenerationModal } from './GenerationModal';
+import { TemplateDetailModal } from './TemplateDetailModal';
 import {
   AllCategoriesCard,
   BentoGrid,
@@ -20,8 +30,6 @@ import {
   QuickActionCard,
   StatsCard,
 } from './bento';
-import { GenerationModal } from './GenerationModal';
-import { TemplateDetailModal } from './TemplateDetailModal';
 
 /**
  * ArchPlayground - Main playground component with Bento Grid layout
@@ -89,7 +97,13 @@ export function ArchPlayground() {
     } else {
       await generateWithEnhancement(promptValue);
     }
-  }, [promptValue, mode, referenceImage, editWithEnhancement, generateWithEnhancement]);
+  }, [
+    promptValue,
+    mode,
+    referenceImage,
+    editWithEnhancement,
+    generateWithEnhancement,
+  ]);
 
   // Handle template click from hero
   const handleHeroTemplateClick = useCallback(
@@ -101,7 +115,12 @@ export function ArchPlayground() {
 
   // Handle template apply from modal
   const handleTemplateApply = useCallback(
-    (template: ArchTemplate, prompt: string, style: StylePresetId | null, ratio: AspectRatioId) => {
+    (
+      template: ArchTemplate,
+      prompt: string,
+      style: StylePresetId | null,
+      ratio: AspectRatioId
+    ) => {
       setPromptValue(prompt);
       setStylePreset(style);
       setAspectRatio(ratio);
@@ -113,7 +132,13 @@ export function ArchPlayground() {
         setMode('generate');
       }
     },
-    [setPromptValue, setStylePreset, setAspectRatio, setShowTemplateModal, setMode]
+    [
+      setPromptValue,
+      setStylePreset,
+      setAspectRatio,
+      setShowTemplateModal,
+      setMode,
+    ]
   );
 
   // Handle category change
@@ -132,13 +157,16 @@ export function ArchPlayground() {
   }, [promptValue, handleSubmit]);
 
   // Close generation modal
-  const handleCloseGenerationModal = useCallback((open: boolean) => {
-    // Only allow closing if not loading
-    if (!isLoading && !open) {
-      // Clear the results to close modal
-      // This would need to be implemented in the hook
-    }
-  }, [isLoading]);
+  const handleCloseGenerationModal = useCallback(
+    (open: boolean) => {
+      // Only allow closing if not loading
+      if (!isLoading && !open) {
+        // Clear the results to close modal
+        // This would need to be implemented in the hook
+      }
+    },
+    [isLoading]
+  );
 
   return (
     <>
@@ -235,7 +263,10 @@ export function ArchPlayground() {
                     >
                       <Icon
                         className="h-3.5 w-3.5"
-                        style={{ color: templateCategory === cat.id ? undefined : cat.color }}
+                        style={{
+                          color:
+                            templateCategory === cat.id ? undefined : cat.color,
+                        }}
                       />
                       <span>{tRoot(cat.labelKey as any)}</span>
                     </button>
@@ -254,7 +285,9 @@ export function ArchPlayground() {
               <h2 className="text-lg font-semibold">
                 {templateCategory === 'all'
                   ? t('categories.all')
-                  : tRoot(getTemplateCategory(templateCategory).labelKey as any)}
+                  : tRoot(
+                      getTemplateCategory(templateCategory).labelKey as any
+                    )}
               </h2>
               <span className="text-sm text-muted-foreground">
                 {templates.length} templates
@@ -300,7 +333,9 @@ export function ArchPlayground() {
                     <rect x="14" y="14" width="7" height="7" rx="1" />
                   </svg>
                 </div>
-                <h3 className="font-medium text-lg mb-1">{t('gallery.empty')}</h3>
+                <h3 className="font-medium text-lg mb-1">
+                  {t('gallery.empty')}
+                </h3>
                 <p className="text-sm text-muted-foreground">
                   {t('gallery.emptyDescription')}
                 </p>

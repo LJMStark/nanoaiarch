@@ -22,7 +22,11 @@ interface AspectRatioSelectProps {
   className?: string;
 }
 
-export function AspectRatioSelect({ value, onChange, className }: AspectRatioSelectProps) {
+export function AspectRatioSelect({
+  value,
+  onChange,
+  className,
+}: AspectRatioSelectProps) {
   const t = useTranslations();
 
   const selectedRatio = getAspectRatio(value);

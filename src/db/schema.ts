@@ -123,3 +123,33 @@ export const creditTransaction = pgTable("credit_transaction", {
 	creditTransactionUserIdIdx: index("credit_transaction_user_id_idx").on(table.userId),
 	creditTransactionTypeIdx: index("credit_transaction_type_idx").on(table.type),
 }));
+
+// Generation history table for storing user's AI generation records
+export const generationHistory = pgTable("generation_history", {
+	id: text("id").primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+	templateId: text("template_id"), // which template was used
+	templateName: text("template_name"), // template name for display
+	prompt: text("prompt").notNull(), // user's prompt
+	enhancedPrompt: text("enhanced_prompt"), // AI-enhanced prompt
+	style: text("style"), // style preset used
+	aspectRatio: text("aspect_ratio"), // aspect ratio used
+	model: text("model"), // AI model used
+	imageUrl: text("image_url"), // generated image URL
+	referenceImageUrl: text("reference_image_url"), // reference image if used
+	creditsUsed: integer("credits_used").notNull().default(1),
+	status: text("status").notNull().default("completed"), // pending, completed, failed
+	errorMessage: text("error_message"), // error message if failed
+	isFavorite: boolean("is_favorite").notNull().default(false),
+	isPublic: boolean("is_public").notNull().default(false), // for future gallery feature
+	metadata: text("metadata"), // JSON string for additional data
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+	generationHistoryUserIdIdx: index("generation_history_user_id_idx").on(table.userId),
+	generationHistoryTemplateIdIdx: index("generation_history_template_id_idx").on(table.templateId),
+	generationHistoryStatusIdx: index("generation_history_status_idx").on(table.status),
+	generationHistoryIsFavoriteIdx: index("generation_history_is_favorite_idx").on(table.isFavorite),
+	generationHistoryIsPublicIdx: index("generation_history_is_public_idx").on(table.isPublic),
+	generationHistoryCreatedAtIdx: index("generation_history_created_at_idx").on(table.createdAt),
+}));

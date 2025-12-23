@@ -8,10 +8,12 @@ import {
   CircleUserRoundIcon,
   CoinsIcon,
   CreditCardIcon,
+  ImageIcon,
   LayoutDashboardIcon,
   LockKeyholeIcon,
   Settings2Icon,
   SettingsIcon,
+  SparklesIcon,
   UsersRoundIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -29,6 +31,7 @@ import { websiteConfig } from './website';
  */
 export function useSidebarLinks(): NestedMenuItem[] {
   const t = useTranslations('Dashboard');
+  const tGallery = useTranslations('Gallery');
 
   // if is demo website, allow user to access admin and user pages, but data is fake
   const isDemo = isDemoWebsite();
@@ -38,6 +41,18 @@ export function useSidebarLinks(): NestedMenuItem[] {
       title: t('dashboard.title'),
       icon: <LayoutDashboardIcon className="size-4 shrink-0" />,
       href: Routes.Dashboard,
+      external: false,
+    },
+    {
+      title: tGallery('title'),
+      icon: <ImageIcon className="size-4 shrink-0" />,
+      href: Routes.Gallery,
+      external: false,
+    },
+    {
+      title: 'Arch AI',
+      icon: <SparklesIcon className="size-4 shrink-0" />,
+      href: Routes.AIImage,
       external: false,
     },
     {

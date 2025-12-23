@@ -69,7 +69,10 @@ export function TemplateGallery({
                   : 'bg-muted hover:bg-muted/80 text-muted-foreground'
               )}
             >
-              <Icon className="h-4 w-4" style={{ color: category === cat.id ? undefined : cat.color }} />
+              <Icon
+                className="h-4 w-4"
+                style={{ color: category === cat.id ? undefined : cat.color }}
+              />
               <span>{t(cat.labelKey as any)}</span>
             </button>
           );
@@ -92,8 +95,12 @@ export function TemplateGallery({
               // Ensure BlurFade takes full width
               'w-full',
               // Create masonry-like effect for featured items
-              template.featured && index % 3 === 0 && 'sm:col-span-2 sm:row-span-2',
-              template.featured && index % 3 === 0 && '[&_.aspect-\\[4\\/3\\]]:aspect-square'
+              template.featured &&
+                index % 3 === 0 &&
+                'sm:col-span-2 sm:row-span-2',
+              template.featured &&
+                index % 3 === 0 &&
+                '[&_.aspect-\\[4\\/3\\]]:aspect-square'
             )}
           >
             <TemplateCard
@@ -108,7 +115,9 @@ export function TemplateGallery({
       {templates.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <LayoutGrid className="h-12 w-12 text-muted-foreground/30 mb-4" />
-          <h3 className="font-medium text-lg mb-1">{t('ArchPage.gallery.empty')}</h3>
+          <h3 className="font-medium text-lg mb-1">
+            {t('ArchPage.gallery.empty')}
+          </h3>
           <p className="text-sm text-muted-foreground">
             {t('ArchPage.gallery.emptyDescription')}
           </p>

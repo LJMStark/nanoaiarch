@@ -2,15 +2,15 @@
 // 建筑风格预设配置
 
 import {
-  Building2,
-  Leaf,
-  Layers,
-  Landmark,
-  Zap,
-  Droplets,
-  Ruler,
   Box,
+  Building2,
+  Droplets,
+  Landmark,
+  Layers,
+  Leaf,
+  Ruler,
   Sparkles,
+  Zap,
 } from 'lucide-react';
 import type { StylePresetConfig, StylePresetId } from './arch-types';
 

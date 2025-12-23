@@ -4,6 +4,41 @@
     "title": "Nano Banana - AI Image Generator & Editor",
     "description": "Create and edit stunning images with AI. Generate images from text prompts or edit existing photos using natural language. Powered by Google's Gemini."
   },
+  "Gallery": {
+    "title": "My Gallery",
+    "description": "View and manage all your AI generations",
+    "newGeneration": "New Generation",
+    "search": "Search by prompt, template, or style...",
+    "tabs": {
+      "all": "All",
+      "favorites": "Favorites"
+    },
+    "empty": {
+      "title": "No generations yet",
+      "description": "Start creating stunning architectural visualizations with Arch AI",
+      "noFavorites": "You haven't saved any favorites yet",
+      "noResults": "No results found for your search",
+      "cta": "Create First Generation"
+    },
+    "detail": {
+      "title": "Generation Details",
+      "prompt": "Prompt",
+      "template": "Template",
+      "style": "Style",
+      "createdAt": "Created At",
+      "credits": "Credits Used",
+      "favorite": "Add to Favorites",
+      "unfavorite": "Remove from Favorites",
+      "download": "Download",
+      "delete": "Delete"
+    },
+    "deleteDialog": {
+      "title": "Delete Generation",
+      "description": "This action cannot be undone. Are you sure you want to delete this generation?",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    }
+  },
   "Common": {
     "premium": "Premium",
     "login": "Log in",
@@ -490,6 +525,42 @@
   "Dashboard": {
     "dashboard": {
       "title": "Dashboard"
+    },
+    "stats": {
+      "totalGenerations": "Total Generations",
+      "totalGenerationsDesc": "All-time generations",
+      "thisMonth": "This Month",
+      "thisMonthDesc": "Generations this month",
+      "creditsUsed": "Credits Used",
+      "creditsUsedDesc": "Total credits consumed",
+      "favorites": "Favorites",
+      "favoritesDesc": "Saved to favorites"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "newGeneration": "New Generation",
+      "newGenerationDesc": "Create architectural visualizations",
+      "gallery": "My Gallery",
+      "galleryDesc": "View all your creations",
+      "history": "History",
+      "historyDesc": "Browse generation history",
+      "favorites": "Favorites",
+      "favoritesDesc": "Your favorite creations"
+    },
+    "recentGenerations": {
+      "title": "Recent Generations",
+      "viewAll": "View All",
+      "empty": {
+        "title": "No generations yet",
+        "description": "Start creating stunning architectural visualizations with Arch AI",
+        "cta": "Create First Generation"
+      },
+      "deleteDialog": {
+        "title": "Delete Generation",
+        "description": "This action cannot be undone. Are you sure you want to delete this generation?",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      }
     },
     "admin": {
       "title": "Admin",

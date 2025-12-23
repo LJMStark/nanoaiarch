@@ -7,7 +7,10 @@ import { cn } from '@/lib/utils';
 import { motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
-import type { TemplateCategory, TemplateCategoryId } from '../../lib/arch-types';
+import type {
+  TemplateCategory,
+  TemplateCategoryId,
+} from '../../lib/arch-types';
 import { getTemplatesByCategory } from '../../lib/templates';
 import { BentoCard } from './BentoCard';
 import { BENTO_PRESETS } from './BentoGrid';
@@ -63,10 +66,7 @@ export function CategoryCard({
         className="w-10 h-10 rounded-xl flex items-center justify-center mb-2"
         style={{ backgroundColor: `${category.color}20` }}
       >
-        <Icon
-          className="w-5 h-5"
-          style={{ color: category.color }}
-        />
+        <Icon className="w-5 h-5" style={{ color: category.color }} />
       </div>
 
       {/* Label and count */}

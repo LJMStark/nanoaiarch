@@ -30,7 +30,9 @@ interface UseArchGenerationReturn {
   mode: ReturnType<typeof useImageGeneration>['mode'];
   selectedModel: ReturnType<typeof useImageGeneration>['selectedModel'];
   referenceImage: ReturnType<typeof useImageGeneration>['referenceImage'];
-  conversationHistory: ReturnType<typeof useImageGeneration>['conversationHistory'];
+  conversationHistory: ReturnType<
+    typeof useImageGeneration
+  >['conversationHistory'];
   editHistory: ReturnType<typeof useImageGeneration>['editHistory'];
   lastCreditsUsed: ReturnType<typeof useImageGeneration>['lastCreditsUsed'];
   creditErrorType: ReturnType<typeof useImageGeneration>['creditErrorType'];
@@ -70,9 +72,14 @@ export function useArchGeneration(): UseArchGenerationReturn {
 
   // 建筑专属状态
   const [stylePreset, setStylePreset] = useState<StylePresetId | null>(null);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatioId>(DEFAULT_ASPECT_RATIO);
-  const [selectedTemplate, setSelectedTemplate] = useState<ArchTemplate | null>(null);
-  const [templateCategory, setTemplateCategory] = useState<TemplateCategoryId | 'all'>('all');
+  const [aspectRatio, setAspectRatio] =
+    useState<AspectRatioId>(DEFAULT_ASPECT_RATIO);
+  const [selectedTemplate, setSelectedTemplate] = useState<ArchTemplate | null>(
+    null
+  );
+  const [templateCategory, setTemplateCategory] = useState<
+    TemplateCategoryId | 'all'
+  >('all');
   const [showHero, setShowHero] = useState(true);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [archHistory, setArchHistory] = useState<GenerationHistoryItem[]>([]);
@@ -121,7 +128,11 @@ export function useArchGeneration(): UseArchGenerationReturn {
       setShowHero(false);
 
       // 构建增强提示词
-      const enhancedPrompt = buildArchPrompt(prompt, stylePreset ?? undefined, aspectRatio);
+      const enhancedPrompt = buildArchPrompt(
+        prompt,
+        stylePreset ?? undefined,
+        aspectRatio
+      );
 
       // 调用基础生成
       await baseHook.generateImage(enhancedPrompt);
@@ -138,7 +149,9 @@ export function useArchGeneration(): UseArchGenerationReturn {
           timestamp: Date.now(),
           creditsUsed: baseHook.lastCreditsUsed ?? 0,
         };
-        setArchHistory((prev) => [historyItem, ...prev].slice(0, MAX_HISTORY_ITEMS));
+        setArchHistory((prev) =>
+          [historyItem, ...prev].slice(0, MAX_HISTORY_ITEMS)
+        );
       }
     },
     [stylePreset, aspectRatio, selectedTemplate, baseHook]
@@ -151,7 +164,11 @@ export function useArchGeneration(): UseArchGenerationReturn {
       setShowHero(false);
 
       // 构建增强提示词
-      const enhancedPrompt = buildArchPrompt(prompt, stylePreset ?? undefined, aspectRatio);
+      const enhancedPrompt = buildArchPrompt(
+        prompt,
+        stylePreset ?? undefined,
+        aspectRatio
+      );
 
       // 调用基础编辑
       await baseHook.editImage(enhancedPrompt);
@@ -169,7 +186,9 @@ export function useArchGeneration(): UseArchGenerationReturn {
           timestamp: Date.now(),
           creditsUsed: baseHook.lastCreditsUsed ?? 0,
         };
-        setArchHistory((prev) => [historyItem, ...prev].slice(0, MAX_HISTORY_ITEMS));
+        setArchHistory((prev) =>
+          [historyItem, ...prev].slice(0, MAX_HISTORY_ITEMS)
+        );
       }
     },
     [stylePreset, aspectRatio, selectedTemplate, baseHook]

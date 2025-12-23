@@ -18,7 +18,10 @@ export function generateImageFileName(prefix: string): string {
 }
 
 // 下载图片
-export async function downloadImage(imageData: string, prefix = 'image'): Promise<void> {
+export async function downloadImage(
+  imageData: string,
+  prefix = 'image'
+): Promise<void> {
   const fileName = generateImageFileName(prefix);
   const blob = base64ToBlob(imageData);
   const blobUrl = URL.createObjectURL(blob);
@@ -33,7 +36,10 @@ export async function downloadImage(imageData: string, prefix = 'image'): Promis
 }
 
 // 分享图片
-export async function shareImage(imageData: string, title?: string): Promise<void> {
+export async function shareImage(
+  imageData: string,
+  title?: string
+): Promise<void> {
   const fileName = generateImageFileName('arch-ai');
   const blob = base64ToBlob(imageData);
   const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
@@ -64,7 +70,10 @@ export function formatModelId(modelId: string): string {
 export const imageHelpers = {
   base64ToBlob,
   generateImageFileName,
-  shareOrDownload: async (imageData: string, provider: string): Promise<void> => {
+  shareOrDownload: async (
+    imageData: string,
+    provider: string
+  ): Promise<void> => {
     const fileName = generateImageFileName(provider);
     const blob = base64ToBlob(imageData);
     const file = new File([blob], `${fileName}.png`, { type: 'image/png' });

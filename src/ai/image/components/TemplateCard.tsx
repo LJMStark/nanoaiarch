@@ -18,7 +18,11 @@ interface TemplateCardProps {
   className?: string;
 }
 
-export function TemplateCard({ template, onClick, className }: TemplateCardProps) {
+export function TemplateCard({
+  template,
+  onClick,
+  className,
+}: TemplateCardProps) {
   const t = useTranslations();
   const [imageError, setImageError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);

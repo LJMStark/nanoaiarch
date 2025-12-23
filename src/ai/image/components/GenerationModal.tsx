@@ -12,7 +12,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'motion/react';
 import {
   AlertCircle,
   Coins,
@@ -23,11 +22,16 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useCallback, useState } from 'react';
-import type { ImageError, ImageResult, ProviderTiming } from '../lib/image-types';
 import { downloadImage, shareImage } from '../lib/image-helpers';
+import type {
+  ImageError,
+  ImageResult,
+  ProviderTiming,
+} from '../lib/image-types';
 import { Stopwatch } from './Stopwatch';
 
 interface GenerationModalProps {
@@ -94,7 +98,11 @@ export function GenerationModal({
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2 text-base font-medium">
               <Sparkles className="w-4 h-4 text-primary" />
-              {isLoading ? t('canvas.generating') : error ? t('canvas.error') : 'Generated Image'}
+              {isLoading
+                ? t('canvas.generating')
+                : error
+                  ? t('canvas.error')
+                  : 'Generated Image'}
             </DialogTitle>
             {/* Close button is handled by DialogContent */}
           </div>
@@ -112,11 +120,7 @@ export function GenerationModal({
             )}
 
             {error && !isLoading && (
-              <ErrorState
-                key="error"
-                error={error}
-                onRetry={onRegenerate}
-              />
+              <ErrorState key="error" error={error} onRetry={onRegenerate} />
             )}
 
             {image && !isLoading && !error && (
@@ -220,11 +224,7 @@ function ErrorState({
       </p>
 
       {onRetry && (
-        <Button
-          variant="outline"
-          onClick={onRetry}
-          className="mt-6 gap-2"
-        >
+        <Button variant="outline" onClick={onRetry} className="mt-6 gap-2">
           <RefreshCw className="h-4 w-4" />
           Try Again
         </Button>
@@ -302,11 +302,21 @@ function ResultState({
 
           {/* Center actions */}
           <div className="absolute inset-0 flex items-center justify-center gap-3">
-            <Button variant="secondary" size="sm" onClick={onDownload} className="gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onDownload}
+              className="gap-2"
+            >
               <Download className="h-4 w-4" />
               {t('canvas.download')}
             </Button>
-            <Button variant="secondary" size="sm" onClick={onShare} className="gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onShare}
+              className="gap-2"
+            >
               <Share2 className="h-4 w-4" />
               {t('canvas.share')}
             </Button>
@@ -323,7 +333,12 @@ function ResultState({
 
         {/* Regenerate button */}
         {onRegenerate && (
-          <Button variant="outline" size="sm" onClick={onRegenerate} className="gap-2 flex-shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRegenerate}
+            className="gap-2 flex-shrink-0"
+          >
             <RefreshCw className="h-4 w-4" />
             Regenerate
           </Button>

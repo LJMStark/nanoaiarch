@@ -1,7 +1,12 @@
 // Aspect ratio configuration for architectural visualization
 // 建筑可视化画幅比例配置
 
-import { Square, RectangleHorizontal, RectangleVertical, Smartphone } from 'lucide-react';
+import {
+  RectangleHorizontal,
+  RectangleVertical,
+  Smartphone,
+  Square,
+} from 'lucide-react';
 import type { AspectRatioConfig, AspectRatioId } from './arch-types';
 
 // Aspect ratio definitions with dimensions
@@ -56,7 +61,10 @@ export function getAspectRatio(id: AspectRatioId): AspectRatioConfig {
 
 // Get dimensions for aspect ratio
 // 获取画幅比例的尺寸
-export function getAspectRatioDimensions(id: AspectRatioId): { width: number; height: number } {
+export function getAspectRatioDimensions(id: AspectRatioId): {
+  width: number;
+  height: number;
+} {
   const ratio = ASPECT_RATIOS[id];
   return { width: ratio.width, height: ratio.height };
 }

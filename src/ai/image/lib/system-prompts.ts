@@ -65,11 +65,16 @@ export function buildArchPrompt(
 // 根据画幅比例获取构图上下文
 function getAspectRatioContext(aspectRatio: AspectRatioId): string {
   const contexts: Record<AspectRatioId, string> = {
-    '1:1': 'Square composition. Centered subject, balanced framing, suitable for social media or detail shots.',
-    '16:9': 'Wide cinematic composition. Panoramic view, emphasize horizontal lines, ideal for exterior perspectives and landscape views.',
-    '4:3': 'Standard composition. Classic framing, versatile for both interior and exterior shots.',
-    '3:4': 'Portrait composition. Vertical emphasis, suitable for tower buildings or interior height shots.',
-    '9:16': 'Vertical mobile composition. Strong vertical lines, ideal for tall structures or vertical section views.',
+    '1:1':
+      'Square composition. Centered subject, balanced framing, suitable for social media or detail shots.',
+    '16:9':
+      'Wide cinematic composition. Panoramic view, emphasize horizontal lines, ideal for exterior perspectives and landscape views.',
+    '4:3':
+      'Standard composition. Classic framing, versatile for both interior and exterior shots.',
+    '3:4':
+      'Portrait composition. Vertical emphasis, suitable for tower buildings or interior height shots.',
+    '9:16':
+      'Vertical mobile composition. Strong vertical lines, ideal for tall structures or vertical section views.',
   };
   return contexts[aspectRatio];
 }
@@ -100,7 +105,7 @@ export function buildMasterplanPrompt(userPrompt: string): string {
     userPrompt,
     undefined,
     '16:9',
-    'Generate a bird\'s eye aerial visualization from this master plan or site plan. Show buildings in 3D form with rooftops, landscaping with trees and vegetation, roads and pathways, water features if present. Use warm atmospheric lighting suggesting morning or evening golden hour.'
+    "Generate a bird's eye aerial visualization from this master plan or site plan. Show buildings in 3D form with rooftops, landscaping with trees and vegetation, roads and pathways, water features if present. Use warm atmospheric lighting suggesting morning or evening golden hour."
   );
 }
 
@@ -158,7 +163,7 @@ export function buildRenovationPrompt(userPrompt: string): string {
     userPrompt,
     undefined,
     undefined,
-    'Transform this existing/old building into a renovated design. Preserve key original architectural elements that define the building\'s character while introducing contemporary interventions. Balance old and new seamlessly.'
+    "Transform this existing/old building into a renovated design. Preserve key original architectural elements that define the building's character while introducing contemporary interventions. Balance old and new seamlessly."
   );
 }
 

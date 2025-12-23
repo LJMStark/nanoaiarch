@@ -4,8 +4,8 @@
 // Hero Bento 卡片 - 大尺寸精选模板展示
 
 import { cn } from '@/lib/utils';
-import { motion } from 'motion/react';
 import { ArrowRight, Building2, Sparkles } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useState } from 'react';
@@ -40,7 +40,9 @@ export function HeroBentoCard({
   return (
     <BentoCard
       variant="glass"
-      onClick={featuredTemplate ? () => onTemplateClick?.(featuredTemplate) : undefined}
+      onClick={
+        featuredTemplate ? () => onTemplateClick?.(featuredTemplate) : undefined
+      }
       hoverGlow
       hoverScale
       animationDelay={0}
@@ -62,7 +64,7 @@ export function HeroBentoCard({
           }}
           transition={{
             duration: 8,
-            repeat: Infinity,
+            repeat: Number.POSITIVE_INFINITY,
             ease: 'easeInOut',
           }}
           className={cn(
@@ -80,7 +82,7 @@ export function HeroBentoCard({
           }}
           transition={{
             duration: 10,
-            repeat: Infinity,
+            repeat: Number.POSITIVE_INFINITY,
             ease: 'easeInOut',
             delay: 1,
           }}
@@ -134,7 +136,9 @@ export function HeroBentoCard({
 
             {/* CTA */}
             <div className="flex items-center gap-2 text-primary font-medium group/cta">
-              <span>{featuredTemplate ? 'Try this template' : 'Start Creating'}</span>
+              <span>
+                {featuredTemplate ? 'Try this template' : 'Start Creating'}
+              </span>
               <ArrowRight className="w-4 h-4 transition-transform group-hover/cta:translate-x-1" />
             </div>
           </div>

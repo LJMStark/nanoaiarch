@@ -4,13 +4,18 @@
 // Bento 卡片基础组件，支持多种变体
 
 import { cn } from '@/lib/utils';
-import { motion, type Variants } from 'motion/react';
-import type { ReactNode, MouseEvent } from 'react';
+import { type Variants, motion } from 'motion/react';
+import type { MouseEvent, ReactNode } from 'react';
 import { forwardRef } from 'react';
 
 // Card style variants
 // 卡片样式变体
-export type BentoCardVariant = 'default' | 'glass' | 'gradient' | 'outline' | 'solid';
+export type BentoCardVariant =
+  | 'default'
+  | 'glass'
+  | 'gradient'
+  | 'outline'
+  | 'solid';
 
 interface BentoCardProps {
   children: ReactNode;
@@ -72,10 +77,7 @@ const variantStyles: Record<BentoCardVariant, string> = {
     'bg-transparent',
     'border-2 border-dashed border-border/50 dark:border-border/30'
   ),
-  solid: cn(
-    'bg-muted dark:bg-muted/50',
-    'border border-border/30'
-  ),
+  solid: cn('bg-muted dark:bg-muted/50', 'border border-border/30'),
 };
 
 /**
@@ -132,7 +134,8 @@ export const BentoCard = forwardRef<HTMLDivElement, BentoCardProps>(
             // Hover scale
             hoverScale && 'hover:scale-[1.02] active:scale-[0.98]',
             // Hover glow
-            hoverGlow && 'hover:shadow-lg hover:shadow-primary/10 dark:hover:shadow-primary/5',
+            hoverGlow &&
+              'hover:shadow-lg hover:shadow-primary/10 dark:hover:shadow-primary/5',
             // Border brighten on hover
             'hover:border-primary/30 dark:hover:border-primary/20',
           ],

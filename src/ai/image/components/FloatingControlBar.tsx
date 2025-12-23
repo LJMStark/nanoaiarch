@@ -7,11 +7,11 @@ import { BorderBeam } from '@/components/magicui/border-beam';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { motion } from 'motion/react';
 import { Coins, ImagePlus, Loader2, Sparkles, X } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import { useCallback, useRef, type KeyboardEvent } from 'react';
+import { type KeyboardEvent, useCallback, useRef } from 'react';
 import type { AspectRatioId, StylePresetId } from '../lib/arch-types';
 import { getCreditCost } from '../lib/credit-costs';
 import type { ImageMode } from '../lib/image-types';
@@ -213,10 +213,7 @@ export function FloatingControlBar({
           {/* Controls row */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <StylePresetSelect
-                value={stylePreset}
-                onChange={onStyleChange}
-              />
+              <StylePresetSelect value={stylePreset} onChange={onStyleChange} />
               <AspectRatioSelect
                 value={aspectRatio}
                 onChange={onAspectRatioChange}

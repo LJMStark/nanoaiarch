@@ -8,12 +8,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import {
-  Brush,
-  Layers,
-  Maximize2,
-  Pencil,
-} from 'lucide-react';
+import { Brush, Layers, Maximize2, Pencil } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
@@ -30,24 +25,24 @@ export default function FeaturesSection() {
 
   const images = {
     'item-1': {
-      image: '/blocks/charts-light.png',
-      darkImage: '/blocks/charts.png',
-      alt: 'Product Feature One',
+      image: '/images/generated/architectural-styles.png',
+      darkImage: '/images/generated/architectural-styles.png',
+      alt: 'Architectural Styles',
     },
     'item-2': {
-      image: '/blocks/music-light.png',
-      darkImage: '/blocks/music.png',
-      alt: 'Product Feature Two',
+      image: '/images/generated/image-enhancement.png',
+      darkImage: '/images/generated/image-enhancement.png',
+      alt: 'Smart Image Enhancement',
     },
     'item-3': {
-      image: '/blocks/mail2-light.png',
-      darkImage: '/blocks/mail2.png',
-      alt: 'Product Feature Three',
+      image: '/images/generated/aspect-ratios.png',
+      darkImage: '/images/generated/aspect-ratios.png',
+      alt: 'Multiple Aspect Ratios',
     },
     'item-4': {
-      image: '/blocks/payments-light.png',
-      darkImage: '/blocks/payments.png',
-      alt: 'Product Feature Four',
+      image: '/images/generated/edit-iterate.png',
+      darkImage: '/images/generated/edit-iterate.png',
+      alt: 'Edit & Iterate',
     },
   };
 

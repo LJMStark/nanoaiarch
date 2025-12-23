@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { Coins, ImagePlus, Loader2, Sparkles, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import { useCallback, useRef, type KeyboardEvent } from 'react';
+import { type KeyboardEvent, useCallback, useRef } from 'react';
 import type { AspectRatioId, StylePresetId } from '../../lib/arch-types';
 import { getCreditCost } from '../../lib/credit-costs';
 import type { GeminiModelId } from '../../lib/provider-config';
@@ -209,10 +209,7 @@ export function QuickActionCard({
         {/* Controls row */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <StylePresetSelect
-              value={stylePreset}
-              onChange={onStyleChange}
-            />
+            <StylePresetSelect value={stylePreset} onChange={onStyleChange} />
             <AspectRatioSelect
               value={aspectRatio}
               onChange={onAspectRatioChange}
@@ -229,7 +226,9 @@ export function QuickActionCard({
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="hidden sm:inline">{t('controls.generating')}</span>
+                <span className="hidden sm:inline">
+                  {t('controls.generating')}
+                </span>
               </>
             ) : (
               <>

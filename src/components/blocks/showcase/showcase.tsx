@@ -71,8 +71,17 @@ export default function ShowcaseSection() {
 
         {/* Template grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {SHOWCASE_ITEMS.map((item) => {
+{SHOWCASE_ITEMS.map((item) => {
             const Icon = item.icon;
+            // Use generated image if available, otherwise fall back to original path or logic
+            const isGenerated =
+              item.id === 'style-transfer' ||
+              item.id === 'model-render' ||
+              item.id === 'floor-plan';
+            const imagePath = isGenerated
+              ? `/images/generated/${item.id}.png`
+              : item.image;
+
             return (
               <div
                 key={item.id}
@@ -84,32 +93,44 @@ export default function ShowcaseSection() {
                   'hover:-translate-y-1'
                 )}
               >
-                {/* Image placeholder */}
+                {/* Image Area */}
                 <div className="aspect-[4/3] relative bg-gradient-to-br from-muted to-muted/50 overflow-hidden">
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-
-                  {/* Placeholder pattern */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                      <Icon className="h-10 w-10 text-primary/50" />
-                    </div>
-                  </div>
+                  {/* Image or Placeholder */}
+                  {isGenerated ? (
+                    <Image
+                      src={imagePath}
+                      alt={t(`items.${item.id}.title` as any)}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                          <Icon className="h-10 w-10 text-primary/50" />
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Content overlay */}
                   <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
                     <div className="flex items-center gap-2 mb-2">
                       <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center backdrop-blur-sm"
                         style={{ backgroundColor: `${item.color}20` }}
                       >
-                        <Icon className="h-4 w-4" style={{ color: item.color }} />
+                        <Icon
+                          className="h-4 w-4"
+                          style={{ color: isGenerated ? 'white' : item.color }}
+                        />
                       </div>
-                      <h3 className="font-semibold text-white">
+                      <h3 className="font-semibold text-white drop-shadow-md">
                         {t(`items.${item.id}.title` as any)}
                       </h3>
                     </div>
-                    <p className="text-sm text-white/70 line-clamp-2">
+                    <p className="text-sm text-white/90 line-clamp-2 drop-shadow-sm">
                       {t(`items.${item.id}.description` as any)}
                     </p>
                   </div>

@@ -22,7 +22,11 @@ interface StylePresetSelectProps {
   className?: string;
 }
 
-export function StylePresetSelect({ value, onChange, className }: StylePresetSelectProps) {
+export function StylePresetSelect({
+  value,
+  onChange,
+  className,
+}: StylePresetSelectProps) {
   const t = useTranslations();
 
   const selectedPreset = value ? getStylePreset(value) : null;
@@ -43,7 +47,9 @@ export function StylePresetSelect({ value, onChange, className }: StylePresetSel
         >
           <Icon className="h-4 w-4" style={{ color: selectedPreset?.color }} />
           <span className="truncate">
-            {selectedPreset ? t(selectedPreset.labelKey as any) : t('ArchPage.controls.style')}
+            {selectedPreset
+              ? t(selectedPreset.labelKey as any)
+              : t('ArchPage.controls.style')}
           </span>
           <ChevronDown className="h-3 w-3 opacity-50 flex-shrink-0" />
         </Button>

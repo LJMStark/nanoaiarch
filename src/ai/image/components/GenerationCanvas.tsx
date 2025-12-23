@@ -6,7 +6,6 @@
 import { BorderBeam } from '@/components/magicui/border-beam';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { motion } from 'motion/react';
 import {
   AlertCircle,
   Coins,
@@ -15,11 +14,16 @@ import {
   Maximize2,
   Share2,
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useCallback, useState } from 'react';
-import type { ImageError, ImageResult, ProviderTiming } from '../lib/image-types';
 import { downloadImage, shareImage } from '../lib/image-helpers';
+import type {
+  ImageError,
+  ImageResult,
+  ProviderTiming,
+} from '../lib/image-types';
 import { Stopwatch } from './Stopwatch';
 
 interface GenerationCanvasProps {
@@ -185,11 +189,7 @@ export function GenerationCanvas({
               {t('canvas.share')}
             </Button>
             {onFullscreen && (
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={onFullscreen}
-              >
+              <Button variant="secondary" size="icon" onClick={onFullscreen}>
                 <Maximize2 className="h-5 w-5" />
               </Button>
             )}

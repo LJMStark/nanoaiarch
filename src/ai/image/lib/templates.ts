@@ -424,7 +424,9 @@ export const FEATURED_TEMPLATES = ARCH_TEMPLATES.filter((t) => t.featured);
 // 根据分类获取模版
 export function getTemplatesByCategory(categoryId: string): ArchTemplate[] {
   if (categoryId === 'all') {
-    return [...ARCH_TEMPLATES].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+    return [...ARCH_TEMPLATES].sort(
+      (a, b) => (a.order ?? 99) - (b.order ?? 99)
+    );
   }
   return ARCH_TEMPLATES.filter((t) => t.categoryId === categoryId).sort(
     (a, b) => (a.order ?? 99) - (b.order ?? 99)
@@ -442,6 +444,8 @@ export function getTemplateById(id: string): ArchTemplate | undefined {
 export function searchTemplates(query: string): ArchTemplate[] {
   const lowerQuery = query.toLowerCase();
   return ARCH_TEMPLATES.filter(
-    (t) => t.tags.some((tag) => tag.includes(lowerQuery)) || t.id.includes(lowerQuery)
+    (t) =>
+      t.tags.some((tag) => tag.includes(lowerQuery)) ||
+      t.id.includes(lowerQuery)
   );
 }

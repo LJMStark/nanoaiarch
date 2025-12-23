@@ -3,9 +3,9 @@
 // Animated hero section for the playground
 // 动画 Hero 区域
 
-import { NumberTicker } from '@/components/magicui/number-ticker';
 import { AnimatedGradientText } from '@/components/magicui/animated-gradient-text';
 import { BlurFade } from '@/components/magicui/blur-fade';
+import { NumberTicker } from '@/components/magicui/number-ticker';
 import { cn } from '@/lib/utils';
 import { LayoutTemplate, Sparkles, Zap } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -82,7 +82,10 @@ function StatItem({
   label,
   color,
 }: {
-  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  icon: React.ComponentType<{
+    className?: string;
+    style?: React.CSSProperties;
+  }>;
   value: number;
   suffix?: string;
   label: string;
