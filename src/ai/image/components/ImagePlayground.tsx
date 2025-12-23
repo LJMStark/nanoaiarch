@@ -65,7 +65,7 @@ export function ImagePlayground({
   // 处理图片下载/分享
   const handleShareOrDownload = async () => {
     if (image?.image) {
-      await imageHelpers.shareOrDownload(image.image, 'nano-banana');
+      await imageHelpers.shareOrDownload(image.image, 'forma');
     }
   };
 

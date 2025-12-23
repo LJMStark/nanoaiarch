@@ -1,13 +1,13 @@
-// Nano Banana 专用配置 - 仅使用 Gemini 模型
+// Forma AI 专用配置 - 仅使用 Gemini 模型
 export type ProviderKey = 'gemini';
 export type ModelMode = 'fast' | 'quality';
 
 // Gemini 模型 ID
 export const GEMINI_MODEL_IDS = {
-  // Nano Banana - Gemini 2.5 Flash Image (快速)
-  'nano-banana': 'gemini-2.5-flash-preview-05-20',
-  // Gemini 2.0 Flash (高质量)
-  'nano-banana-pro': 'gemini-2.0-flash-exp',
+  // Forma AI - Gemini 2.0 Flash (快速，支持原生图像生成)
+  forma: 'gemini-2.0-flash-exp',
+  // Forma Pro - Gemini 2.0 Flash (高质量，高级渲染)
+  'forma-pro': 'gemini-2.0-flash-exp',
 } as const;
 
 export type GeminiModelId = keyof typeof GEMINI_MODEL_IDS;
@@ -23,33 +23,33 @@ export const PROVIDERS: Record<
   }
 > = {
   gemini: {
-    displayName: 'Nano Banana',
+    displayName: 'Forma AI',
     iconPath: '/provider-icons/gemini.svg',
-    color: 'from-yellow-400 to-orange-500',
-    models: ['nano-banana', 'nano-banana-pro'],
+    color: 'from-violet-500 to-purple-600',
+    models: ['forma', 'forma-pro'],
   },
 };
 
 // 模型显示名称
 export const MODEL_DISPLAY_NAMES: Record<GeminiModelId, string> = {
-  'nano-banana': 'Nano Banana',
-  'nano-banana-pro': 'Nano Banana Pro',
+  forma: 'Forma',
+  'forma-pro': 'Forma Pro',
 };
 
 // 模型描述
 export const MODEL_DESCRIPTIONS: Record<GeminiModelId, string> = {
-  'nano-banana': 'Fast and efficient image generation',
-  'nano-banana-pro': 'Higher quality with advanced reasoning',
+  forma: 'Fast and efficient architectural visualization',
+  'forma-pro': 'Higher quality with advanced rendering',
 };
 
 // 模型模式配置
 export const MODEL_CONFIGS: Record<ModelMode, GeminiModelId> = {
-  fast: 'nano-banana',
-  quality: 'nano-banana-pro',
+  fast: 'forma',
+  quality: 'forma-pro',
 };
 
 // 默认配置
-export const DEFAULT_MODEL: GeminiModelId = 'nano-banana';
+export const DEFAULT_MODEL: GeminiModelId = 'forma';
 export const DEFAULT_PROVIDER: ProviderKey = 'gemini';
 
 // Provider 顺序（只有一个）

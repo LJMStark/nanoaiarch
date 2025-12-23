@@ -31,26 +31,20 @@ export const generateRequestId = (): string => {
 /**
  * Gemini 模型 Key 类型
  */
-export type GeminiModelKey = 'nano-banana' | 'gemini-flash';
+export type GeminiModelKey = 'forma' | 'gemini-flash';
 
 /**
- * 将 Nano Banana 模型 ID 映射到 Gemini 客户端的模型 key
+ * 将 Forma AI 模型 ID 映射到 Gemini 客户端的模型 key
  */
 export const mapModelIdToGeminiKey = (modelId: string): GeminiModelKey => {
-  if (
-    modelId === 'nano-banana' ||
-    modelId === GEMINI_MODEL_IDS['nano-banana']
-  ) {
-    return 'nano-banana';
+  if (modelId === 'forma' || modelId === GEMINI_MODEL_IDS.forma) {
+    return 'forma';
   }
-  if (
-    modelId === 'nano-banana-pro' ||
-    modelId === GEMINI_MODEL_IDS['nano-banana-pro']
-  ) {
+  if (modelId === 'forma-pro' || modelId === GEMINI_MODEL_IDS['forma-pro']) {
     return 'gemini-flash';
   }
-  // 默认使用 nano-banana
-  return 'nano-banana';
+  // 默认使用 forma
+  return 'forma';
 };
 
 /**

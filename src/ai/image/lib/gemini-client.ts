@@ -3,8 +3,8 @@ import type { GeminiModelKey } from './api-utils';
 
 // Gemini 模型配置
 export const GEMINI_MODELS: Record<GeminiModelKey, string> = {
-  // Nano Banana - Gemini 2.5 Flash Image (快速高效)
-  'nano-banana': 'gemini-2.5-flash-preview-05-20',
+  // Forma AI - Gemini 2.0 Flash (支持原生图像生成)
+  forma: 'gemini-2.0-flash-exp',
   // Gemini 2.0 Flash (备选)
   'gemini-flash': 'gemini-2.0-flash-exp',
 };
@@ -40,7 +40,7 @@ export interface GenerateImageResult {
 export async function generateImageWithGemini(
   params: GenerateImageParams
 ): Promise<GenerateImageResult> {
-  const { prompt, modelKey = 'nano-banana', referenceImage } = params;
+  const { prompt, modelKey = 'forma', referenceImage } = params;
 
   try {
     const client = createGeminiClient();
@@ -107,7 +107,7 @@ export async function generateImageWithGemini(
       text: resultText,
     };
   } catch (error) {
-    console.error('Gemini image generation error:', error);
+    console.error('Image generation error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -136,7 +136,7 @@ export interface EditImageWithConversationParams {
 export async function editImageWithConversation(
   params: EditImageWithConversationParams
 ): Promise<GenerateImageResult> {
-  const { messages, modelKey = 'nano-banana' } = params;
+  const { messages, modelKey = 'forma' } = params;
 
   try {
     const client = createGeminiClient();

@@ -50,7 +50,7 @@ export function useSidebarLinks(): NestedMenuItem[] {
       external: false,
     },
     {
-      title: 'Arch AI',
+      title: t('archAi.title'),
       icon: <SparklesIcon className="size-4 shrink-0" />,
       href: Routes.AIImage,
       external: false,

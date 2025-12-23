@@ -40,7 +40,7 @@ export async function shareImage(
   imageData: string,
   title?: string
 ): Promise<void> {
-  const fileName = generateImageFileName('arch-ai');
+  const fileName = generateImageFileName('forma');
   const blob = base64ToBlob(imageData);
   const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
 
@@ -48,16 +48,16 @@ export async function shareImage(
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       await navigator.share({
         files: [file],
-        title: title || 'Arch AI Generated Image',
+        title: title || 'Forma AI Generated Image',
       });
     } else {
       // 如果不支持分享，则下载
-      await downloadImage(imageData, 'arch-ai');
+      await downloadImage(imageData, 'forma');
     }
   } catch (error) {
     // 分享被取消或出错，则下载
     console.error('Error sharing:', error);
-    await downloadImage(imageData, 'arch-ai');
+    await downloadImage(imageData, 'forma');
   }
 }
 

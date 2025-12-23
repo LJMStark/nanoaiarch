@@ -80,8 +80,8 @@ export const websiteConfig: WebsiteConfig = {
   },
   mail: {
     provider: 'resend',
-    fromEmail: 'Nano Banana <noreply@nanobanana.com>',
-    supportEmail: 'Nano Banana <support@nanobanana.com>',
+    fromEmail: 'Forma AI <noreply@forma.ai>',
+    supportEmail: 'Forma AI <support@forma.ai>',
   },
   newsletter: {
     enable: true,
@@ -131,7 +131,7 @@ export const websiteConfig: WebsiteConfig = {
         popular: true,
         credits: {
           enable: true,
-          amount: 1000,
+          amount: 500,
           expireDays: 30,
         },
       },
@@ -151,7 +151,7 @@ export const websiteConfig: WebsiteConfig = {
         credits: {
           enable: true,
           amount: 1000,
-          expireDays: 30,
+          expireDays: 0,
         },
       },
     },
