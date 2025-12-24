@@ -82,25 +82,26 @@ export const auth = betterAuth({
       });
     },
   },
-  socialProviders: {
-    // https://www.better-auth.com/docs/authentication/github
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-    },
-    // https://www.better-auth.com/docs/authentication/google
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    },
-  },
-  account: {
-    // https://www.better-auth.com/docs/concepts/users-accounts#account-linking
-    accountLinking: {
-      enabled: true,
-      trustedProviders: ['google', 'github'],
-    },
-  },
+  // 社交登录已禁用 - Social login disabled
+  // socialProviders: {
+  //   // https://www.better-auth.com/docs/authentication/github
+  //   github: {
+  //     clientId: process.env.GITHUB_CLIENT_ID!,
+  //     clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+  //   },
+  //   // https://www.better-auth.com/docs/authentication/google
+  //   google: {
+  //     clientId: process.env.GOOGLE_CLIENT_ID!,
+  //     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+  //   },
+  // },
+  // account: {
+  //   // https://www.better-auth.com/docs/concepts/users-accounts#account-linking
+  //   accountLinking: {
+  //     enabled: true,
+  //     trustedProviders: ['google', 'github'],
+  //   },
+  // },
   user: {
     // https://www.better-auth.com/docs/concepts/database#extending-core-schema
     additionalFields: {

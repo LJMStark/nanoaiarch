@@ -51,9 +51,9 @@ export const websiteConfig: WebsiteConfig = {
     enableSpeedInsights: false,
   },
   auth: {
-    enableGoogleLogin: true,
-    enableGithubLogin: true,
-    enableCredentialLogin: true,
+    enableGoogleLogin: false, // 已禁用 Google 登录
+    enableGithubLogin: false, // 已禁用 GitHub 登录
+    enableCredentialLogin: true, // 保留邮箱密码登录
   },
   i18n: {
     defaultLocale: 'en',
