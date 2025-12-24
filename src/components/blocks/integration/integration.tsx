@@ -17,6 +17,43 @@ import type * as React from 'react';
 export default function IntegrationSection() {
   const t = useTranslations('HomePage.integration');
 
+  const integrationItems: Array<{
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+  }> = [
+    {
+      icon: <Gemini />,
+      title: t('items.item-1.title' as any),
+      description: t('items.item-1.description' as any),
+    },
+    {
+      icon: <Replit />,
+      title: t('items.item-2.title' as any),
+      description: t('items.item-2.description' as any),
+    },
+    {
+      icon: <MagicUI />,
+      title: t('items.item-3.title' as any),
+      description: t('items.item-3.description' as any),
+    },
+    {
+      icon: <VSCodium />,
+      title: t('items.item-4.title' as any),
+      description: t('items.item-4.description' as any),
+    },
+    {
+      icon: <MediaWiki />,
+      title: t('items.item-5.title' as any),
+      description: t('items.item-5.description' as any),
+    },
+    {
+      icon: <GooglePaLM />,
+      title: t('items.item-6.title' as any),
+      description: t('items.item-6.description' as any),
+    },
+  ];
+
   return (
     <section id="integration" className="px-4 py-16">
       <div className="mx-auto max-w-5xl">
@@ -29,47 +66,15 @@ export default function IntegrationSection() {
         />
 
         <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <IntegrationCard
-            title={t('items.item-1.title')}
-            description={t('items.item-1.description')}
-          >
-            <Gemini />
-          </IntegrationCard>
-
-          <IntegrationCard
-            title={t('items.item-2.title')}
-            description={t('items.item-2.description')}
-          >
-            <Replit />
-          </IntegrationCard>
-
-          <IntegrationCard
-            title={t('items.item-3.title')}
-            description={t('items.item-3.description')}
-          >
-            <MagicUI />
-          </IntegrationCard>
-
-          <IntegrationCard
-            title={t('items.item-4.title')}
-            description={t('items.item-4.description')}
-          >
-            <VSCodium />
-          </IntegrationCard>
-
-          <IntegrationCard
-            title={t('items.item-5.title')}
-            description={t('items.item-5.description')}
-          >
-            <MediaWiki />
-          </IntegrationCard>
-
-          <IntegrationCard
-            title={t('items.item-6.title')}
-            description={t('items.item-6.description')}
-          >
-            <GooglePaLM />
-          </IntegrationCard>
+          {integrationItems.map((item, index) => (
+            <IntegrationCard
+              key={index}
+              title={item.title}
+              description={item.description}
+            >
+              {item.icon}
+            </IntegrationCard>
+          ))}
         </div>
       </div>
     </section>

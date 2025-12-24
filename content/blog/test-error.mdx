@@ -1,0 +1,35 @@
+---
+title: "Error Boundary Test"
+description: "Test post for error boundary"
+image: /images/blog/post-1.png
+date: "2024-12-24"
+author: mkdirs
+categories:
+  - test
+published: true
+---
+
+This is normal content that should render correctly.
+
+## Normal Section
+
+Here's some normal content with a list:
+
+- Item 1
+- Item 2
+- Item 3
+
+## Error Test Section
+
+The component below will throw an error to test the ErrorBoundary:
+
+export const BrokenComponent = () => {
+  throw new Error('Test error: ErrorBoundary is working!');
+  return <div>This will never render</div>;
+};
+
+<BrokenComponent />
+
+## This Should Not Appear
+
+If you see this text, the ErrorBoundary failed to catch the error and the entire page crashed.

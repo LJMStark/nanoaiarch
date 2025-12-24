@@ -6,6 +6,7 @@ import {
   getGenerationHistory,
   toggleFavorite,
 } from '@/actions/generation-history';
+import { shareImage, urlToBase64 } from '@/ai/image/lib/image-helpers';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import {
   AlertDialog,
@@ -39,6 +40,7 @@ import {
   IconHeartFilled,
   IconList,
   IconSearch,
+  IconShare,
   IconSparkles,
   IconTrash,
 } from '@tabler/icons-react';
@@ -138,13 +140,24 @@ export default function GalleryPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `arch-ai-${prompt.slice(0, 20).replace(/\s+/g, '-')}.png`;
+      a.download = `forma-ai-${prompt.slice(0, 20).replace(/\s+/g, '-')}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download failed:', error);
+    }
+  };
+
+  const handleShare = async (imageUrl: string, prompt: string) => {
+    if (!imageUrl) return;
+
+    try {
+      const base64 = await urlToBase64(imageUrl);
+      await shareImage(base64, prompt);
+    } catch (error) {
+      console.error('Share failed:', error);
     }
   };
 
@@ -438,6 +451,21 @@ export default function GalleryPage() {
                         >
                           <IconDownload className="mr-2 size-4" />
                           {t('detail.download')}
+                        </Button>
+                      )}
+
+                      {selectedGeneration.imageUrl && (
+                        <Button
+                          variant="outline"
+                          onClick={() =>
+                            handleShare(
+                              selectedGeneration.imageUrl!,
+                              selectedGeneration.prompt
+                            )
+                          }
+                        >
+                          <IconShare className="mr-2 size-4" />
+                          {t('detail.share')}
                         </Button>
                       )}
 

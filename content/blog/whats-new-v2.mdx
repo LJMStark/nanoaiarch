@@ -1,0 +1,109 @@
+---
+title: "Introducing MKSaaS v2.0"
+description: "AI image generation, enhanced authentication, and a powerful credit system. Here's what's new in MKSaaS v2.0."
+image: /images/blog/post-2.png
+date: "2024-12-18"
+author: mkdirs
+categories:
+  - news
+published: true
+---
+
+MKSaaS v2.0 is here. This release focuses on AI capabilities, better monetization tools, and improved developer experience.
+
+## What's New
+
+### AI Image Generation
+
+Generate images directly from your dashboard using multiple AI providers:
+
+| Provider | Model | Use Case |
+|----------|-------|----------|
+| Forma AI | Gemini 2.0 | Fast generation |
+| Forma Pro | Gemini 2.0 | High quality output |
+| Nano Banana Pro | Imagen 4 | Professional results |
+
+```typescript
+const response = await fetch('/api/generate-images', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    prompt: 'A modern workspace',
+    modelId: 'forma-pro',
+  }),
+});
+```
+
+### Credit System
+
+Monetize AI features with a flexible credit system:
+
+- **Predefined packages** - One-time credit purchases
+- **Subscription bonuses** - Monthly credits for subscribers
+- **Usage tracking** - Monitor consumption per user
+- **Pay-per-use pricing** - Different costs per model
+
+```typescript
+// Check if user has enough credits
+const hasCredits = await hasEnoughCredits({
+  userId,
+  requiredCredits: 5,
+});
+
+// Deduct credits after generation
+await consumeCredits({
+  userId,
+  amount: 5,
+  description: 'Image generation',
+});
+```
+
+### Enhanced Authentication
+
+- **Google OAuth** - One-click social login
+- **GitHub OAuth** - Developer-friendly authentication
+- **Email verification** - Confirm user email addresses
+- **Password reset** - Self-service recovery
+
+### Performance Improvements
+
+- 40% faster initial page load
+- Optimized database queries
+- Better caching strategy
+- Lazy loading for heavy components
+
+## Breaking Changes
+
+### Database Migration
+
+Run migrations to update your database:
+
+```bash
+pnpm db:migrate
+```
+
+### API Endpoint Changes
+
+Image generation endpoint renamed:
+
+```diff
+- POST /api/generate-image
++ POST /api/generate-images
+```
+
+## Upgrade Guide
+
+1. Backup your database
+2. Update dependencies: `pnpm update`
+3. Run migrations: `pnpm db:migrate`
+4. Update environment variables (see `env.example`)
+5. Test before deploying
+
+## What's Next
+
+v2.1 will include:
+- Video generation capabilities
+- Advanced analytics dashboard
+- Team collaboration features
+
+Feedback? Join the [Discord](https://discord.gg/mksaas) or contribute on [GitHub](https://github.com/mksaas/mksaas-template).

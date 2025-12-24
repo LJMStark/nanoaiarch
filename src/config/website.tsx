@@ -71,7 +71,7 @@ export const websiteConfig: WebsiteConfig = {
     },
   },
   blog: {
-    enable: false,
+    enable: true,
     paginationSize: 6,
     relatedPostsSize: 3,
   },
@@ -213,6 +213,21 @@ export const websiteConfig: WebsiteConfig = {
           allowPromotionCode: true,
         },
       },
+    },
+  },
+  referral: {
+    enable: true,
+    // Bonus for new users who register via referral link
+    signupBonus: {
+      enable: true,
+      amount: 20,
+      expireDays: 30,
+    },
+    // Commission for referrers when referred user makes first payment
+    commission: {
+      enable: true,
+      amount: 50,
+      expireDays: 0, // Never expire
     },
   },
 };

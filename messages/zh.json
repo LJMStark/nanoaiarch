@@ -30,6 +30,7 @@
       "favorite": "添加到收藏",
       "unfavorite": "取消收藏",
       "download": "下载",
+      "share": "分享",
       "delete": "删除"
     },
     "deleteDialog": {
@@ -748,6 +749,9 @@
           "never": "永不过期"
         }
       },
+      "referral": {
+        "title": "邀请奖励"
+      },
       "notification": {
         "title": "通知",
         "description": "管理您的通知设置",
@@ -807,6 +811,33 @@
       "title": "升级",
       "description": "升级到Pro以获取所有功能",
       "button": "升级"
+    }
+  },
+  "Referral": {
+    "title": "邀请奖励",
+    "description": "邀请好友，一起赚取积分",
+    "settings": "设置",
+    "yourLink": "您的邀请链接",
+    "copy": "复制",
+    "copied": "已复制！",
+    "rules": {
+      "title": "奖励规则",
+      "signup": "好友注册后可获得 {amount} 积分",
+      "commission": "好友首次付款后您可获得 {amount} 积分"
+    },
+    "stats": {
+      "invited": "邀请人数",
+      "pending": "待确认",
+      "qualified": "已达标",
+      "earned": "获得积分"
+    },
+    "list": {
+      "title": "邀请记录",
+      "empty": "暂无邀请记录，分享链接开始赚取奖励！"
+    },
+    "status": {
+      "pending": "待确认",
+      "qualified": "已达标"
     }
   },
   "Mail": {
@@ -953,6 +984,170 @@
       "description": "几秒钟内将您的建筑概念转化为惊艳视觉效果",
       "primaryButton": "免费试用",
       "secondaryButton": "查看价格"
+    },
+    "features2": {
+      "title": "为什么选择 Forma AI？",
+      "subtitle": "强大功能",
+      "description": "创建专业建筑可视化所需的一切",
+      "feature-1": "即时邮件送达 - 几秒内获得结果",
+      "feature-2": "闪电般快速 - 针对速度和效率进行优化",
+      "feature-3": "实时活动 - 实时跟踪您的进度",
+      "feature-4": "精密工具 - 绘图仪级别的精度"
+    },
+    "features3": {
+      "title": "高级功能",
+      "subtitle": "应有尽有",
+      "description": "专业工具成就专业结果",
+      "items": {
+        "item-1": {
+          "title": "闪电般快速",
+          "description": "几秒钟内生成图像，而不是几分钟"
+        },
+        "item-2": {
+          "title": "智能处理",
+          "description": "专为建筑可视化优化的 AI"
+        },
+        "item-3": {
+          "title": "安全私密",
+          "description": "您的设计永远不会被共享或存储"
+        },
+        "item-4": {
+          "title": "易于编辑",
+          "description": "使用直观的工具完善结果"
+        },
+        "item-5": {
+          "title": "云端同步",
+          "description": "从任何地方访问您的项目"
+        },
+        "item-6": {
+          "title": "智能增强",
+          "description": "理解建筑意图的 AI"
+        }
+      }
+    },
+    "testimonials": {
+      "title": "用户评价",
+      "subtitle": "受到全球建筑师和设计师的信赖",
+      "items": {
+        "item-1": {
+          "name": "陈莎拉",
+          "role": "建筑师",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
+          "quote": "Forma AI 彻底改变了向客户展示设计的方式。质量令人难以置信。"
+        },
+        "item-2": {
+          "name": "朴迈克尔",
+          "role": "室内设计师",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
+          "quote": "以前需要几个小时的工作现在几分钟就能完成。这是现代建筑师的必备工具。"
+        },
+        "item-3": {
+          "name": "威尔逊艾玛",
+          "role": "城市规划师",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma",
+          "quote": "仅分析图表功能就值得使用。为我节省了数小时的手工工作。"
+        },
+        "item-4": {
+          "name": "金大卫",
+          "role": "景观建筑师",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
+          "quote": "出色的总图可视化工具。强烈推荐给任何设计公司。"
+        },
+        "item-5": {
+          "name": "张丽莎",
+          "role": "设计总监",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa",
+          "quote": "自从采用 Forma AI，我们团队的工作效率显著提高。"
+        },
+        "item-6": {
+          "name": "罗德里格斯詹姆斯",
+          "role": "资深建筑师",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=James",
+          "quote": "风格预设非常棒。非常适合探索不同的设计方向。"
+        },
+        "item-7": {
+          "name": "穆勒安娜",
+          "role": "室内设计师",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Anna",
+          "quote": "终于有一款理解建筑可视化需求的 AI 工具了。"
+        },
+        "item-8": {
+          "name": "泰勒罗伯特",
+          "role": "建筑师",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Robert",
+          "quote": "立面生成功能简化了我们的改造项目流程。"
+        },
+        "item-9": {
+          "name": "陈苏菲",
+          "role": "设计主管",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophie",
+          "quote": "每次都有出色的结果。这是建筑可视化的未来。"
+        },
+        "item-10": {
+          "name": "约翰逊马库斯",
+          "role": "项目经理",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus",
+          "quote": "客户演示从未如此令人印象深刻。Forma AI 值得信赖。"
+        },
+        "item-11": {
+          "name": "罗德里格斯埃琳娜",
+          "role": "资深设计师",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Elena",
+          "quote": "工作流程集成无缝衔接。完美融入我们的设计流程。"
+        },
+        "item-12": {
+          "name": "赖特托马斯",
+          "role": "首席建筑师",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Thomas",
+          "quote": "现代建筑实践的必备工具。物超所值。"
+        }
+      }
+    },
+    "logocloud": {
+      "title": "深受领先公司信赖"
+    },
+    "integration": {
+      "title": "无缝集成",
+      "subtitle": "与您喜爱的工具配合使用",
+      "description": "支持从 Sketch、AutoCAD、Rhino 等导入",
+      "learnMore": "了解更多",
+      "items": {
+        "item-1": {
+          "title": "Google Gemini",
+          "description": "先进的人工智能语言模型，用于自然语言理解和生成"
+        },
+        "item-2": {
+          "title": "Replit",
+          "description": "在线 IDE，支持协作编码和 AI 辅助"
+        },
+        "item-3": {
+          "title": "MagicUI",
+          "description": "精美的现代 Web 应用 UI 组件库"
+        },
+        "item-4": {
+          "title": "VSCodium",
+          "description": "VS Code 的开源版本，无遥测功能"
+        },
+        "item-5": {
+          "title": "MediaWiki",
+          "description": "功能强大的 Wiki 软件，用于知识管理"
+        },
+        "item-6": {
+          "title": "Google PaLM",
+          "description": "下一代语言模型，面向高级 AI 应用"
+        }
+      }
+    },
+    "integration2": {
+      "title": "随处可用",
+      "subtitle": "平台无关",
+      "description": "在浏览器中使用，无需安装",
+      "primaryButton": "免费试用",
+      "secondaryButton": "查看定价",
+      "feature-1": "Web 浏览器",
+      "feature-2": "移动端就绪",
+      "feature-3": "平板支持",
+      "feature-4": "桌面应用"
     }
   },
   "AITextPage": {

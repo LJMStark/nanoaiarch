@@ -1,4 +1,8 @@
-import { GEMINI_MODEL_IDS, type GeminiModelId } from './provider-config';
+import {
+  GEMINI_MODEL_IDS,
+  type GeminiModelId,
+  isVertexImagenModel,
+} from './provider-config';
 
 /**
  * 请求超时时间（55 秒）
@@ -35,8 +39,14 @@ export type GeminiModelKey = 'forma' | 'gemini-flash';
 
 /**
  * 将 Forma AI 模型 ID 映射到 Gemini 客户端的模型 key
+ * 注意：Vertex AI Imagen 模型不需要映射，直接使用 modelId
  */
 export const mapModelIdToGeminiKey = (modelId: string): GeminiModelKey => {
+  // Vertex AI Imagen 模型不走这个映射
+  if (isVertexImagenModel(modelId)) {
+    return 'forma'; // 返回默认值，实际不会使用
+  }
+
   if (modelId === 'forma' || modelId === GEMINI_MODEL_IDS.forma) {
     return 'forma';
   }

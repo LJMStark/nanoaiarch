@@ -30,6 +30,7 @@
       "favorite": "Add to Favorites",
       "unfavorite": "Remove from Favorites",
       "download": "Download",
+      "share": "Share",
       "delete": "Delete"
     },
     "deleteDialog": {
@@ -748,6 +749,9 @@
           "never": "Never"
         }
       },
+      "referral": {
+        "title": "Referral"
+      },
       "notification": {
         "title": "Notification",
         "description": "Manage your notification preferences",
@@ -807,6 +811,33 @@
       "title": "Upgrade",
       "description": "Upgrade to Pro to access all features",
       "button": "Upgrade"
+    }
+  },
+  "Referral": {
+    "title": "Referral Program",
+    "description": "Invite friends and earn credits together",
+    "settings": "Settings",
+    "yourLink": "Your Referral Link",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "rules": {
+      "title": "Reward Rules",
+      "signup": "Your friend gets {amount} credits when they sign up",
+      "commission": "You get {amount} credits when they make their first purchase"
+    },
+    "stats": {
+      "invited": "Total Invited",
+      "pending": "Pending",
+      "qualified": "Qualified",
+      "earned": "Credits Earned"
+    },
+    "list": {
+      "title": "Referral History",
+      "empty": "No referrals yet. Share your link to start earning!"
+    },
+    "status": {
+      "pending": "Pending",
+      "qualified": "Qualified"
     }
   },
   "Mail": {
@@ -953,6 +984,170 @@
       "description": "Transform your architectural concepts into stunning visuals in seconds",
       "primaryButton": "Try for Free",
       "secondaryButton": "View Pricing"
+    },
+    "features2": {
+      "title": "Why Choose Forma AI?",
+      "subtitle": "Powerful Features",
+      "description": "Everything you need to create professional architectural visualizations",
+      "feature-1": "Instant Email Delivery - Get your results in seconds",
+      "feature-2": "Lightning Fast - Optimized for speed and efficiency",
+      "feature-3": "Real-time Activity - Track your progress live",
+      "feature-4": "Precision Tools - Drafting compass accuracy"
+    },
+    "features3": {
+      "title": "Advanced Features",
+      "subtitle": "Everything You Need",
+      "description": "Professional tools for professional results",
+      "items": {
+        "item-1": {
+          "title": "Lightning Fast",
+          "description": "Generate images in seconds, not minutes"
+        },
+        "item-2": {
+          "title": "Smart Processing",
+          "description": "AI-optimized for architectural visualization"
+        },
+        "item-3": {
+          "title": "Secure & Private",
+          "description": "Your designs are never shared or stored"
+        },
+        "item-4": {
+          "title": "Easy Editing",
+          "description": "Refine your results with intuitive tools"
+        },
+        "item-5": {
+          "title": "Cloud Sync",
+          "description": "Access your projects from anywhere"
+        },
+        "item-6": {
+          "title": "Smart Enhancement",
+          "description": "AI that understands architectural intent"
+        }
+      }
+    },
+    "testimonials": {
+      "title": "What Our Users Say",
+      "subtitle": "Trusted by architects and designers worldwide",
+      "items": {
+        "item-1": {
+          "name": "Sarah Chen",
+          "role": "Architect",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
+          "quote": "Forma AI has transformed how I present my designs to clients. The quality is incredible."
+        },
+        "item-2": {
+          "name": "Michael Park",
+          "role": "Interior Designer",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
+          "quote": "What used to take hours now takes minutes. This tool is essential for any modern architect."
+        },
+        "item-3": {
+          "name": "Emma Wilson",
+          "role": "Urban Planner",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma",
+          "quote": "The analysis diagrams feature alone is worth it. Saves me hours of manual work."
+        },
+        "item-4": {
+          "name": "David Kim",
+          "role": "Landscape Architect",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
+          "quote": "Incredible tool for masterplan visualization. Highly recommend for any design firm."
+        },
+        "item-5": {
+          "name": "Lisa Zhang",
+          "role": "Design Director",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa",
+          "quote": "Our team productivity has increased significantly since adopting Forma AI."
+        },
+        "item-6": {
+          "name": "James Rodriguez",
+          "role": "Senior Architect",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=James",
+          "quote": "The style presets are amazing. Perfect for exploring different design directions."
+        },
+        "item-7": {
+          "name": "Anna Mueller",
+          "role": "Interior Designer",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Anna",
+          "quote": "Finally, an AI tool that understands architectural visualization needs."
+        },
+        "item-8": {
+          "name": "Robert Taylor",
+          "role": "Architect",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Robert",
+          "quote": "The facade generation feature has streamlined our renovation projects."
+        },
+        "item-9": {
+          "name": "Sophie Chen",
+          "role": "Design Lead",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophie",
+          "quote": "Outstanding results every time. This is the future of architectural visualization."
+        },
+        "item-10": {
+          "name": "Marcus Johnson",
+          "role": "Project Manager",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus",
+          "quote": "Client presentations have never been more impressive. Forma AI delivers."
+        },
+        "item-11": {
+          "name": "Elena Rodriguez",
+          "role": "Senior Designer",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Elena",
+          "quote": "The workflow integration is seamless. Fits perfectly into our design process."
+        },
+        "item-12": {
+          "name": "Thomas Wright",
+          "role": "Principal Architect",
+          "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Thomas",
+          "quote": "An essential tool for modern architectural practice. Worth every penny."
+        }
+      }
+    },
+    "logocloud": {
+      "title": "Trusted by Leading Firms"
+    },
+    "integration": {
+      "title": "Seamless Integration",
+      "subtitle": "Works with your favorite tools",
+      "description": "Import from Sketch, AutoCAD, Rhino, and more",
+      "learnMore": "Learn More",
+      "items": {
+        "item-1": {
+          "title": "Google Gemini",
+          "description": "Advanced AI language model for natural language understanding"
+        },
+        "item-2": {
+          "title": "Replit",
+          "description": "Online IDE for collaborative coding with AI assistance"
+        },
+        "item-3": {
+          "title": "MagicUI",
+          "description": "Beautiful UI component library for modern web apps"
+        },
+        "item-4": {
+          "title": "VSCodium",
+          "description": "Open-source version of VS Code without telemetry"
+        },
+        "item-5": {
+          "title": "MediaWiki",
+          "description": "Powerful wiki software for knowledge management"
+        },
+        "item-6": {
+          "title": "Google PaLM",
+          "description": "Next-generation language model for AI applications"
+        }
+      }
+    },
+    "integration2": {
+      "title": "Works Everywhere",
+      "subtitle": "Platform independent",
+      "description": "Use in your browser, no installation needed",
+      "primaryButton": "Try for Free",
+      "secondaryButton": "View Pricing",
+      "feature-1": "Web Browser",
+      "feature-2": "Mobile Ready",
+      "feature-3": "Tablet Support",
+      "feature-4": "Desktop App"
     }
   },
   "AITextPage": {

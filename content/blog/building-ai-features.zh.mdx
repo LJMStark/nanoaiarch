@@ -1,0 +1,143 @@
+---
+title: "使用 MKSaaS 构建 AI 功能"
+description: "学习如何集成 AI 图像生成、实现积分系统，以及使用 MKSaaS 构建 AI 驱动的功能。"
+image: /images/blog/post-4.png
+date: "2024-12-10"
+author: mksaas
+categories:
+  - product
+published: true
+---
+
+MKSaaS 包含完整的图像生成 AI 基础设施。以下是如何使用它。
+
+## AI 提供商
+
+三种 AI 模型开箱即用：
+
+| 提供商 | 模型 | 积分 | 适用场景 |
+|--------|------|------|----------|
+| Forma AI | Gemini 2.0 | 1 | 快速预览 |
+| Forma Pro | Gemini 2.0 | 3 | 高质量 |
+| Nano Banana Pro | Imagen 4 | 5 | 专业级 |
+
+## 基本用法
+
+从任何组件生成图像：
+
+```typescript
+const response = await fetch('/api/generate-images', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    prompt: '现代简约风格的客厅',
+    modelId: 'forma-pro',
+  }),
+});
+
+const { image, creditsUsed } = await response.json();
+```
+
+## 使用 Hook
+
+为了更好的开发体验：
+
+```typescript
+import { useArchGeneration } from '@/ai/image/hooks/use-arch-generation';
+
+function ImageGenerator() {
+  const { generate, isLoading, result } = useArchGeneration();
+
+  return (
+    <button onClick={() => generate({ prompt: '咖啡店', modelId: 'forma' })}>
+      {isLoading ? '生成中...' : '生成'}
+    </button>
+  );
+}
+```
+
+## 积分系统
+
+### 检查积分
+
+```typescript
+import { hasEnoughCredits } from '@/credits/credits';
+
+const canGenerate = await hasEnoughCredits({
+  userId: session.user.id,
+  requiredCredits: 5,
+});
+```
+
+### 消耗积分
+
+```typescript
+import { consumeCredits } from '@/credits/credits';
+
+await consumeCredits({
+  userId: session.user.id,
+  amount: 5,
+  description: '图像生成：forma-pro',
+});
+```
+
+### 定价
+
+在 `src/ai/image/lib/credit-costs.ts` 中配置定价：
+
+```typescript
+export const CREDIT_COSTS = {
+  forma: 1,
+  'forma-pro': 3,
+  'nano-banana-pro': 5,
+};
+```
+
+## 高级选项
+
+```typescript
+await generate({
+  prompt: '现代办公楼',
+  modelId: 'nano-banana-pro',
+  aspectRatio: '16:9',
+  negativePrompt: '模糊，低质量',
+});
+```
+
+可用比例：`1:1`、`16:9`、`9:16`、`4:3`、`3:4`。
+
+## 安全
+
+### 输入验证
+
+Prompt 会自动验证：
+
+- 最大长度：4000 字符
+- 阻止 prompt 注入模式
+- 内容过滤
+
+### 限流
+
+API 端点已限流以防止滥用。
+
+## 最佳实践
+
+1. **始终检查积分** - 生成前确认
+2. **优雅处理错误** - AI 服务可能失败
+3. **显示加载状态** - 生成需要时间
+4. **适当缓存结果**
+5. **使用积分系统** 监控成本
+
+## 添加更多模型
+
+添加新的 AI 提供商：
+
+1. 在 `src/ai/image/lib/provider-config.ts` 中添加配置
+2. 在 `src/ai/image/lib/credit-costs.ts` 中设置定价
+3. 在 API 路由中实现生成逻辑
+
+## 文档
+
+完整的 API 文档请访问 `/docs`。
+
+有问题？加入我们的 [Discord](https://discord.gg/mksaas)。

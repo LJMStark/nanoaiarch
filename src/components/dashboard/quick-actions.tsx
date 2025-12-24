@@ -73,10 +73,10 @@ export function QuickActions() {
                 )}
               />
               <h3 className="font-medium text-foreground">
-                {t(action.titleKey)}
+                {t(action.titleKey as any)}
               </h3>
               <p className="mt-1 text-center text-xs text-muted-foreground">
-                {t(action.descriptionKey)}
+                {t(action.descriptionKey as any)}
               </p>
             </Link>
           ))}

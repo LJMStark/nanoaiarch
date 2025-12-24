@@ -1,0 +1,233 @@
+---
+title: "使用 Next.js 15 构建生产级应用"
+description: "使用 Next.js 15、Server Components 和 App Router 构建生产级应用的实用模式和最佳实践。"
+image: /images/blog/post-3.png
+date: "2024-12-15"
+author: fox
+categories:
+  - product
+published: true
+---
+
+Next.js 15 改变了我们构建 React 应用的方式。以下是我们在 MKSaaS 中用于创建快速、可维护生产级应用的模式。
+
+## 默认使用 Server Components
+
+Server Components 减少客户端 JavaScript 并提升性能。用于：
+
+- 从数据库获取数据
+- 在服务器保存敏感令牌
+- 减少打包体积
+
+```typescript
+// Server Component（默认）
+async function ProductList() {
+  const products = await db.products.findMany();
+  return (
+    <ul>
+      {products.map((p) => (
+        <li key={p.id}>{p.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+仅在需要时使用 Client Components：
+
+- 带事件处理器的交互 UI
+- 浏览器 API（localStorage、window）
+- React hooks（useState、useEffect）
+
+```typescript
+'use client';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+```
+
+## 数据获取
+
+并行获取数据避免瀑布式请求：
+
+```typescript
+async function Dashboard() {
+  const [user, posts, analytics] = await Promise.all([
+    getUser(),
+    getPosts(),
+    getAnalytics(),
+  ]);
+
+  return <DashboardView user={user} posts={posts} analytics={analytics} />;
+}
+```
+
+对于顺序数据（当一个请求依赖另一个时）：
+
+```typescript
+async function Profile({ userId }: { userId: string }) {
+  const user = await getUser(userId);
+  const posts = await getUserPosts(user.id);
+  return <ProfileView user={user} posts={posts} />;
+}
+```
+
+## Server Actions
+
+使用 Server Actions 处理表单提交和变更：
+
+```typescript
+'use server';
+
+import { z } from 'zod';
+
+const schema = z.object({
+  email: z.string().email(),
+  message: z.string().min(10).max(1000),
+});
+
+export async function submitForm(formData: FormData) {
+  const result = schema.safeParse({
+    email: formData.get('email'),
+    message: formData.get('message'),
+  });
+
+  if (!result.success) {
+    return { error: '输入无效' };
+  }
+
+  // 处理验证后的数据
+}
+```
+
+## 错误处理
+
+使用 `error.tsx` 创建错误边界：
+
+```typescript
+'use client';
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error;
+  reset: () => void;
+}) {
+  return (
+    <div>
+      <h2>出错了！</h2>
+      <button onClick={() => reset()}>重试</button>
+    </div>
+  );
+}
+```
+
+使用 `not-found.tsx` 处理 404：
+
+```typescript
+export default function NotFound() {
+  return (
+    <div>
+      <h2>页面未找到</h2>
+      <Link href="/">返回首页</Link>
+    </div>
+  );
+}
+```
+
+## 性能
+
+### 图像优化
+
+始终使用 Next.js Image 组件：
+
+```typescript
+import Image from 'next/image';
+
+function Hero() {
+  return (
+    <Image
+      src="/hero.jpg"
+      alt="Hero"
+      width={1200}
+      height={600}
+      priority
+      placeholder="blur"
+    />
+  );
+}
+```
+
+### 动态导入
+
+仅在需要时加载重型组件：
+
+```typescript
+import dynamic from 'next/dynamic';
+
+const Chart = dynamic(() => import('@/components/chart'), {
+  loading: () => <ChartSkeleton />,
+  ssr: false,
+});
+```
+
+### 缓存
+
+为数据配置重新验证：
+
+```typescript
+export const revalidate = 3600; // 1 小时
+
+async function PricingPage() {
+  const prices = await fetch('https://api.stripe.com/prices', {
+    next: { revalidate: 3600 },
+  });
+  // ...
+}
+```
+
+## 安全
+
+### 环境变量
+
+服务器专用变量永远不会暴露给客户端：
+
+```bash
+# 仅服务器（安全）
+DATABASE_URL="postgresql://..."
+STRIPE_SECRET_KEY="sk_..."
+
+# 客户端暴露（前缀 NEXT_PUBLIC_）
+NEXT_PUBLIC_API_URL="https://api.example.com"
+```
+
+### 输入验证
+
+始终在边界验证：
+
+```typescript
+import { z } from 'zod';
+
+const schema = z.object({
+  name: z.string().min(1).max(100),
+  email: z.string().email(),
+});
+
+export async function createUser(formData: FormData) {
+  const data = schema.parse(Object.fromEntries(formData));
+  // 安全使用 data
+}
+```
+
+## 关键要点
+
+1. 默认使用 Server Components
+2. 尽可能并行获取数据
+3. 使用 Zod 验证所有输入
+4. 优雅处理错误
+5. 优化图像并懒加载重型组件
+
+这些模式正是驱动 MKSaaS 的核心。用它们构建更好的 Next.js 应用。

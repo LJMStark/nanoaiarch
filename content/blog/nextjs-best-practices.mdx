@@ -1,0 +1,233 @@
+---
+title: "Building Production Apps with Next.js 15"
+description: "Practical patterns and best practices for building production-ready applications with Next.js 15, Server Components, and App Router."
+image: /images/blog/post-3.png
+date: "2024-12-15"
+author: fox
+categories:
+  - product
+published: true
+---
+
+Next.js 15 changes how we build React applications. Here are the patterns we use in MKSaaS to create fast, maintainable production apps.
+
+## Server Components by Default
+
+Server Components reduce client-side JavaScript and improve performance. Use them for:
+
+- Data fetching from databases
+- Keeping sensitive tokens on the server
+- Reducing bundle size
+
+```typescript
+// Server Component (default)
+async function ProductList() {
+  const products = await db.products.findMany();
+  return (
+    <ul>
+      {products.map((p) => (
+        <li key={p.id}>{p.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+Use Client Components only when needed:
+
+- Interactive UI with event handlers
+- Browser APIs (localStorage, window)
+- React hooks (useState, useEffect)
+
+```typescript
+'use client';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+```
+
+## Data Fetching
+
+Fetch data in parallel to avoid waterfalls:
+
+```typescript
+async function Dashboard() {
+  const [user, posts, analytics] = await Promise.all([
+    getUser(),
+    getPosts(),
+    getAnalytics(),
+  ]);
+
+  return <DashboardView user={user} posts={posts} analytics={analytics} />;
+}
+```
+
+For sequential data (when one request depends on another):
+
+```typescript
+async function Profile({ userId }: { userId: string }) {
+  const user = await getUser(userId);
+  const posts = await getUserPosts(user.id);
+  return <ProfileView user={user} posts={posts} />;
+}
+```
+
+## Server Actions
+
+Use Server Actions for form submissions and mutations:
+
+```typescript
+'use server';
+
+import { z } from 'zod';
+
+const schema = z.object({
+  email: z.string().email(),
+  message: z.string().min(10).max(1000),
+});
+
+export async function submitForm(formData: FormData) {
+  const result = schema.safeParse({
+    email: formData.get('email'),
+    message: formData.get('message'),
+  });
+
+  if (!result.success) {
+    return { error: 'Invalid input' };
+  }
+
+  // Process validated data
+}
+```
+
+## Error Handling
+
+Create error boundaries with `error.tsx`:
+
+```typescript
+'use client';
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error;
+  reset: () => void;
+}) {
+  return (
+    <div>
+      <h2>Something went wrong!</h2>
+      <button onClick={() => reset()}>Try again</button>
+    </div>
+  );
+}
+```
+
+Handle 404s with `not-found.tsx`:
+
+```typescript
+export default function NotFound() {
+  return (
+    <div>
+      <h2>Page Not Found</h2>
+      <Link href="/">Go home</Link>
+    </div>
+  );
+}
+```
+
+## Performance
+
+### Image Optimization
+
+Always use the Next.js Image component:
+
+```typescript
+import Image from 'next/image';
+
+function Hero() {
+  return (
+    <Image
+      src="/hero.jpg"
+      alt="Hero"
+      width={1200}
+      height={600}
+      priority
+      placeholder="blur"
+    />
+  );
+}
+```
+
+### Dynamic Imports
+
+Load heavy components only when needed:
+
+```typescript
+import dynamic from 'next/dynamic';
+
+const Chart = dynamic(() => import('@/components/chart'), {
+  loading: () => <ChartSkeleton />,
+  ssr: false,
+});
+```
+
+### Caching
+
+Configure revalidation for data:
+
+```typescript
+export const revalidate = 3600; // 1 hour
+
+async function PricingPage() {
+  const prices = await fetch('https://api.stripe.com/prices', {
+    next: { revalidate: 3600 },
+  });
+  // ...
+}
+```
+
+## Security
+
+### Environment Variables
+
+Server-only variables are never exposed to the client:
+
+```bash
+# Server-only (safe)
+DATABASE_URL="postgresql://..."
+STRIPE_SECRET_KEY="sk_..."
+
+# Client-exposed (prefix with NEXT_PUBLIC_)
+NEXT_PUBLIC_API_URL="https://api.example.com"
+```
+
+### Input Validation
+
+Always validate at the boundary:
+
+```typescript
+import { z } from 'zod';
+
+const schema = z.object({
+  name: z.string().min(1).max(100),
+  email: z.string().email(),
+});
+
+export async function createUser(formData: FormData) {
+  const data = schema.parse(Object.fromEntries(formData));
+  // Safe to use data
+}
+```
+
+## Key Takeaways
+
+1. Use Server Components by default
+2. Fetch data in parallel when possible
+3. Validate all inputs with Zod
+4. Handle errors gracefully
+5. Optimize images and lazy-load heavy components
+
+These patterns are what power MKSaaS. Use them to build better Next.js applications.

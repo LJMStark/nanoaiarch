@@ -1,0 +1,77 @@
+---
+title: "Get Started with MKSaaS in 5 Minutes"
+description: "Launch your next SaaS product faster with MKSaaS - the production-ready Next.js template with authentication, payments, and AI features built in."
+image: /images/blog/post-1.png
+date: "2024-12-20"
+author: mkdirs
+categories:
+  - product
+published: true
+---
+
+Stop building from scratch. MKSaaS gives you everything you need to launch a SaaS product in days, not months.
+
+## Why MKSaaS?
+
+Every SaaS product needs the same foundation: user authentication, payment processing, database management, internationalization, and a modern UI. Building these from scratch takes weeks. MKSaaS gives you a head start with a production-ready template you can customize.
+
+## What's Included
+
+| Feature | Description |
+|---------|-------------|
+| **Authentication** | Email/password + social login (Google, GitHub) |
+| **Payments** | Stripe integration with subscriptions and one-time purchases |
+| **Database** | PostgreSQL with Drizzle ORM |
+| **AI Features** | Image generation with multiple providers |
+| **i18n** | English and Chinese support out of the box |
+| **UI Components** | Radix UI + TailwindCSS |
+
+## Quick Start
+
+Clone and install:
+
+```bash
+git clone https://github.com/mksaas/mksaas-template.git
+cd mksaas-template
+pnpm install
+```
+
+Configure environment variables:
+
+```bash
+cp env.example .env
+# Edit .env with your API keys
+```
+
+Start the development server:
+
+```bash
+pnpm dev
+```
+
+Visit `http://localhost:3000` and you're ready to build.
+
+## Project Structure
+
+```
+src/
+├── app/           # Next.js App Router pages
+├── components/    # Reusable React components
+├── lib/           # Utilities and helpers
+├── db/            # Database schema and migrations
+├── actions/       # Server actions
+└── config/        # App configuration
+```
+
+## Next Steps
+
+1. **Customize the design** - Update colors and branding in `src/config/website.tsx`
+2. **Configure auth** - Set up OAuth providers in Better Auth
+3. **Add your Stripe keys** - Enable payments in the dashboard
+4. **Deploy to Vercel** - One-click deployment
+
+## Documentation
+
+Full documentation is available at `/docs`. Need help? Join our [Discord](https://discord.gg/mksaas) or open an issue on [GitHub](https://github.com/mksaas/mksaas-template).
+
+Start building something great.

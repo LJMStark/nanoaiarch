@@ -8,6 +8,7 @@ import {
   CircleUserRoundIcon,
   CoinsIcon,
   CreditCardIcon,
+  GiftIcon,
   ImageIcon,
   LayoutDashboardIcon,
   LockKeyholeIcon,
@@ -90,6 +91,16 @@ export function useSidebarLinks(): NestedMenuItem[] {
                 title: t('settings.credits.title'),
                 icon: <CoinsIcon className="size-4 shrink-0" />,
                 href: Routes.SettingsCredits,
+                external: false,
+              },
+            ]
+          : []),
+        ...(websiteConfig.referral?.enable
+          ? [
+              {
+                title: t('settings.referral.title'),
+                icon: <GiftIcon className="size-4 shrink-0" />,
+                href: Routes.SettingsReferral,
                 external: false,
               },
             ]

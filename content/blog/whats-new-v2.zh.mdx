@@ -1,0 +1,109 @@
+---
+title: "MKSaaS v2.0 发布"
+description: "AI 图像生成、增强认证和强大的积分系统。以下是 MKSaaS v2.0 的新功能。"
+image: /images/blog/post-2.png
+date: "2024-12-18"
+author: mkdirs
+categories:
+  - news
+published: true
+---
+
+MKSaaS v2.0 正式发布。本次版本专注于 AI 能力、更好的变现工具和改进的开发体验。
+
+## 新功能
+
+### AI 图像生成
+
+直接从仪表板使用多个 AI 提供商生成图像：
+
+| 提供商 | 模型 | 适用场景 |
+|--------|------|----------|
+| Forma AI | Gemini 2.0 | 快速生成 |
+| Forma Pro | Gemini 2.0 | 高质量输出 |
+| Nano Banana Pro | Imagen 4 | 专业级效果 |
+
+```typescript
+const response = await fetch('/api/generate-images', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    prompt: '现代化办公空间',
+    modelId: 'forma-pro',
+  }),
+});
+```
+
+### 积分系统
+
+使用灵活的积分系统变现 AI 功能：
+
+- **预定义套餐** - 一次性积分购买
+- **订阅奖励** - 订阅用户的每月积分
+- **使用追踪** - 监控每位用户的消耗
+- **按量付费** - 不同模型不同价格
+
+```typescript
+// 检查用户是否有足够积分
+const hasCredits = await hasEnoughCredits({
+  userId,
+  requiredCredits: 5,
+});
+
+// 生成后扣除积分
+await consumeCredits({
+  userId,
+  amount: 5,
+  description: '图像生成',
+});
+```
+
+### 增强认证
+
+- **Google OAuth** - 一键社交登录
+- **GitHub OAuth** - 开发者友好的认证
+- **邮箱验证** - 确认用户邮箱地址
+- **密码重置** - 自助找回
+
+### 性能提升
+
+- 首页加载快 40%
+- 优化数据库查询
+- 改进缓存策略
+- 重型组件懒加载
+
+## 破坏性变更
+
+### 数据库迁移
+
+运行迁移更新数据库：
+
+```bash
+pnpm db:migrate
+```
+
+### API 端点变更
+
+图像生成端点已重命名：
+
+```diff
+- POST /api/generate-image
++ POST /api/generate-images
+```
+
+## 升级指南
+
+1. 备份数据库
+2. 更新依赖：`pnpm update`
+3. 运行迁移：`pnpm db:migrate`
+4. 更新环境变量（见 `env.example`）
+5. 部署前测试
+
+## 下一步
+
+v2.1 将包括：
+- 视频生成功能
+- 高级分析仪表板
+- 团队协作功能
+
+有反馈？加入 [Discord](https://discord.gg/mksaas) 或在 [GitHub](https://github.com/mksaas/mksaas-template) 上贡献。

@@ -1,0 +1,143 @@
+---
+title: "Building AI Features with MKSaaS"
+description: "Learn how to integrate AI image generation, implement credit systems, and build AI-powered features with MKSaaS."
+image: /images/blog/post-4.png
+date: "2024-12-10"
+author: mksaas
+categories:
+  - product
+published: true
+---
+
+MKSaaS includes a complete AI infrastructure for image generation. Here's how to use it.
+
+## AI Providers
+
+Three AI models are available out of the box:
+
+| Provider | Model | Credits | Best For |
+|----------|-------|---------|----------|
+| Forma AI | Gemini 2.0 | 1 | Quick previews |
+| Forma Pro | Gemini 2.0 | 3 | High quality |
+| Nano Banana Pro | Imagen 4 | 5 | Professional output |
+
+## Basic Usage
+
+Generate images from any component:
+
+```typescript
+const response = await fetch('/api/generate-images', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    prompt: 'A modern minimalist living room',
+    modelId: 'forma-pro',
+  }),
+});
+
+const { image, creditsUsed } = await response.json();
+```
+
+## Using the Hook
+
+For a better developer experience:
+
+```typescript
+import { useArchGeneration } from '@/ai/image/hooks/use-arch-generation';
+
+function ImageGenerator() {
+  const { generate, isLoading, result } = useArchGeneration();
+
+  return (
+    <button onClick={() => generate({ prompt: 'Coffee shop', modelId: 'forma' })}>
+      {isLoading ? 'Generating...' : 'Generate'}
+    </button>
+  );
+}
+```
+
+## Credit System
+
+### Check Credits
+
+```typescript
+import { hasEnoughCredits } from '@/credits/credits';
+
+const canGenerate = await hasEnoughCredits({
+  userId: session.user.id,
+  requiredCredits: 5,
+});
+```
+
+### Consume Credits
+
+```typescript
+import { consumeCredits } from '@/credits/credits';
+
+await consumeCredits({
+  userId: session.user.id,
+  amount: 5,
+  description: 'Image generation: forma-pro',
+});
+```
+
+### Pricing
+
+Configure pricing in `src/ai/image/lib/credit-costs.ts`:
+
+```typescript
+export const CREDIT_COSTS = {
+  forma: 1,
+  'forma-pro': 3,
+  'nano-banana-pro': 5,
+};
+```
+
+## Advanced Options
+
+```typescript
+await generate({
+  prompt: 'Modern office building',
+  modelId: 'nano-banana-pro',
+  aspectRatio: '16:9',
+  negativePrompt: 'blurry, low quality',
+});
+```
+
+Available aspect ratios: `1:1`, `16:9`, `9:16`, `4:3`, `3:4`.
+
+## Security
+
+### Input Validation
+
+Prompts are validated automatically:
+
+- Maximum length: 4000 characters
+- Blocked patterns for prompt injection
+- Content filtering
+
+### Rate Limiting
+
+API endpoints are rate-limited to prevent abuse.
+
+## Best Practices
+
+1. **Always check credits** before generation
+2. **Handle errors gracefully** - AI services can fail
+3. **Show loading states** - generation takes time
+4. **Cache results** when appropriate
+5. **Monitor costs** using the credit system
+
+## Adding More Models
+
+To add a new AI provider:
+
+1. Add configuration in `src/ai/image/lib/provider-config.ts`
+2. Set pricing in `src/ai/image/lib/credit-costs.ts`
+3. Implement the generation logic in the API route
+
+## Documentation
+
+For complete API documentation, visit `/docs`.
+
+Questions? Join our [Discord](https://discord.gg/mksaas).

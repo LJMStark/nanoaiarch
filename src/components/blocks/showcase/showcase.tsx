@@ -71,16 +71,12 @@ export default function ShowcaseSection() {
 
         {/* Template grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-{SHOWCASE_ITEMS.map((item) => {
+          {SHOWCASE_ITEMS.map((item) => {
             const Icon = item.icon;
             // Use generated image if available, otherwise fall back to original path or logic
-            const isGenerated =
-              item.id === 'style-transfer' ||
-              item.id === 'model-render' ||
-              item.id === 'floor-plan';
-            const imagePath = isGenerated
-              ? `/images/generated/${item.id}.png`
-              : item.image;
+            // Use generated image for all items
+            const isGenerated = true;
+            const imagePath = `/images/generated/${item.id}.png`;
 
             return (
               <div

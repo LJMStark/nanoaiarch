@@ -1,11 +1,12 @@
 'use server';
 
-import { db } from '@/db';
+import { getDb } from '@/db';
 import { generationHistory } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
 import { headers } from 'next/headers';
+
+const generateId = () => crypto.randomUUID().slice(0, 8);
 
 export type GenerationHistoryItem = {
   id: string;
@@ -56,7 +57,8 @@ export async function saveGeneration(data: {
   }
 
   try {
-    const id = nanoid();
+    const id = generateId();
+    const db = await getDb();
     await db.insert(generationHistory).values({
       id,
       userId: session.user.id,
@@ -99,6 +101,7 @@ export async function getGenerationHistory(options?: {
   const offset = options?.offset ?? 0;
 
   try {
+    const db = await getDb();
     const conditions = [eq(generationHistory.userId, session.user.id)];
 
     if (options?.favoritesOnly) {
@@ -134,6 +137,8 @@ export async function getGenerationStats(): Promise<{
   }
 
   try {
+    const db = await getDb();
+
     // Get total generations and credits used
     const totals = await db
       .select({
@@ -194,6 +199,8 @@ export async function toggleFavorite(generationId: string) {
   }
 
   try {
+    const db = await getDb();
+
     // First get the current status
     const current = await db
       .select({ isFavorite: generationHistory.isFavorite })
@@ -241,6 +248,7 @@ export async function deleteGeneration(generationId: string) {
   }
 
   try {
+    const db = await getDb();
     await db
       .delete(generationHistory)
       .where(
@@ -270,6 +278,7 @@ export async function updateGenerationImage(
   }
 
   try {
+    const db = await getDb();
     await db
       .update(generationHistory)
       .set({

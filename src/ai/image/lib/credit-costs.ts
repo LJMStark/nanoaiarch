@@ -8,6 +8,8 @@ export const CREDIT_COSTS: Record<GeminiModelId, number> = {
   forma: 1,
   // Forma Pro (高质量模式) - 3 credits/张
   'forma-pro': 3,
+  // Nano Banana Pro (Vertex AI Imagen 4) - 5 credits/张
+  'nano-banana-pro': 5,
 };
 
 /**

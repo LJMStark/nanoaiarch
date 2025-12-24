@@ -66,6 +66,21 @@ export function formatModelId(modelId: string): string {
   return modelId.split('/').pop() || modelId;
 }
 
+// URL 图片转 base64（用于 Gallery 分享）
+export async function urlToBase64(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = (reader.result as string).split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 // 保留旧的 imageHelpers 对象以兼容现有代码
 export const imageHelpers = {
   base64ToBlob,

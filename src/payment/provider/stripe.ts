@@ -5,6 +5,7 @@ import {
   addLifetimeMonthlyCredits,
   addSubscriptionCredits,
 } from '@/credits/credits';
+import { completeReferral } from '@/credits/referral';
 import { getCreditPackageById } from '@/credits/server';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { getDb } from '@/db';
@@ -738,6 +739,11 @@ export class StripeProvider implements PaymentProvider {
       console.log('Added subscription credits for user:', userId);
     }
 
+    // Complete referral if this is user's first payment
+    if (websiteConfig.referral?.enable) {
+      await completeReferral(userId);
+    }
+
     console.log('<< Process subscription purchase success');
   }
 
@@ -784,6 +790,11 @@ export class StripeProvider implements PaymentProvider {
         } else {
           // Process lifetime plan purchase
           await this.processLifetimePlanPurchase(invoice, paymentRecord);
+        }
+
+        // Complete referral if this is user's first payment
+        if (websiteConfig.referral?.enable) {
+          await completeReferral(paymentRecord.userId);
         }
       }
     } catch (error) {

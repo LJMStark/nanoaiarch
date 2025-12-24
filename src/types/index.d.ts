@@ -21,6 +21,7 @@ export type WebsiteConfig = {
   payment: PaymentConfig;
   price: PriceConfig;
   credits: CreditsConfig;
+  referral: ReferralConfig;
 };
 
 /**
@@ -190,6 +191,23 @@ export interface CreditsConfig {
     expireDays?: number;             // The number of days to expire the credits, undefined means no expire
   };
   packages: Record<string, CreditPackage>;  // Packages indexed by ID
+}
+
+/**
+ * Referral configuration
+ */
+export interface ReferralConfig {
+  enable: boolean;                   // Whether to enable the referral system
+  signupBonus: {
+    enable: boolean;                 // Whether to enable signup bonus for referred users
+    amount: number;                  // The amount of credits to give to referred users
+    expireDays?: number;             // The number of days to expire the credits
+  };
+  commission: {
+    enable: boolean;                 // Whether to enable commission for referrers
+    amount: number;                  // The amount of credits to give to referrer
+    expireDays?: number;             // The number of days to expire the credits
+  };
 }
 
 /**

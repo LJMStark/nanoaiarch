@@ -1,5 +1,6 @@
 'use client';
 
+import { applyReferralCode } from '@/actions/referral';
 import { validateCaptchaAction } from '@/actions/validate-captcha';
 import { AuthCard } from '@/components/auth/auth-card';
 import { FormError } from '@/components/shared/form-error';
@@ -38,6 +39,7 @@ export const RegisterForm = ({
   const t = useTranslations('AuthPage.register');
   const searchParams = useSearchParams();
   const paramCallbackUrl = searchParams.get('callbackUrl');
+  const refCode = searchParams.get('ref'); // Get referral code from URL
   // Use prop callback URL or param callback URL if provided, otherwise use the default login redirect
   const locale = useLocale();
   const defaultCallbackUrl = getUrlWithLocale(DEFAULT_LOGIN_REDIRECT, locale);
@@ -144,10 +146,20 @@ export const RegisterForm = ({
           // console.log('register, response:', ctx.response);
           setIsPending(false);
         },
-        onSuccess: (ctx) => {
+        onSuccess: async (ctx) => {
           // sign up success, user information stored in ctx.data
           // console.log("register, success:", ctx.data);
           setSuccess(t('checkEmail'));
+
+          // Apply referral code if present
+          if (refCode && ctx.data?.user?.id) {
+            try {
+              await applyReferralCode(ctx.data.user.id, refCode);
+              console.log('register, referral applied:', refCode);
+            } catch (error) {
+              console.error('register, referral error:', error);
+            }
+          }
 
           // add affonso affiliate
           // https://affonso.io/app/affiliate-program/connect

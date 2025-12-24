@@ -13,10 +13,14 @@ export const user = pgTable("user", {
 	banReason: text('ban_reason'),
 	banExpires: timestamp('ban_expires'),
 	customerId: text('customer_id'),
+	// Referral fields
+	referralCode: text('referral_code').unique(),
+	referredBy: text('referred_by'),
 }, (table) => ({
 	userIdIdx: index("user_id_idx").on(table.id),
 	userCustomerIdIdx: index("user_customer_id_idx").on(table.customerId),
 	userRoleIdx: index("user_role_idx").on(table.role),
+	userReferralCodeIdx: index("user_referral_code_idx").on(table.referralCode),
 }));
 
 export const session = pgTable("session", {
@@ -152,4 +156,18 @@ export const generationHistory = pgTable("generation_history", {
 	generationHistoryIsFavoriteIdx: index("generation_history_is_favorite_idx").on(table.isFavorite),
 	generationHistoryIsPublicIdx: index("generation_history_is_public_idx").on(table.isPublic),
 	generationHistoryCreatedAtIdx: index("generation_history_created_at_idx").on(table.createdAt),
+}));
+
+// Referral tracking table
+export const referral = pgTable("referral", {
+	id: text("id").primaryKey(),
+	referrerId: text("referrer_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+	referredId: text("referred_id").notNull().unique().references(() => user.id, { onDelete: 'cascade' }),
+	status: text("status").notNull().default("pending"), // pending, qualified, rewarded
+	qualifiedAt: timestamp("qualified_at"), // when referred user made first payment
+	rewardedAt: timestamp("rewarded_at"), // when referrer received commission
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+	referralReferrerIdIdx: index("referral_referrer_id_idx").on(table.referrerId),
+	referralStatusIdx: index("referral_status_idx").on(table.status),
 }));

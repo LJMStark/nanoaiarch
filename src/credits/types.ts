@@ -9,6 +9,9 @@ export enum CREDIT_TRANSACTION_TYPE {
   LIFETIME_MONTHLY = 'LIFETIME_MONTHLY',      // Credits earned by lifetime plan monthly distribution
   USAGE = 'USAGE',                            // Credits spent by usage
   EXPIRE = 'EXPIRE',                          // Credits expired
+  // Referral rewards
+  REFERRAL_SIGNUP_BONUS = 'REFERRAL_SIGNUP_BONUS',  // Credits earned by being referred (new user bonus)
+  REFERRAL_COMMISSION = 'REFERRAL_COMMISSION',      // Credits earned by referring someone (commission)
 }
 
 /**

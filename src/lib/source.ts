@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { type InferPageType, loader } from 'fumadocs-core/source';
 import { createMDXSource } from 'fumadocs-mdx';
 import * as LucideIcons from 'lucide-react';
@@ -69,7 +71,23 @@ export const categorySource = loader({
 });
 
 /**
- * Blog posts source
+ * Calculate estimated reading time in minutes from content
+ */
+function calculateReadTimeFromContent(content: string): number {
+  // Remove frontmatter (between --- markers)
+  const cleanContent = content.replace(/^---[\s\S]*?---\n/, '');
+  // Average reading speed: 200 words per minute for mixed content
+  const wordsPerMinute = 200;
+  // Count words (handles both English and Chinese characters)
+  const words = cleanContent.trim().split(/\s+/).length;
+  const chineseChars = (cleanContent.match(/[\u4e00-\u9fa5]/g) || []).length;
+  // Chinese characters are counted as words (with 0.5 weight since they're denser)
+  const totalWords = words + chineseChars * 0.5;
+  return Math.max(1, Math.ceil(totalWords / wordsPerMinute));
+}
+
+/**
+ * Blog posts source with readTime calculation
  */
 export const blogSource = loader({
   baseUrl: '/blog',
@@ -77,8 +95,32 @@ export const blogSource = loader({
   source: createMDXSource(blog),
   transformers: [
     (page) => {
-      // console.log('page', page);
-      return page;
+      // Read the MDX file content to calculate reading time
+      // The page parameter has limited type info, use 'as any' to access properties
+      const pageData = page as any;
+      const locale = pageData.locale || pageData._locale || 'en';
+      const slugs = pageData.slugs || [];
+      const filePath = join(
+        process.cwd(),
+        'content',
+        'blog',
+        locale,
+        `${slugs.join('/')}.mdx`
+      );
+      try {
+        const content = readFileSync(filePath, 'utf-8');
+        const readTime = calculateReadTimeFromContent(content);
+        return {
+          ...page,
+          data: {
+            ...pageData.data,
+            readTime,
+          },
+        } as typeof page;
+      } catch {
+        // Fallback if file read fails
+        return page;
+      }
     },
   ],
 });
@@ -88,3 +130,81 @@ export type PagesType = InferPageType<typeof pagesSource>;
 export type AuthorType = InferPageType<typeof authorSource>;
 export type CategoryType = InferPageType<typeof categorySource>;
 export type BlogType = InferPageType<typeof blogSource>;
+
+/**
+ * Get blog posts with optional filtering and pagination
+ */
+export function getBlogPosts(
+  locale: string,
+  options?: {
+    category?: string;
+    page?: number;
+    pageSize?: number;
+  }
+): { posts: BlogType[]; total: number; totalPages: number } {
+  const { category, page = 1, pageSize = 6 } = options || {};
+
+  // Get all blog posts for the locale
+  let posts = blogSource.getPages(locale).filter((post) => {
+    // Filter by published status
+    if (post.data.published === false) return false;
+    // Filter by category if specified
+    if (category && post.data.categories) {
+      return post.data.categories.includes(category);
+    }
+    return true;
+  });
+
+  // Sort by date (newest first)
+  posts = posts.sort((a, b) => {
+    const dateA = new Date(a.data.date || 0);
+    const dateB = new Date(b.data.date || 0);
+    return dateB.getTime() - dateA.getTime();
+  });
+
+  const total = posts.length;
+  const totalPages = Math.ceil(total / pageSize);
+
+  // Apply pagination
+  const start = (page - 1) * pageSize;
+  const paginatedPosts = posts.slice(start, start + pageSize);
+
+  return { posts: paginatedPosts, total, totalPages };
+}
+
+/**
+ * Get related posts based on shared categories
+ */
+export function getRelatedPosts(
+  currentSlug: string,
+  categories: string[],
+  locale: string,
+  limit = 3
+): BlogType[] {
+  const allPosts = blogSource.getPages(locale).filter((post) => {
+    // Exclude current post
+    if (post.slugs.join('/') === currentSlug) return false;
+    // Filter by published status
+    if (post.data.published === false) return false;
+    return true;
+  });
+
+  // Score posts by number of shared categories
+  const scoredPosts = allPosts.map((post) => {
+    const postCategories = post.data.categories || [];
+    const sharedCategories = categories.filter((cat) =>
+      postCategories.includes(cat)
+    );
+    return { post, score: sharedCategories.length };
+  });
+
+  // Sort by score (most related first), then by date
+  scoredPosts.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    const dateA = new Date(a.post.data.date || 0);
+    const dateB = new Date(b.post.data.date || 0);
+    return dateB.getTime() - dateA.getTime();
+  });
+
+  return scoredPosts.slice(0, limit).map((item) => item.post);
+}
