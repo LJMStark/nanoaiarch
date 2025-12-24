@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
   // https://nextjs.org/docs/architecture/nextjs-compiler#remove-console
   // Remove all console.* calls in production only
   compiler: {
-    // removeConsole: process.env.NODE_ENV === 'production',
+    removeConsole: process.env.NODE_ENV === 'production',
   },
 
   images: {
