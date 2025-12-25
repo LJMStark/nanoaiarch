@@ -169,7 +169,7 @@ export interface StorageConfig {
  * Payment configuration
  */
 export interface PaymentConfig {
-  provider: 'stripe';                // The payment provider, only stripe is supported for now
+  provider: 'stripe' | 'zpay';       // The payment provider: stripe (international) or zpay (China)
 }
 
 /**

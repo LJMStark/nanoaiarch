@@ -59,6 +59,7 @@ export interface Price {
   trialPeriodDays?: number;          // Free trial period in days
   allowPromotionCode?: boolean;      // Whether to allow promotion code for this price
   disabled?: boolean;                // Whether to disable this price in UI
+  zpayAmount?: number;               // zpay price in CNY (Chinese Yuan), for China payments
 }
 
 /**

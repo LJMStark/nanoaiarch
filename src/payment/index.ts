@@ -1,5 +1,6 @@
 import { websiteConfig } from '@/config/website';
 import { StripeProvider } from './provider/stripe';
+import { ZpayProvider } from './provider/zpay';
 import type {
   CheckoutResult,
   CreateCheckoutParams,
@@ -32,12 +33,13 @@ export const getPaymentProvider = (): PaymentProvider => {
  */
 export const initializePaymentProvider = (): PaymentProvider => {
   if (!paymentProvider) {
-    if (websiteConfig.payment.provider === 'stripe') {
+    const provider = websiteConfig.payment.provider;
+    if (provider === 'stripe') {
       paymentProvider = new StripeProvider();
+    } else if (provider === 'zpay') {
+      paymentProvider = new ZpayProvider();
     } else {
-      throw new Error(
-        `Unsupported payment provider: ${websiteConfig.payment.provider}`
-      );
+      throw new Error(`Unsupported payment provider: ${provider}`);
     }
   }
   return paymentProvider;

@@ -2,6 +2,17 @@ import { PaymentTypes, PlanIntervals } from '@/payment/types';
 import type { WebsiteConfig } from '@/types';
 
 /**
+ * Helper function to parse zpay price from environment variable
+ * Returns undefined if not set, allowing ZpayProvider to use fallback
+ */
+const getZpayPrice = (envKey: string): number | undefined => {
+  const value = process.env[envKey];
+  if (!value) return undefined;
+  const parsed = Number.parseFloat(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+};
+
+/**
  * website config, without translations
  *
  * docs:
@@ -144,6 +155,7 @@ export const websiteConfig: WebsiteConfig = {
             amount: 19900,
             currency: 'USD',
             allowPromotionCode: true,
+            zpayAmount: getZpayPrice('ZPAY_PRICE_LIFETIME'), // CNY price for zpay
           },
         ],
         isFree: false,
@@ -175,6 +187,7 @@ export const websiteConfig: WebsiteConfig = {
           amount: 990,
           currency: 'USD',
           allowPromotionCode: true,
+          zpayAmount: getZpayPrice('ZPAY_PRICE_CREDITS_BASIC'),
         },
       },
       standard: {
@@ -187,6 +200,7 @@ export const websiteConfig: WebsiteConfig = {
           amount: 1490,
           currency: 'USD',
           allowPromotionCode: true,
+          zpayAmount: getZpayPrice('ZPAY_PRICE_CREDITS_STANDARD'),
         },
       },
       premium: {
@@ -199,6 +213,7 @@ export const websiteConfig: WebsiteConfig = {
           amount: 3990,
           currency: 'USD',
           allowPromotionCode: true,
+          zpayAmount: getZpayPrice('ZPAY_PRICE_CREDITS_PREMIUM'),
         },
       },
       enterprise: {
@@ -211,6 +226,7 @@ export const websiteConfig: WebsiteConfig = {
           amount: 6990,
           currency: 'USD',
           allowPromotionCode: true,
+          zpayAmount: getZpayPrice('ZPAY_PRICE_CREDITS_ENTERPRISE'),
         },
       },
     },

@@ -22,6 +22,7 @@ export interface CreditPackagePrice {
   amount: number;                    // Price amount in currency units (dollars, euros, etc.)
   currency: string;                  // Currency code (e.g., USD)
   allowPromotionCode?: boolean;      // Whether to allow promotion code for this price
+  zpayAmount?: number;               // zpay price in CNY (Chinese Yuan), for China payments
 }
 
 /**
