@@ -62,9 +62,9 @@ export const websiteConfig: WebsiteConfig = {
     enableSpeedInsights: false,
   },
   auth: {
-    enableGoogleLogin: false, // 已禁用 Google 登录
-    enableGithubLogin: false, // 已禁用 GitHub 登录
-    enableCredentialLogin: true, // 保留邮箱密码登录
+    enableGoogleLogin: true,
+    enableGithubLogin: false,
+    enableCredentialLogin: true,
   },
   i18n: {
     defaultLocale: 'en',
