@@ -91,8 +91,8 @@ export const websiteConfig: WebsiteConfig = {
   },
   mail: {
     provider: 'resend',
-    fromEmail: 'Forma AI <noreply@forma.ai>',
-    supportEmail: 'Forma AI <support@forma.ai>',
+    fromEmail: 'Nano AI <noreply@nanoaiarch.com>',
+    supportEmail: 'Nano AI <support@nanoaiarch.com>',
   },
   newsletter: {
     enable: true,
