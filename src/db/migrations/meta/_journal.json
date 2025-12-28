@@ -64,6 +64,13 @@
       "when": 1766542142733,
       "tag": "0008_yellow_vapor",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1766920274697,
+      "tag": "0009_chief_hercules",
+      "breakpoints": true
     }
   ]
 }

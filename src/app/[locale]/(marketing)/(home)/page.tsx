@@ -5,6 +5,7 @@ import HeroSection from '@/components/blocks/hero/hero';
 import PricingSection from '@/components/blocks/pricing/pricing';
 import ShowcaseSection from '@/components/blocks/showcase/showcase';
 import StatsSection from '@/components/blocks/stats/stats';
+import TemplateShowcaseSection from '@/components/blocks/template-showcase/template-showcase';
 import CrispChat from '@/components/layout/crisp-chat';
 import { constructMetadata } from '@/lib/metadata';
 import type { Metadata } from 'next';
@@ -45,6 +46,8 @@ export default async function HomePage(props: HomePageProps) {
         <HeroSection />
 
         <StatsSection />
+
+        <TemplateShowcaseSection />
 
         <ShowcaseSection />
 

@@ -72,6 +72,40 @@ export interface PromptValidationResult {
   error?: string;
 }
 
+/**
+ * Image size validation
+ */
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_IMAGE_SIZE_MB = 10;
+
+export interface ImageValidationResult {
+  valid: boolean;
+  error?: string;
+  sizeBytes?: number;
+}
+
+export function validateBase64Image(base64: string | undefined | null): ImageValidationResult {
+  if (!base64) {
+    return { valid: true }; // No image is valid
+  }
+
+  // Calculate approximate size from base64
+  // Base64 encoded size is roughly 4/3 of original, so original = base64.length * 3/4
+  const paddingCount = (base64.match(/=/g) || []).length;
+  const sizeBytes = Math.floor((base64.length * 3) / 4) - paddingCount;
+
+  if (sizeBytes > MAX_IMAGE_SIZE_BYTES) {
+    const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
+    return {
+      valid: false,
+      error: `Image size (${sizeMB}MB) exceeds maximum allowed size of ${MAX_IMAGE_SIZE_MB}MB`,
+      sizeBytes,
+    };
+  }
+
+  return { valid: true, sizeBytes };
+}
+
 export function validatePrompt(prompt: string): PromptValidationResult {
   if (!prompt || prompt.trim().length === 0) {
     return { valid: false, error: 'Prompt is required' };
@@ -91,4 +125,69 @@ export function validatePrompt(prompt: string): PromptValidationResult {
   }
 
   return { valid: true };
+}
+
+/**
+ * 客户端调用图片生成 API
+ */
+export interface GenerateImageParams {
+  prompt: string;
+  referenceImage?: string;
+  aspectRatio?: string;
+  model?: string;
+}
+
+export interface GenerateImageResult {
+  success: boolean;
+  image?: string;
+  text?: string;
+  error?: string;
+  creditsUsed?: number;
+}
+
+export async function generateImage(
+  params: GenerateImageParams
+): Promise<GenerateImageResult> {
+  try {
+    const response = await fetch('/api/generate-images', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: params.prompt,
+        modelId: params.model || 'gemini-2.0-flash-exp',
+        referenceImage: params.referenceImage,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to generate image',
+      };
+    }
+
+    if (data.image) {
+      return {
+        success: true,
+        image: data.image,
+        text: data.text,
+        creditsUsed: data.creditsUsed,
+      };
+    }
+
+    return {
+      success: false,
+      error: data.error || 'No image generated',
+    };
+  } catch (error) {
+    console.error('Generate image error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 }

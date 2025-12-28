@@ -171,3 +171,77 @@ export const referral = pgTable("referral", {
 	referralReferrerIdIdx: index("referral_referrer_id_idx").on(table.referrerId),
 	referralStatusIdx: index("referral_status_idx").on(table.status),
 }));
+
+// Image generation project table for conversation-style workflow
+export const imageProject = pgTable("image_project", {
+	id: text("id").primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+
+	// Project info
+	title: text("title").notNull().default("Untitled"),
+	coverImage: text("cover_image"), // base64 or URL
+
+	// Project config
+	templateId: text("template_id"),
+	stylePreset: text("style_preset"),
+	aspectRatio: text("aspect_ratio").default("1:1"),
+	model: text("model").default("gemini-2.0-flash-exp"),
+
+	// Stats
+	messageCount: integer("message_count").notNull().default(0),
+	generationCount: integer("generation_count").notNull().default(0),
+	totalCreditsUsed: integer("total_credits_used").notNull().default(0),
+
+	// Status
+	status: text("status").notNull().default("active"), // active, archived, deleted
+	isPinned: boolean("is_pinned").notNull().default(false),
+
+	// Timestamps
+	lastActiveAt: timestamp("last_active_at").notNull().defaultNow(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+	imageProjectUserIdIdx: index("image_project_user_id_idx").on(table.userId),
+	imageProjectStatusIdx: index("image_project_status_idx").on(table.status),
+	imageProjectLastActiveAtIdx: index("image_project_last_active_at_idx").on(table.lastActiveAt),
+	imageProjectIsPinnedIdx: index("image_project_is_pinned_idx").on(table.isPinned),
+}));
+
+// Project message table for storing conversation messages
+export const projectMessage = pgTable("project_message", {
+	id: text("id").primaryKey(),
+	projectId: text("project_id").notNull().references(() => imageProject.id, { onDelete: 'cascade' }),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+
+	// Message content
+	role: text("role").notNull(), // "user" | "assistant"
+	content: text("content").notNull(),
+
+	// Images (base64)
+	inputImage: text("input_image"), // user uploaded reference
+	outputImage: text("output_image"), // generated result
+	maskImage: text("mask_image"), // for inpainting
+
+	// Generation params (JSON string)
+	generationParams: text("generation_params"), // { prompt, enhancedPrompt, style, aspectRatio, model }
+
+	// Stats
+	creditsUsed: integer("credits_used").default(0),
+	generationTime: integer("generation_time"), // milliseconds
+
+	// Status
+	status: text("status").notNull().default("completed"), // pending, generating, completed, failed
+	errorMessage: text("error_message"),
+
+	// Order
+	orderIndex: integer("order_index").notNull().default(0),
+
+	// Timestamps
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+	projectMessageProjectIdIdx: index("project_message_project_id_idx").on(table.projectId),
+	projectMessageUserIdIdx: index("project_message_user_id_idx").on(table.userId),
+	projectMessageStatusIdx: index("project_message_status_idx").on(table.status),
+	projectMessageOrderIdx: index("project_message_order_idx").on(table.orderIndex),
+}));

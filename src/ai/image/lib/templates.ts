@@ -38,6 +38,7 @@ export const ARCH_TEMPLATES: ArchTemplate[] = [
     defaultAspectRatio: '16:9',
     requiresInput: true,
     tags: ['style', 'transfer', 'traditional', 'chinese'],
+    featured: true,
     order: 2,
   },
   {
@@ -100,6 +101,7 @@ export const ARCH_TEMPLATES: ArchTemplate[] = [
     defaultAspectRatio: '16:9',
     requiresInput: true,
     tags: ['model', 'rhino', 'sketchup', 'render'],
+    featured: true,
     order: 6,
   },
 
@@ -198,6 +200,7 @@ export const ARCH_TEMPLATES: ArchTemplate[] = [
     defaultAspectRatio: '16:9',
     requiresInput: false,
     tags: ['facade', 'elevation', 'design', 'generate'],
+    featured: true,
     order: 12,
   },
   {
@@ -257,6 +260,7 @@ export const ARCH_TEMPLATES: ArchTemplate[] = [
     defaultAspectRatio: '16:9',
     requiresInput: false,
     tags: ['section', 'perspective', 'spatial', 'interior'],
+    featured: true,
     order: 16,
   },
 
@@ -336,6 +340,7 @@ export const ARCH_TEMPLATES: ArchTemplate[] = [
     defaultAspectRatio: '4:3',
     requiresInput: true,
     tags: ['floorplan', 'color', 'diagram', 'residential'],
+    featured: true,
     order: 21,
   },
   {
@@ -368,6 +373,7 @@ export const ARCH_TEMPLATES: ArchTemplate[] = [
     defaultAspectRatio: '16:9',
     requiresInput: true,
     tags: ['renovation', 'modern', 'adaptive', 'reuse'],
+    featured: true,
     order: 23,
   },
   {
@@ -400,6 +406,7 @@ export const ARCH_TEMPLATES: ArchTemplate[] = [
     defaultAspectRatio: '16:9',
     requiresInput: false,
     tags: ['interior', 'perspective', 'render', 'space'],
+    featured: true,
     order: 25,
   },
   {
