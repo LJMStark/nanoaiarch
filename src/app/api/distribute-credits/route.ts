@@ -1,4 +1,5 @@
 import { distributeCreditsToAllUsers } from '@/credits/distribute';
+import { logger } from '@/lib/logger';
 import { NextResponse } from 'next/server';
 
 // Basic authentication middleware
@@ -21,7 +22,7 @@ function validateBasicAuth(request: Request): boolean {
   const expectedPassword = process.env.CRON_JOBS_PASSWORD;
 
   if (!expectedUsername || !expectedPassword) {
-    console.error(
+    logger.api.error(
       'Basic auth credentials not configured in environment variables'
     );
     return false;
@@ -36,7 +37,7 @@ function validateBasicAuth(request: Request): boolean {
 export async function GET(request: Request) {
   // Validate basic authentication
   if (!validateBasicAuth(request)) {
-    console.error('distribute credits unauthorized');
+    logger.api.error('distribute credits unauthorized');
     return new NextResponse('Unauthorized', {
       status: 401,
       headers: {
@@ -45,10 +46,10 @@ export async function GET(request: Request) {
     });
   }
 
-  console.log('route: distribute credits start');
+  logger.api.info('route: distribute credits start');
   const { usersCount, processedCount, errorCount } =
     await distributeCreditsToAllUsers();
-  console.log(
+  logger.api.info(
     `route: distribute credits end, users: ${usersCount}, processed: ${processedCount}, errors: ${errorCount}`
   );
   return NextResponse.json({

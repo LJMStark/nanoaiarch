@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { useCallback, useState } from 'react';
 import type { GenerateImageResponse } from '../lib/api-types';
 import type {
@@ -194,7 +195,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           throw new Error('No image in response');
         }
       } catch (err) {
-        console.error('Image generation error:', err);
+        logger.ai.error('Image generation error:', err);
         setError({
           provider: 'gemini',
           message:
@@ -329,7 +330,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           throw new Error('No image in response');
         }
       } catch (err) {
-        console.error('Image edit error:', err);
+        logger.ai.error('Image edit error:', err);
         setError({
           provider: 'gemini',
           message:

@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useLocaleRouter } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
+import { logger } from '@/lib/logger';
 import { Routes } from '@/routes';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react';
@@ -73,22 +74,21 @@ export const ResetPasswordForm = () => {
       },
       {
         onRequest: (ctx) => {
-          // console.log("resetPassword, request:", ctx.url);
           setIsPending(true);
           setError('');
           setSuccess('');
         },
         onResponse: (ctx) => {
-          // console.log("resetPassword, response:", ctx.response);
           setIsPending(false);
         },
         onSuccess: (ctx) => {
-          // console.log("resetPassword, success:", ctx.data);
-          // setSuccess("Password reset successfully");
           router.push(`${Routes.Login}`);
         },
         onError: (ctx) => {
-          console.error('resetPassword, error:', ctx.error);
+          logger.auth.error('resetPassword error', ctx.error, {
+            status: ctx.error.status,
+            message: ctx.error.message,
+          });
           setError(`${ctx.error.status}: ${ctx.error.message}`);
         },
       }

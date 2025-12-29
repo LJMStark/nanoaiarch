@@ -6,6 +6,7 @@ import {
 import { getDb } from '@/db/index';
 import { defaultMessages } from '@/i18n/messages';
 import { LOCALE_COOKIE_NAME, routing } from '@/i18n/routing';
+import { logger } from '@/lib/logger';
 import { sendEmail } from '@/mail';
 import { subscribe } from '@/newsletter';
 import { type User, betterAuth } from 'better-auth';
@@ -140,7 +141,7 @@ export const auth = betterAuth({
     // https://www.better-auth.com/docs/reference/options#onapierror
     errorURL: '/auth/error',
     onError: (error, ctx) => {
-      console.error('auth error:', error);
+      logger.auth.error('auth error', error);
     },
   },
 });
@@ -177,12 +178,14 @@ async function onCreateUser(user: User) {
       try {
         const subscribed = await subscribe(user.email);
         if (!subscribed) {
-          console.error(`Failed to subscribe user ${user.email} to newsletter`);
+          logger.auth.error(
+            `Failed to subscribe user ${user.email} to newsletter`
+          );
         } else {
-          console.log(`User ${user.email} subscribed to newsletter`);
+          logger.auth.debug(`User ${user.email} subscribed to newsletter`);
         }
       } catch (error) {
-        console.error('Newsletter subscription error:', error);
+        logger.auth.error('Newsletter subscription error', error);
       }
     }, 2000);
   }
@@ -195,9 +198,9 @@ async function onCreateUser(user: User) {
   ) {
     try {
       await addRegisterGiftCredits(user.id);
-      console.log(`added register gift credits for user ${user.id}`);
+      logger.auth.debug(`added register gift credits for user ${user.id}`);
     } catch (error) {
-      console.error('Register gift credits error:', error);
+      logger.auth.error('Register gift credits error', error);
     }
   }
 
@@ -211,9 +214,9 @@ async function onCreateUser(user: User) {
     if (freePlan) {
       try {
         await addMonthlyFreeCredits(user.id, freePlan.id);
-        console.log(`added Free monthly credits for user ${user.id}`);
+        logger.auth.debug(`added Free monthly credits for user ${user.id}`);
       } catch (error) {
-        console.error('Free monthly credits error:', error);
+        logger.auth.error('Free monthly credits error', error);
       }
     }
   }

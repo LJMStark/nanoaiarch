@@ -1,5 +1,6 @@
 import { websiteConfig } from '@/config/website';
 import { defaultMessages } from '@/i18n/messages';
+import { logger } from '@/lib/logger';
 import { getBaseUrl } from '@/lib/urls/urls';
 
 /**
@@ -19,7 +20,7 @@ export async function sendMessageToDiscord(
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
     if (!webhookUrl) {
-      console.warn(
+      logger.general.warn(
         'DISCORD_WEBHOOK_URL is not set, skipping Discord notification'
       );
       return;
@@ -71,17 +72,18 @@ export async function sendMessageToDiscord(
     });
 
     if (!response.ok) {
-      console.error(
-        `<< Failed to send Discord notification for user ${userName}:`,
-        response
+      logger.general.error(
+        'Failed to send Discord notification',
+        new Error(`Response not ok for user ${userName}`),
+        { status: response.status, userName }
       );
+    } else {
+      logger.general.info('Successfully sent Discord notification', {
+        userName,
+      });
     }
-
-    console.log(
-      `<< Successfully sent Discord notification for user ${userName}`
-    );
   } catch (error) {
-    console.error('<< Failed to send Discord notification:', error);
+    logger.general.error('Failed to send Discord notification', error);
     // Don't rethrow the error to avoid interrupting the payment flow
   }
 }

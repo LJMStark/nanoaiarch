@@ -3,6 +3,7 @@
 import { getDb } from '@/db';
 import { user } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
+import { logger } from '@/lib/logger';
 import { userActionClient } from '@/lib/safe-action';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 import { createCustomerPortal } from '@/payment';
@@ -39,7 +40,9 @@ export const createPortalAction = userActionClient
         .limit(1);
 
       if (customerResult.length <= 0 || !customerResult[0].customerId) {
-        console.error(`No customer found for user ${currentUser.id}`);
+        logger.actions.error('No customer found for user', null, {
+          userId: currentUser.id,
+        });
         return {
           success: false,
           error: 'No customer found for user',
@@ -59,13 +62,12 @@ export const createPortalAction = userActionClient
       };
 
       const result = await createCustomerPortal(params);
-      // console.log('create customer portal result:', result);
       return {
         success: true,
         data: result,
       };
     } catch (error) {
-      console.error('create customer portal error:', error);
+      logger.actions.error('create customer portal error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Something went wrong',

@@ -8,6 +8,7 @@ import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { getDb } from '@/db';
 import { payment, user } from '@/db/schema';
 import type { Payment } from '@/db/types';
+import { logger } from '@/lib/logger';
 import { findPlanByPlanId } from '@/lib/price-plan';
 import { sendNotification } from '@/notification/notification';
 import { and, eq } from 'drizzle-orm';
@@ -350,7 +351,7 @@ export class ZpayProvider implements PaymentProvider {
     payload: string,
     _signature: string
   ): Promise<void> {
-    console.log('>> zpay webhook received');
+    logger.payment.info('zpay webhook received');
 
     // Parse callback parameters
     let params: Record<string, string>;
@@ -362,16 +363,15 @@ export class ZpayProvider implements PaymentProvider {
 
     // Verify signature
     if (!this.verifySign(params)) {
-      console.error('zpay webhook signature verification failed');
+      logger.payment.error('zpay webhook signature verification failed');
       throw new Error('Invalid signature');
     }
 
     // Check trade status
     if (params.trade_status !== 'TRADE_SUCCESS') {
-      console.log(
-        'zpay webhook: trade not success, status:',
-        params.trade_status
-      );
+      logger.payment.info('zpay webhook: trade not success', {
+        status: params.trade_status,
+      });
       return;
     }
 
@@ -379,7 +379,11 @@ export class ZpayProvider implements PaymentProvider {
     const tradeNo = params.trade_no;
     const money = params.money;
 
-    console.log('zpay webhook: processing payment', outTradeNo, tradeNo, money);
+    logger.payment.info('zpay webhook: processing payment', {
+      outTradeNo,
+      tradeNo,
+      money,
+    });
 
     // Use atomic update to prevent race condition
     // Only update if payment exists AND is not already paid
@@ -404,11 +408,11 @@ export class ZpayProvider implements PaymentProvider {
         .limit(1);
 
       if (existingPayment.length > 0 && existingPayment[0].paid) {
-        console.log('Payment already processed:', outTradeNo);
+        logger.payment.info('Payment already processed', { outTradeNo });
         return;
       }
 
-      console.error('Payment record not found for out_trade_no:', outTradeNo);
+      logger.payment.error('Payment record not found', { outTradeNo });
       throw new Error('Payment record not found');
     }
 
@@ -426,7 +430,7 @@ export class ZpayProvider implements PaymentProvider {
       await completeReferral(paymentRecord.userId);
     }
 
-    console.log('<< zpay webhook processed successfully');
+    logger.payment.info('zpay webhook processed successfully');
   }
 
   /**
@@ -436,7 +440,7 @@ export class ZpayProvider implements PaymentProvider {
     paymentRecord: Payment,
     params: Record<string, string>
   ): Promise<void> {
-    console.log('>> Process credit purchase');
+    logger.payment.info('Process credit purchase');
 
     // Get credits info from custom param
     let packageId: string | undefined;
@@ -448,18 +452,18 @@ export class ZpayProvider implements PaymentProvider {
         packageId = customParams.packageId;
         credits = customParams.credits;
       } catch {
-        console.warn('Failed to parse custom params');
+        logger.payment.warn('Failed to parse custom params');
       }
     }
 
     if (!packageId || !credits) {
-      console.warn('Missing packageId or credits in webhook params');
+      logger.payment.warn('Missing packageId or credits in webhook params');
       return;
     }
 
     const creditPackage = getCreditPackageById(packageId);
     if (!creditPackage) {
-      console.warn('Credit package not found:', packageId);
+      logger.payment.warn('Credit package not found', { packageId });
       return;
     }
 
@@ -472,7 +476,7 @@ export class ZpayProvider implements PaymentProvider {
       expireDays: creditPackage.expireDays,
     });
 
-    console.log('<< Process credit purchase success');
+    logger.payment.info('Process credit purchase success');
   }
 
   /**
@@ -482,14 +486,16 @@ export class ZpayProvider implements PaymentProvider {
     paymentRecord: Payment,
     money: string
   ): Promise<void> {
-    console.log('>> Process lifetime plan purchase');
+    logger.payment.info('Process lifetime plan purchase');
 
     if (websiteConfig.credits?.enableCredits) {
       await addLifetimeMonthlyCredits(
         paymentRecord.userId,
         paymentRecord.priceId
       );
-      console.log('Added lifetime credits for user:', paymentRecord.userId);
+      logger.payment.info('Added lifetime credits for user', {
+        userId: paymentRecord.userId,
+      });
     }
 
     // Send notification
@@ -500,6 +506,6 @@ export class ZpayProvider implements PaymentProvider {
       Number.parseFloat(money) || 0
     );
 
-    console.log('<< Process lifetime plan purchase success');
+    logger.payment.info('Process lifetime plan purchase success');
   }
 }

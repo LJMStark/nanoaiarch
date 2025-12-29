@@ -2,6 +2,7 @@
 
 import { getUserCredits } from '@/credits/credits';
 import type { User } from '@/lib/auth-types';
+import { logger } from '@/lib/logger';
 import { userActionClient } from '@/lib/safe-action';
 
 /**
@@ -14,7 +15,7 @@ export const getCreditBalanceAction = userActionClient.action(
       const credits = await getUserCredits(currentUser.id);
       return { success: true, credits };
     } catch (error) {
-      console.error('get credit balance error:', error);
+      logger.actions.error('get credit balance error:', error);
       return {
         success: false,
         error:

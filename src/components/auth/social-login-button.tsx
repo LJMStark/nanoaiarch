@@ -6,6 +6,7 @@ import { GoogleIcon } from '@/components/icons/google';
 import { Button } from '@/components/ui/button';
 import { websiteConfig } from '@/config/website';
 import { authClient } from '@/lib/auth-client';
+import { logger } from '@/lib/logger';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
 import { Loader2Icon } from 'lucide-react';
@@ -40,7 +41,7 @@ export const SocialLoginButton = ({
   const defaultCallbackUrl = getUrlWithLocale(DEFAULT_LOGIN_REDIRECT, locale);
   const callbackUrl = propCallbackUrl || paramCallbackUrl || defaultCallbackUrl;
   const [isLoading, setIsLoading] = useState<'google' | 'github' | null>(null);
-  console.log('social login button, callbackUrl', callbackUrl);
+  logger.auth.debug('social login button, callbackUrl', { callbackUrl });
 
   const onClick = async (provider: 'google' | 'github') => {
     await authClient.signIn.social(
@@ -71,19 +72,19 @@ export const SocialLoginButton = ({
       },
       {
         onRequest: (ctx) => {
-          // console.log("onRequest", ctx);
           setIsLoading(provider);
         },
         onResponse: (ctx) => {
-          // console.log("onResponse", ctx.response);
           setIsLoading(null);
         },
         onSuccess: (ctx) => {
-          // console.log("onSuccess", ctx.data);
           setIsLoading(null);
         },
         onError: (ctx) => {
-          console.log('social login error', ctx.error.message);
+          logger.auth.error('social login error', ctx.error, {
+            provider,
+            message: ctx.error.message,
+          });
           setIsLoading(null);
         },
       }

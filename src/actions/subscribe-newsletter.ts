@@ -1,5 +1,6 @@
 'use server';
 
+import { logger } from '@/lib/logger';
 import { actionClient } from '@/lib/safe-action';
 import { sendEmail } from '@/mail';
 import { subscribe } from '@/newsletter';
@@ -20,7 +21,7 @@ export const subscribeNewsletterAction = actionClient
       const subscribed = await subscribe(email);
 
       if (!subscribed) {
-        console.error('subscribe newsletter error:', email);
+        logger.actions.error('subscribe newsletter error:', null, { email });
         return {
           success: false,
           error: 'Failed to subscribe to the newsletter',
@@ -42,7 +43,7 @@ export const subscribeNewsletterAction = actionClient
         success: true,
       };
     } catch (error) {
-      console.error('subscribe newsletter error:', error);
+      logger.actions.error('subscribe newsletter error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Something went wrong',

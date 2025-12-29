@@ -1,6 +1,7 @@
 'use server';
 
 import { websiteConfig } from '@/config/website';
+import { logger } from '@/lib/logger';
 import { actionClient } from '@/lib/safe-action';
 import { sendEmail } from '@/mail';
 import { getLocale } from 'next-intl/server';
@@ -32,7 +33,7 @@ export const sendMessageAction = actionClient
       const { name, email, message } = parsedInput;
 
       if (!websiteConfig.mail.supportEmail) {
-        console.error('The mail receiver is not set');
+        logger.actions.error('The mail receiver is not set');
         throw new Error('The mail receiver is not set');
       }
 
@@ -51,7 +52,7 @@ export const sendMessageAction = actionClient
       });
 
       if (!result) {
-        console.error('send message error');
+        logger.actions.error('send message error');
         return {
           success: false,
           error: 'Failed to send the message',
@@ -62,7 +63,7 @@ export const sendMessageAction = actionClient
         success: true,
       };
     } catch (error) {
-      console.error('send message error:', error);
+      logger.actions.error('send message error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Something went wrong',

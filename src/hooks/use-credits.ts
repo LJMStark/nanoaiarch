@@ -2,6 +2,7 @@ import { consumeCreditsAction } from '@/actions/consume-credits';
 import { getCreditBalanceAction } from '@/actions/get-credit-balance';
 import { getCreditStatsAction } from '@/actions/get-credit-stats';
 import { getCreditTransactionsAction } from '@/actions/get-credit-transactions';
+import { logger } from '@/lib/logger';
 import {
   keepPreviousData,
   useMutation,
@@ -29,15 +30,17 @@ export function useCreditBalance() {
   return useQuery({
     queryKey: creditsKeys.balance(),
     queryFn: async () => {
-      console.log('Fetching credit balance...');
+      logger.credits.debug('Fetching credit balance...');
       const result = await getCreditBalanceAction();
       if (!result?.data?.success) {
-        console.log('useCreditBalance error:', result?.data?.error);
+        logger.credits.error('useCreditBalance error:', result?.data?.error);
         throw new Error(
           result?.data?.error || 'Failed to fetch credit balance'
         );
       }
-      console.log('Credit balance fetched:', result.data.credits);
+      logger.credits.debug('Credit balance fetched:', {
+        credits: result.data.credits,
+      });
       return result.data.credits || 0;
     },
   });
@@ -48,13 +51,15 @@ export function useCreditStats() {
   return useQuery({
     queryKey: creditsKeys.stats(),
     queryFn: async () => {
-      console.log('Fetching credit stats...');
+      logger.credits.debug('Fetching credit stats...');
       const result = await getCreditStatsAction();
       if (!result?.data?.success) {
-        console.log('useCreditStats error:', result?.data?.error);
+        logger.credits.error('useCreditStats error:', result?.data?.error);
         throw new Error(result?.data?.error || 'Failed to fetch credit stats');
       }
-      console.log('Credit stats fetched:', result.data.data);
+      logger.credits.debug('Credit stats fetched:', {
+        stats: result.data.data,
+      });
       return result.data.data;
     },
   });
@@ -77,7 +82,7 @@ export function useConsumeCredits() {
         description,
       });
       if (!result?.data?.success) {
-        console.log('useConsumeCredits error:', result?.data?.error);
+        logger.credits.error('useConsumeCredits error:', result?.data?.error);
         throw new Error(result?.data?.error || 'Failed to consume credits');
       }
       return result.data;
@@ -117,7 +122,10 @@ export function useCreditTransactions(
       });
 
       if (!result?.data?.success) {
-        console.log('useCreditTransactions error:', result?.data?.error);
+        logger.credits.error(
+          'useCreditTransactions error:',
+          result?.data?.error
+        );
         throw new Error(
           result?.data?.error || 'Failed to fetch credit transactions'
         );

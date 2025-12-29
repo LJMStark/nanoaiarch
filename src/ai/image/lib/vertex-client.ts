@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { GoogleGenAI } from '@google/genai';
 
 // Vertex AI 项目配置
@@ -80,7 +81,7 @@ export async function generateImageWithImagen(
     const client = createVertexClient();
     const modelId = IMAGEN_MODELS[modelKey];
 
-    console.log(
+    logger.ai.debug(
       `[Imagen] Generating image with model=${modelId}, aspectRatio=${aspectRatio}`
     );
 
@@ -125,7 +126,7 @@ export async function generateImageWithImagen(
       image: imageData,
     };
   } catch (error) {
-    console.error('[Imagen] Image generation error:', error);
+    logger.ai.error('[Imagen] Image generation error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',

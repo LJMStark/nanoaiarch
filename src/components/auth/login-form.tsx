@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { websiteConfig } from '@/config/website';
 import { LocaleLink } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
+import { logger } from '@/lib/logger';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 import { cn } from '@/lib/utils';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
@@ -46,11 +47,8 @@ export const LoginForm = ({
   // Use prop callback URL or param callback URL if provided, otherwise use the default login redirect
   const locale = useLocale();
   const defaultCallbackUrl = getUrlWithLocale(DEFAULT_LOGIN_REDIRECT, locale);
-  // console.log('login form, propCallbackUrl', propCallbackUrl);
-  // console.log('login form, paramCallbackUrl', paramCallbackUrl);
-  // console.log('login form, defaultCallbackUrl', defaultCallbackUrl);
   const callbackUrl = propCallbackUrl || paramCallbackUrl || defaultCallbackUrl;
-  console.log('login form, callbackUrl', callbackUrl);
+  logger.auth.debug('login form, callbackUrl', { callbackUrl });
 
   const [error, setError] = useState<string | undefined>('');
   const [success, setSuccess] = useState<string | undefined>('');
@@ -114,7 +112,9 @@ export const LoginForm = ({
       });
 
       if (!captchaResult?.data?.success || !captchaResult?.data?.valid) {
-        console.error('login, captcha invalid:', values.captchaToken);
+        logger.auth.error('login, captcha invalid', undefined, {
+          captchaToken: values.captchaToken,
+        });
         const errorMessage = captchaResult?.data?.error || t('captchaInvalid');
         setError(errorMessage);
         setIsPending(false);
@@ -134,22 +134,21 @@ export const LoginForm = ({
       },
       {
         onRequest: (ctx) => {
-          // console.log("login, request:", ctx.url);
           setIsPending(true);
           setError('');
           setSuccess('');
         },
         onResponse: (ctx) => {
-          // console.log("login, response:", ctx.response);
           setIsPending(false);
         },
         onSuccess: (ctx) => {
-          // console.log("login, success:", ctx.data);
-          // setSuccess("Login successful");
-          // router.push(callbackUrl || "/dashboard");
+          // Login successful, user will be redirected
         },
         onError: (ctx) => {
-          // console.error('login, error:', ctx.error);
+          logger.auth.error('login error', ctx.error, {
+            status: ctx.error.status,
+            message: ctx.error.message,
+          });
           setError(`${ctx.error.status}: ${ctx.error.message}`);
           // Reset captcha on login error
           if (captchaConfigured) {

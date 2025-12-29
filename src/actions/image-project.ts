@@ -3,6 +3,7 @@
 import { getDb } from '@/db';
 import { imageProject, projectMessage } from '@/db/schema';
 import { auth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 
@@ -75,7 +76,7 @@ export async function createImageProject(data?: {
 
     return { success: true, data: project };
   } catch (error) {
-    console.error('Failed to create project:', error);
+    logger.actions.error('Failed to create project', error);
     return { success: false, error: 'Failed to create project' };
   }
 }
@@ -122,7 +123,7 @@ export async function getImageProjects(options?: {
 
     return { success: true, data: items as ImageProjectItem[] };
   } catch (error) {
-    console.error('Failed to get projects:', error);
+    logger.actions.error('Failed to get projects', error);
     return { success: false, error: 'Failed to get projects', data: [] };
   }
 }
@@ -155,7 +156,7 @@ export async function getImageProject(projectId: string) {
 
     return { success: true, data: project[0] as ImageProjectItem };
   } catch (error) {
-    console.error('Failed to get project:', error);
+    logger.actions.error('Failed to get project', error);
     return { success: false, error: 'Failed to get project' };
   }
 }
@@ -195,7 +196,7 @@ export async function updateImageProject(
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to update project:', error);
+    logger.actions.error('Failed to update project', error);
     return { success: false, error: 'Failed to update project' };
   }
 }
@@ -249,7 +250,7 @@ export async function updateProjectActivity(
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to update project activity:', error);
+    logger.actions.error('Failed to update project activity', error);
     return { success: false, error: 'Failed to update project' };
   }
 }
@@ -298,7 +299,7 @@ export async function toggleProjectPin(projectId: string) {
 
     return { success: true, isPinned: !current[0].isPinned };
   } catch (error) {
-    console.error('Failed to toggle pin:', error);
+    logger.actions.error('Failed to toggle pin', error);
     return { success: false, error: 'Failed to update' };
   }
 }
@@ -329,7 +330,7 @@ export async function archiveProject(projectId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to archive project:', error);
+    logger.actions.error('Failed to archive project', error);
     return { success: false, error: 'Failed to archive' };
   }
 }
@@ -363,7 +364,7 @@ export async function deleteImageProject(projectId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to delete project:', error);
+    logger.actions.error('Failed to delete project', error);
     return { success: false, error: 'Failed to delete' };
   }
 }
@@ -403,7 +404,7 @@ export async function getProjectStats() {
       },
     };
   } catch (error) {
-    console.error('Failed to get project stats:', error);
+    logger.actions.error('Failed to get project stats', error);
     return { success: false, error: 'Failed to get stats' };
   }
 }

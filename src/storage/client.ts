@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import type { UploadFileResult } from './types';
 
 const API_STORAGE_UPLOAD = '/api/storage/upload';
@@ -29,7 +30,10 @@ export const uploadFileFromBrowser = async (
       body: formData,
     });
 
-    console.log('uploadFileFromBrowser, response', response);
+    logger.storage.debug('uploadFileFromBrowser response', {
+      status: response.status,
+      ok: response.ok,
+    });
 
     if (!response.ok) {
       // Handle 413 error specifically (Request Entity Too Large)

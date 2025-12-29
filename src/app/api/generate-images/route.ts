@@ -15,6 +15,7 @@ import {
 import { generateImageWithImagen } from '@/ai/image/lib/vertex-client';
 import { consumeCredits, hasEnoughCredits } from '@/credits/credits';
 import { auth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -26,14 +27,14 @@ export async function POST(req: NextRequest) {
     // 验证请求参数
     if (!modelId) {
       const error = 'Model ID is required';
-      console.error(`${error} [requestId=${requestId}]`);
+      logger.api.error(`${error} [requestId=${requestId}]`);
       return NextResponse.json({ error }, { status: 400 });
     }
 
     // 验证 prompt
     const promptValidation = validatePrompt(prompt);
     if (!promptValidation.valid) {
-      console.error(
+      logger.api.error(
         `Invalid prompt [requestId=${requestId}]: ${promptValidation.error}`
       );
       return NextResponse.json(
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!session?.user?.id) {
-      console.error(`Unauthorized request [requestId=${requestId}]`);
+      logger.api.error(`Unauthorized request [requestId=${requestId}]`);
       return NextResponse.json(
         { error: 'Please sign in to generate images' },
         { status: 401 }
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!hasCredits) {
-      console.error(
+      logger.api.error(
         `Insufficient credits [requestId=${requestId}, userId=${userId}, required=${creditCost}]`
       );
       return NextResponse.json(
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
     const startstamp = performance.now();
     const isVertexModel = isVertexImagenModel(modelId);
 
-    console.log(
+    logger.api.info(
       `Starting image generation [requestId=${requestId}, userId=${userId}, model=${modelId}, isVertex=${isVertexModel}, creditCost=${creditCost}]`
     );
 
@@ -121,18 +122,18 @@ export async function POST(req: NextRequest) {
               amount: creditCost,
               description: `Image generation: ${modelId}`,
             });
-            console.log(
+            logger.api.info(
               `Consumed ${creditCost} credits [requestId=${requestId}, userId=${userId}]`
             );
           } catch (creditError) {
-            console.error(
+            logger.api.error(
               `Failed to consume credits [requestId=${requestId}, userId=${userId}]: `,
               creditError
             );
             // 即使扣费失败也返回图片，但记录错误（避免用户体验受影响）
           }
 
-          console.log(
+          logger.api.info(
             `Completed image request [requestId=${requestId}, model=${modelId}, elapsed=${elapsed}s]`
           );
           return {
@@ -142,7 +143,7 @@ export async function POST(req: NextRequest) {
           };
         }
 
-        console.error(
+        logger.api.error(
           `Image generation failed [requestId=${requestId}, model=${modelId}, elapsed=${elapsed}s]: ${genResult.error}`
         );
         return {
@@ -157,7 +158,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     // 记录完整错误详情，但返回通用错误消息以避免泄露敏感信息
-    console.error(
+    logger.api.error(
       `Error generating image [requestId=${requestId}, model=${modelId}]: `,
       error
     );

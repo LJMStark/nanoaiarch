@@ -2,6 +2,7 @@
 
 import { consumeCredits } from '@/credits/credits';
 import type { User } from '@/lib/auth-types';
+import { logger } from '@/lib/logger';
 import { userActionClient } from '@/lib/safe-action';
 import { z } from 'zod';
 
@@ -28,7 +29,7 @@ export const consumeCreditsAction = userActionClient
       });
       return { success: true };
     } catch (error) {
-      console.error('consume credits error:', error);
+      logger.actions.error('consume credits error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Something went wrong',

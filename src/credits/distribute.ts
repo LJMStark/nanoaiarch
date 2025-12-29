@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { getDb } from '@/db';
 import { creditTransaction, payment, user, userCredit } from '@/db/schema';
+import { logger } from '@/lib/logger';
 import { findPlanByPriceId, getAllPricePlans } from '@/lib/price-plan';
 import { PlanIntervals } from '@/payment/types';
 import { addDays } from 'date-fns';
@@ -13,12 +14,12 @@ import { CREDIT_TRANSACTION_TYPE } from './types';
  * This function is designed to be called by a cron job
  */
 export async function distributeCreditsToAllUsers() {
-  console.log('>>> distribute credits start');
+  logger.credits.info('Distribute credits start');
 
   // Process expired credits first before distributing new credits
-  console.log('Processing expired credits before distribution...');
+  logger.credits.debug('Processing expired credits before distribution');
   const expiredResult = await batchProcessExpiredCredits();
-  console.log('Expired credits processed:', expiredResult);
+  logger.credits.debug('Expired credits processed', expiredResult);
 
   const db = await getDb();
 
@@ -69,7 +70,9 @@ export async function distributeCreditsToAllUsers() {
     )
     .where(or(isNull(user.banned), eq(user.banned, false)));
 
-  console.log('distribute credits, users count:', usersWithPayments.length);
+  logger.credits.debug('Distribute credits users count', {
+    count: usersWithPayments.length,
+  });
 
   const usersCount = usersWithPayments.length;
   let processedCount = 0;
@@ -118,9 +121,11 @@ export async function distributeCreditsToAllUsers() {
     }
   });
 
-  console.log(
-    `distribute credits, lifetime users: ${lifetimeUsers.length}, free users: ${freeUserIds.length}, yearly users: ${yearlyUsers.length}`
-  );
+  logger.credits.debug('Distribute credits breakdown', {
+    lifetime: lifetimeUsers.length,
+    free: freeUserIds.length,
+    yearly: yearlyUsers.length,
+  });
 
   const batchSize = 100;
 
@@ -131,8 +136,8 @@ export async function distributeCreditsToAllUsers() {
       await batchAddMonthlyFreeCredits(batch);
       processedCount += batch.length;
     } catch (error) {
-      console.error(
-        `batchAddMonthlyFreeCredits error for batch ${i / batchSize + 1}:`,
+      logger.credits.error(
+        `batchAddMonthlyFreeCredits error for batch ${i / batchSize + 1}`,
         error
       );
       errorCount += batch.length;
@@ -140,8 +145,8 @@ export async function distributeCreditsToAllUsers() {
 
     // Log progress for large datasets
     if (freeUserIds.length > 1000) {
-      console.log(
-        `free credits progress: ${Math.min(i + batchSize, freeUserIds.length)}/${freeUserIds.length}`
+      logger.credits.debug(
+        `Free credits progress: ${Math.min(i + batchSize, freeUserIds.length)}/${freeUserIds.length}`
       );
     }
   }
@@ -153,8 +158,8 @@ export async function distributeCreditsToAllUsers() {
       await batchAddLifetimeMonthlyCredits(batch);
       processedCount += batch.length;
     } catch (error) {
-      console.error(
-        `batchAddLifetimeMonthlyCredits error for batch ${i / batchSize + 1}:`,
+      logger.credits.error(
+        `batchAddLifetimeMonthlyCredits error for batch ${i / batchSize + 1}`,
         error
       );
       errorCount += batch.length;
@@ -162,8 +167,8 @@ export async function distributeCreditsToAllUsers() {
 
     // Log progress for large datasets
     if (lifetimeUsers.length > 1000) {
-      console.log(
-        `lifetime credits progress: ${Math.min(i + batchSize, lifetimeUsers.length)}/${lifetimeUsers.length}`
+      logger.credits.debug(
+        `Lifetime credits progress: ${Math.min(i + batchSize, lifetimeUsers.length)}/${lifetimeUsers.length}`
       );
     }
   }
@@ -175,8 +180,8 @@ export async function distributeCreditsToAllUsers() {
       await batchAddYearlyUsersMonthlyCredits(batch);
       processedCount += batch.length;
     } catch (error) {
-      console.error(
-        `batchAddYearlyUsersMonthlyCredits error for batch ${i / batchSize + 1}:`,
+      logger.credits.error(
+        `batchAddYearlyUsersMonthlyCredits error for batch ${i / batchSize + 1}`,
         error
       );
       errorCount += batch.length;
@@ -184,15 +189,17 @@ export async function distributeCreditsToAllUsers() {
 
     // Log progress for large datasets
     if (yearlyUsers.length > 1000) {
-      console.log(
-        `yearly subscription credits progress: ${Math.min(i + batchSize, yearlyUsers.length)}/${yearlyUsers.length}`
+      logger.credits.debug(
+        `Yearly subscription credits progress: ${Math.min(i + batchSize, yearlyUsers.length)}/${yearlyUsers.length}`
       );
     }
   }
 
-  console.log(
-    `<<< distribute credits end, users: ${usersCount}, processed: ${processedCount}, errors: ${errorCount}`
-  );
+  logger.credits.info('Distribute credits end', {
+    usersCount,
+    processedCount,
+    errorCount,
+  });
   return { usersCount, processedCount, errorCount };
 }
 
@@ -202,7 +209,7 @@ export async function distributeCreditsToAllUsers() {
  */
 export async function batchAddMonthlyFreeCredits(userIds: string[]) {
   if (userIds.length === 0) {
-    console.log('batchAddMonthlyFreeCredits, no users to add credits');
+    logger.credits.debug('batchAddMonthlyFreeCredits: no users to add credits');
     return;
   }
 
@@ -216,7 +223,7 @@ export async function batchAddMonthlyFreeCredits(userIds: string[]) {
       plan.credits?.amount > 0
   );
   if (!freePlan) {
-    console.log('batchAddMonthlyFreeCredits, no available free plan');
+    logger.credits.debug('batchAddMonthlyFreeCredits: no available free plan');
     return;
   }
 
@@ -255,7 +262,7 @@ export async function batchAddMonthlyFreeCredits(userIds: string[]) {
     }
 
     if (eligibleUserIds.length === 0) {
-      console.log('batchAddMonthlyFreeCredits, no eligible users');
+      logger.credits.debug('batchAddMonthlyFreeCredits: no eligible users');
       return;
     }
 
@@ -314,9 +321,11 @@ export async function batchAddMonthlyFreeCredits(userIds: string[]) {
     }
   });
 
-  console.log(
-    `batchAddMonthlyFreeCredits, ${credits} credits for ${processedCount} users, date: ${now.getFullYear()}-${now.getMonth() + 1}`
-  );
+  logger.credits.info('batchAddMonthlyFreeCredits completed', {
+    credits,
+    processedCount,
+    date: `${now.getFullYear()}-${now.getMonth() + 1}`,
+  });
 }
 
 /**
@@ -327,7 +336,9 @@ export async function batchAddLifetimeMonthlyCredits(
   users: Array<{ userId: string; priceId: string }>
 ) {
   if (users.length === 0) {
-    console.log('batchAddLifetimeMonthlyCredits, no users to add credits');
+    logger.credits.debug(
+      'batchAddLifetimeMonthlyCredits: no users to add credits'
+    );
     return;
   }
 
@@ -355,9 +366,9 @@ export async function batchAddLifetimeMonthlyCredits(
       !pricePlan.credits?.enable ||
       !pricePlan.credits?.amount
     ) {
-      console.log(
-        `batchAddLifetimeMonthlyCredits, invalid plan for priceId: ${priceId}`
-      );
+      logger.credits.debug('batchAddLifetimeMonthlyCredits: invalid plan', {
+        priceId,
+      });
       continue;
     }
 
@@ -394,8 +405,9 @@ export async function batchAddLifetimeMonthlyCredits(
       }
 
       if (eligibleUserIds.length === 0) {
-        console.log(
-          `batchAddLifetimeMonthlyCredits, no eligible users for priceId: ${priceId}`
+        logger.credits.debug(
+          'batchAddLifetimeMonthlyCredits: no eligible users',
+          { priceId }
         );
         return;
       }
@@ -456,14 +468,17 @@ export async function batchAddLifetimeMonthlyCredits(
     });
 
     totalProcessedCount += processedCount;
-    console.log(
-      `batchAddLifetimeMonthlyCredits, ${credits} credits for ${processedCount} users with priceId ${priceId}, date: ${now.getFullYear()}-${now.getMonth() + 1}`
-    );
+    logger.credits.debug('batchAddLifetimeMonthlyCredits batch completed', {
+      credits,
+      processedCount,
+      priceId,
+      date: `${now.getFullYear()}-${now.getMonth() + 1}`,
+    });
   }
 
-  console.log(
-    `batchAddLifetimeMonthlyCredits, total processed: ${totalProcessedCount} users`
-  );
+  logger.credits.info('batchAddLifetimeMonthlyCredits completed', {
+    totalProcessedCount,
+  });
 }
 
 /**
@@ -474,7 +489,9 @@ export async function batchAddYearlyUsersMonthlyCredits(
   users: Array<{ userId: string; priceId: string }>
 ) {
   if (users.length === 0) {
-    console.log('batchAddYearlyUsersMonthlyCredits, no users to add credits');
+    logger.credits.debug(
+      'batchAddYearlyUsersMonthlyCredits: no users to add credits'
+    );
     return;
   }
 
@@ -496,8 +513,9 @@ export async function batchAddYearlyUsersMonthlyCredits(
   for (const [priceId, userIds] of usersByPriceId) {
     const pricePlan = findPlanByPriceId(priceId);
     if (!pricePlan || !pricePlan.credits || !pricePlan.credits.enable) {
-      console.log(
-        `batchAddYearlyUsersMonthlyCredits, plan disabled or credits disabled for priceId: ${priceId}`
+      logger.credits.debug(
+        'batchAddYearlyUsersMonthlyCredits: plan or credits disabled',
+        { priceId }
       );
       continue;
     }
@@ -535,8 +553,9 @@ export async function batchAddYearlyUsersMonthlyCredits(
       }
 
       if (eligibleUserIds.length === 0) {
-        console.log(
-          `batchAddYearlyUsersMonthlyCredits, no eligible users for priceId: ${priceId}`
+        logger.credits.debug(
+          'batchAddYearlyUsersMonthlyCredits: no eligible users',
+          { priceId }
         );
         return;
       }
@@ -597,14 +616,17 @@ export async function batchAddYearlyUsersMonthlyCredits(
     });
 
     totalProcessedCount += processedCount;
-    console.log(
-      `batchAddYearlyUsersMonthlyCredits, ${credits} credits for ${processedCount} users with priceId: ${priceId}, date: ${now.getFullYear()}-${now.getMonth() + 1}`
-    );
+    logger.credits.debug('batchAddYearlyUsersMonthlyCredits batch completed', {
+      credits,
+      processedCount,
+      priceId,
+      date: `${now.getFullYear()}-${now.getMonth() + 1}`,
+    });
   }
 
-  console.log(
-    `batchAddYearlyUsersMonthlyCredits completed, total processed: ${totalProcessedCount} users`
-  );
+  logger.credits.info('batchAddYearlyUsersMonthlyCredits completed', {
+    totalProcessedCount,
+  });
 }
 
 /**
@@ -612,7 +634,7 @@ export async function batchAddYearlyUsersMonthlyCredits(
  * This function is designed to be called by a cron job
  */
 export async function batchProcessExpiredCredits() {
-  console.log('>>> batch process expired credits start');
+  logger.credits.info('Batch process expired credits start');
 
   const db = await getDb();
   const now = new Date();
@@ -639,10 +661,9 @@ export async function batchProcessExpiredCredits() {
       )
     );
 
-  console.log(
-    'batch process expired credits, users count:',
-    usersWithExpirableCredits.length
-  );
+  logger.credits.debug('Batch process expired credits users count', {
+    count: usersWithExpirableCredits.length,
+  });
 
   const usersCount = usersWithExpirableCredits.length;
   let processedCount = 0;
@@ -661,8 +682,8 @@ export async function batchProcessExpiredCredits() {
       processedCount += batchResult.processedCount;
       totalExpiredCredits += batchResult.expiredCredits;
     } catch (error) {
-      console.error(
-        `batchProcessExpiredCredits error for batch ${i / batchSize + 1}:`,
+      logger.credits.error(
+        `batchProcessExpiredCredits error for batch ${i / batchSize + 1}`,
         error
       );
       errorCount += batch.length;
@@ -670,15 +691,18 @@ export async function batchProcessExpiredCredits() {
 
     // Log progress for large datasets
     if (usersWithExpirableCredits.length > 1000) {
-      console.log(
-        `expired credits progress: ${Math.min(i + batchSize, usersWithExpirableCredits.length)}/${usersWithExpirableCredits.length}`
+      logger.credits.debug(
+        `Expired credits progress: ${Math.min(i + batchSize, usersWithExpirableCredits.length)}/${usersWithExpirableCredits.length}`
       );
     }
   }
 
-  console.log(
-    `<<< batch process expired credits end, users: ${usersCount}, processed: ${processedCount}, errors: ${errorCount}, total expired credits: ${totalExpiredCredits}`
-  );
+  logger.credits.info('Batch process expired credits end', {
+    usersCount,
+    processedCount,
+    errorCount,
+    totalExpiredCredits,
+  });
   return { usersCount, processedCount, errorCount, totalExpiredCredits };
 }
 
@@ -688,7 +712,9 @@ export async function batchProcessExpiredCredits() {
  */
 export async function batchProcessExpiredCreditsForUsers(userIds: string[]) {
   if (userIds.length === 0) {
-    console.log('batchProcessExpiredCreditsForUsers, no users to process');
+    logger.credits.debug(
+      'batchProcessExpiredCreditsForUsers: no users to process'
+    );
     return { processedCount: 0, expiredCredits: 0 };
   }
 
@@ -771,18 +797,20 @@ export async function batchProcessExpiredCreditsForUsers(userIds: string[]) {
         });
 
         totalExpiredCredits += expiredTotal;
-        console.log(
-          `batchProcessExpiredCreditsForUsers, ${expiredTotal} credits expired for user ${userId}`
-        );
+        logger.credits.debug('Credits expired for user', {
+          userId,
+          expiredTotal,
+        });
       }
 
       totalProcessedCount++;
     }
   });
 
-  console.log(
-    `batchProcessExpiredCreditsForUsers, processed ${totalProcessedCount} users, total expired credits: ${totalExpiredCredits}`
-  );
+  logger.credits.info('batchProcessExpiredCreditsForUsers completed', {
+    totalProcessedCount,
+    totalExpiredCredits,
+  });
 
   return {
     processedCount: totalProcessedCount,

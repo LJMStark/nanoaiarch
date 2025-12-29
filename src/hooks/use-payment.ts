@@ -1,4 +1,5 @@
 import { getCurrentPlanAction } from '@/actions/get-current-plan';
+import { logger } from '@/lib/logger';
 import { getAllPricePlans } from '@/lib/price-plan';
 import type { PricePlan, Subscription } from '@/payment/types';
 import { useQuery } from '@tanstack/react-query';
@@ -21,14 +22,19 @@ export function useCurrentPlan(userId: string | undefined) {
       if (!userId) {
         throw new Error('User ID is required');
       }
-      console.log('>>> Check current plan start for userId:', userId);
+      logger.payment.debug('>>> Check current plan start for userId:', {
+        userId,
+      });
       const result = await getCurrentPlanAction({ userId });
       if (!result?.data?.success) {
-        console.log('<<< Check current plan failed:', result?.data?.error);
+        logger.payment.error(
+          '<<< Check current plan failed:',
+          result?.data?.error
+        );
         throw new Error(result?.data?.error || 'Failed to fetch current plan');
       }
 
-      console.log('<<< Check current plan success');
+      logger.payment.debug('<<< Check current plan success');
       return (
         result.data.data || {
           currentPlan: getAllPricePlans().find((plan) => plan.isFree) || null,

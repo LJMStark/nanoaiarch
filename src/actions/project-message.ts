@@ -4,6 +4,7 @@ import { validateBase64Image } from '@/ai/image/lib/api-utils';
 import { getDb } from '@/db';
 import { imageProject, projectMessage } from '@/db/schema';
 import { auth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 
@@ -72,7 +73,7 @@ export async function getProjectMessages(projectId: string) {
 
     return { success: true, data: messages as ProjectMessageItem[] };
   } catch (error) {
-    console.error('Failed to get messages:', error);
+    logger.actions.error('Failed to get messages', error);
     return { success: false, error: 'Failed to get messages', data: [] };
   }
 }
@@ -174,7 +175,7 @@ export async function addUserMessage(
 
     return { success: true, data: message };
   } catch (error) {
-    console.error('Failed to add user message:', error);
+    logger.actions.error('Failed to add user message', error);
     return { success: false, error: 'Failed to add message' };
   }
 }
@@ -302,7 +303,7 @@ export async function addAssistantMessage(
 
     return { success: true, data: message };
   } catch (error) {
-    console.error('Failed to add assistant message:', error);
+    logger.actions.error('Failed to add assistant message', error);
     return { success: false, error: 'Failed to add message' };
   }
 }
@@ -384,7 +385,7 @@ export async function updateAssistantMessage(
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to update message:', error);
+    logger.actions.error('Failed to update message', error);
     return { success: false, error: 'Failed to update message' };
   }
 }
@@ -411,7 +412,7 @@ export async function deleteMessage(messageId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to delete message:', error);
+    logger.actions.error('Failed to delete message', error);
     return { success: false, error: 'Failed to delete' };
   }
 }
@@ -448,7 +449,7 @@ export async function getLastGeneratedImage(projectId: string) {
 
     return { success: true, data: message[0] as ProjectMessageItem };
   } catch (error) {
-    console.error('Failed to get last image:', error);
+    logger.actions.error('Failed to get last image', error);
     return { success: false, error: 'Failed to get image' };
   }
 }

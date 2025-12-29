@@ -3,6 +3,7 @@
 import { getDb } from '@/db';
 import { creditTransaction } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
+import { logger } from '@/lib/logger';
 import { userActionClient } from '@/lib/safe-action';
 import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -116,7 +117,7 @@ export const getCreditTransactionsAction = userActionClient
         },
       };
     } catch (error) {
-      console.error('get credit transactions error:', error);
+      logger.actions.error('get credit transactions error:', error);
       return {
         success: false,
         error:

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { GoogleGenAI } from '@google/genai';
 import type { GeminiModelKey } from './api-utils';
 
@@ -107,7 +108,7 @@ export async function generateImageWithGemini(
       text: resultText,
     };
   } catch (error) {
-    console.error('Image generation error:', error);
+    logger.ai.error('Image generation error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -210,7 +211,7 @@ export async function editImageWithConversation(
       text: resultText,
     };
   } catch (error) {
-    console.error('Gemini conversation edit error:', error);
+    logger.ai.error('Gemini conversation edit error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',

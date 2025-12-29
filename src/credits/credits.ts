@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { websiteConfig } from '@/config/website';
 import { getDb } from '@/db';
 import { creditTransaction, userCredit } from '@/db/schema';
+import { logger } from '@/lib/logger';
 import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
 import { addDays, isAfter } from 'date-fns';
 import { and, asc, eq, gt, isNull, not, or, sql } from 'drizzle-orm';
@@ -26,7 +27,7 @@ export async function getUserCredits(userId: string): Promise<number> {
 
     return record[0]?.currentCredits || 0;
   } catch (error) {
-    console.error('getUserCredits, error:', error);
+    logger.credits.error('getUserCredits error', { error });
     // Return 0 on error to prevent UI from breaking
     return 0;
   }
@@ -45,7 +46,7 @@ export async function updateUserCredits(userId: string, credits: number) {
       .set({ currentCredits: credits, updatedAt: new Date() })
       .where(eq(userCredit.userId, userId));
   } catch (error) {
-    console.error('updateUserCredits, error:', error);
+    logger.credits.error('updateUserCredits error', error);
   }
 }
 
@@ -69,16 +70,18 @@ export async function saveCreditTransaction({
   expirationDate?: Date;
 }) {
   if (!userId || !type || !description) {
-    console.error(
-      'saveCreditTransaction, invalid params',
+    logger.credits.error('saveCreditTransaction invalid params', null, {
       userId,
       type,
-      description
-    );
+      description,
+    });
     throw new Error('saveCreditTransaction, invalid params');
   }
   if (!Number.isFinite(amount) || amount === 0) {
-    console.error('saveCreditTransaction, invalid amount', userId, amount);
+    logger.credits.error('saveCreditTransaction invalid amount', null, {
+      userId,
+      amount,
+    });
     throw new Error('saveCreditTransaction, invalid amount');
   }
   const db = await getDb();
@@ -118,18 +121,25 @@ export async function addCredits({
   expireDays?: number;
 }) {
   if (!userId || !type || !description) {
-    console.error('addCredits, invalid params', userId, type, description);
+    logger.credits.error('addCredits invalid params', null, {
+      userId,
+      type,
+      description,
+    });
     throw new Error('Invalid params');
   }
   if (!Number.isFinite(amount) || amount <= 0) {
-    console.error('addCredits, invalid amount', userId, amount);
+    logger.credits.error('addCredits invalid amount', null, { userId, amount });
     throw new Error('Invalid amount');
   }
   if (
     expireDays !== undefined &&
     (!Number.isFinite(expireDays) || expireDays <= 0)
   ) {
-    console.error('addCredits, invalid expire days', userId, expireDays);
+    logger.credits.error('addCredits invalid expire days', null, {
+      userId,
+      expireDays,
+    });
     throw new Error('Invalid expire days');
   }
   // Update user credit balance
@@ -142,7 +152,10 @@ export async function addCredits({
   // const newBalance = (current[0]?.currentCredits || 0) + amount;
   if (current.length > 0) {
     const newBalance = (current[0]?.currentCredits || 0) + amount;
-    console.log('addCredits, update user credit', userId, newBalance);
+    logger.credits.debug('addCredits update user credit', {
+      userId,
+      newBalance,
+    });
     await db
       .update(userCredit)
       .set({
@@ -152,7 +165,10 @@ export async function addCredits({
       .where(eq(userCredit.userId, userId));
   } else {
     const newBalance = amount;
-    console.log('addCredits, insert user credit', userId, newBalance);
+    logger.credits.debug('addCredits insert user credit', {
+      userId,
+      newBalance,
+    });
     await db.insert(userCredit).values({
       id: randomUUID(),
       userId,
@@ -202,18 +218,25 @@ export async function consumeCredits({
   description: string;
 }) {
   if (!userId || !description) {
-    console.error('consumeCredits, invalid params', userId, description);
+    logger.credits.error('consumeCredits invalid params', null, {
+      userId,
+      description,
+    });
     throw new Error('Invalid params');
   }
   if (!Number.isFinite(amount) || amount <= 0) {
-    console.error('consumeCredits, invalid amount', userId, amount);
+    logger.credits.error('consumeCredits invalid amount', null, {
+      userId,
+      amount,
+    });
     throw new Error('Invalid amount');
   }
   // Check balance
   if (!(await hasEnoughCredits({ userId, requiredCredits: amount }))) {
-    console.error(
-      `consumeCredits, insufficient credits for user ${userId}, required: ${amount}`
-    );
+    logger.credits.error('consumeCredits insufficient credits', null, {
+      userId,
+      required: amount,
+    });
     throw new Error('Insufficient credits');
   }
   // FIFO consumption: consume from the earliest unexpired credits first
@@ -349,9 +372,10 @@ export async function processExpiredCredits(userId: string) {
       description: `Expire credits: ${expiredTotal}`,
     });
 
-    console.log(
-      `processExpiredCredits, ${expiredTotal} credits expired for user ${userId}`
-    );
+    logger.credits.info('processExpiredCredits completed', {
+      userId,
+      expiredTotal,
+    });
   }
 }
 
@@ -419,9 +443,10 @@ export async function addRegisterGiftCredits(userId: string) {
       expireDays,
     });
 
-    console.log(
-      `addRegisterGiftCredits, ${credits} credits for user ${userId}`
-    );
+    logger.credits.info('addRegisterGiftCredits completed', {
+      userId,
+      credits,
+    });
   }
 }
 
@@ -440,9 +465,9 @@ export async function addMonthlyFreeCredits(userId: string, planId: string) {
     !pricePlan.credits ||
     !pricePlan.credits.enable
   ) {
-    console.log(
-      `addMonthlyFreeCredits, no credits configured for plan ${planId}`
-    );
+    logger.credits.debug('addMonthlyFreeCredits no credits configured', {
+      planId,
+    });
     return;
   }
 
@@ -464,13 +489,16 @@ export async function addMonthlyFreeCredits(userId: string, planId: string) {
       expireDays,
     });
 
-    console.log(
-      `addMonthlyFreeCredits, ${credits} credits for user ${userId}, date: ${now.getFullYear()}-${now.getMonth() + 1}`
-    );
+    logger.credits.info('addMonthlyFreeCredits completed', {
+      userId,
+      credits,
+      month: `${now.getFullYear()}-${now.getMonth() + 1}`,
+    });
   } else {
-    console.log(
-      `addMonthlyFreeCredits, no new month for user ${userId}, date: ${now.getFullYear()}-${now.getMonth() + 1}`
-    );
+    logger.credits.debug('addMonthlyFreeCredits skipped (already added)', {
+      userId,
+      month: `${now.getFullYear()}-${now.getMonth() + 1}`,
+    });
   }
 }
 
@@ -488,9 +516,9 @@ export async function addSubscriptionCredits(userId: string, priceId: string) {
     !pricePlan.credits ||
     !pricePlan.credits.enable
   ) {
-    console.log(
-      `addSubscriptionCredits, no credits configured for plan ${priceId}`
-    );
+    logger.credits.debug('addSubscriptionCredits no credits configured', {
+      priceId,
+    });
     return;
   }
 
@@ -513,13 +541,17 @@ export async function addSubscriptionCredits(userId: string, priceId: string) {
       expireDays,
     });
 
-    console.log(
-      `addSubscriptionCredits, ${credits} credits for user ${userId}, priceId: ${priceId}, date: ${now.getFullYear()}-${now.getMonth() + 1}`
-    );
+    logger.credits.info('addSubscriptionCredits completed', {
+      userId,
+      priceId,
+      credits,
+      month: `${now.getFullYear()}-${now.getMonth() + 1}`,
+    });
   } else {
-    console.log(
-      `addSubscriptionCredits, no new month for user ${userId}, date: ${now.getFullYear()}-${now.getMonth() + 1}`
-    );
+    logger.credits.debug('addSubscriptionCredits skipped (already added)', {
+      userId,
+      month: `${now.getFullYear()}-${now.getMonth() + 1}`,
+    });
   }
 }
 
@@ -541,9 +573,9 @@ export async function addLifetimeMonthlyCredits(
     !pricePlan.credits ||
     !pricePlan.credits.enable
   ) {
-    console.log(
-      `addLifetimeMonthlyCredits, no credits configured for plan ${priceId}`
-    );
+    logger.credits.debug('addLifetimeMonthlyCredits no credits configured', {
+      priceId,
+    });
     return;
   }
 
@@ -566,12 +598,15 @@ export async function addLifetimeMonthlyCredits(
       expireDays,
     });
 
-    console.log(
-      `addLifetimeMonthlyCredits, ${credits} credits for user ${userId}, date: ${now.getFullYear()}-${now.getMonth() + 1}`
-    );
+    logger.credits.info('addLifetimeMonthlyCredits completed', {
+      userId,
+      credits,
+      month: `${now.getFullYear()}-${now.getMonth() + 1}`,
+    });
   } else {
-    console.log(
-      `addLifetimeMonthlyCredits, no new month for user ${userId}, date: ${now.getFullYear()}-${now.getMonth() + 1}`
-    );
+    logger.credits.debug('addLifetimeMonthlyCredits skipped (already added)', {
+      userId,
+      month: `${now.getFullYear()}-${now.getMonth() + 1}`,
+    });
   }
 }

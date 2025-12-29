@@ -1,4 +1,5 @@
 import { routing } from '@/i18n/routing';
+import { logger } from '@/lib/logger';
 import type { Locale } from 'next-intl';
 
 const baseUrl =
@@ -74,7 +75,10 @@ export function getUrlWithLocaleInCallbackUrl(
     return urlObj.toString();
   } catch (error) {
     // If URL parsing fails, return the original URL
-    console.warn('Failed to parse URL for locale insertion:', url, error);
+    logger.general.warn('Failed to parse URL for locale insertion', {
+      error,
+      url,
+    });
     return url;
   }
 }

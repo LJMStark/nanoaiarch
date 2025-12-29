@@ -1,5 +1,6 @@
 'use server';
 
+import { logger } from '@/lib/logger';
 import { userActionClient } from '@/lib/safe-action';
 import { isSubscribed } from '@/newsletter';
 import { z } from 'zod';
@@ -21,7 +22,7 @@ export const checkNewsletterStatusAction = userActionClient
         subscribed,
       };
     } catch (error) {
-      console.error('check newsletter status error:', error);
+      logger.actions.error('check newsletter status error:', error);
       return {
         success: false,
         subscribed: false,

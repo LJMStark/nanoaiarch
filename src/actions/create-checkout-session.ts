@@ -2,6 +2,7 @@
 
 import { websiteConfig } from '@/config/website';
 import type { User } from '@/lib/auth-types';
+import { logger } from '@/lib/logger';
 import { findPlanByPlanId } from '@/lib/price-plan';
 import { userActionClient } from '@/lib/safe-action';
 import { getUrlWithLocale } from '@/lib/urls/urls';
@@ -77,13 +78,12 @@ export const createCheckoutAction = userActionClient
       };
 
       const result = await createCheckout(params);
-      // console.log('create checkout session result:', result);
       return {
         success: true,
         data: result,
       };
     } catch (error) {
-      console.error('create checkout session error:', error);
+      logger.actions.error('create checkout session error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Something went wrong',

@@ -17,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { websiteConfig } from '@/config/website';
 import { authClient } from '@/lib/auth-client';
+import { logger } from '@/lib/logger';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,11 +44,8 @@ export const RegisterForm = ({
   // Use prop callback URL or param callback URL if provided, otherwise use the default login redirect
   const locale = useLocale();
   const defaultCallbackUrl = getUrlWithLocale(DEFAULT_LOGIN_REDIRECT, locale);
-  // console.log('register form, propCallbackUrl', propCallbackUrl);
-  // console.log('register form, paramCallbackUrl', paramCallbackUrl);
-  // console.log('register form, defaultCallbackUrl', defaultCallbackUrl);
   const callbackUrl = propCallbackUrl || paramCallbackUrl || defaultCallbackUrl;
-  console.log('register form, callbackUrl', callbackUrl);
+  logger.auth.debug('register form, callbackUrl', { callbackUrl });
 
   const [error, setError] = useState<string | undefined>('');
   const [success, setSuccess] = useState<string | undefined>('');
@@ -115,7 +113,9 @@ export const RegisterForm = ({
       });
 
       if (!captchaResult?.data?.success || !captchaResult?.data?.valid) {
-        console.error('register, captcha invalid:', values.captchaToken);
+        logger.auth.error('register, captcha invalid', undefined, {
+          captchaToken: values.captchaToken,
+        });
         const errorMessage = captchaResult?.data?.error || t('captchaInvalid');
         setError(errorMessage);
         setIsPending(false);
@@ -137,40 +137,42 @@ export const RegisterForm = ({
       },
       {
         onRequest: (ctx) => {
-          // console.log('register, request:', ctx.url);
           setIsPending(true);
           setError('');
           setSuccess('');
         },
         onResponse: (ctx) => {
-          // console.log('register, response:', ctx.response);
           setIsPending(false);
         },
         onSuccess: async (ctx) => {
           // sign up success, user information stored in ctx.data
-          // console.log("register, success:", ctx.data);
           setSuccess(t('checkEmail'));
 
           // Apply referral code if present
           if (refCode && ctx.data?.user?.id) {
             try {
               await applyReferralCode(ctx.data.user.id, refCode);
-              console.log('register, referral applied:', refCode);
+              logger.auth.debug('register, referral applied', { refCode });
             } catch (error) {
-              console.error('register, referral error:', error);
+              logger.auth.error('register, referral error', error, { refCode });
             }
           }
 
           // add affonso affiliate
           // https://affonso.io/app/affiliate-program/connect
           if (websiteConfig.features.enableAffonsoAffiliate) {
-            console.log('register, affonso affiliate:', values.email);
+            logger.auth.debug('register, affonso affiliate', {
+              email: values.email,
+            });
             window.Affonso.signup(values.email);
           }
         },
         onError: (ctx) => {
           // sign up fail, display the error message
-          // console.error('register, error:', ctx.error);
+          logger.auth.error('register error', ctx.error, {
+            status: ctx.error.status,
+            message: ctx.error.message,
+          });
           setError(`${ctx.error.status}: ${ctx.error.message}`);
           // Reset captcha on registration error
           if (captchaConfigured) {

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import type {
   CheckSubscribeStatusParams,
   NewsletterProvider,
@@ -51,7 +52,7 @@ export class ResendNewsletterProvider implements NewsletterProvider {
 
       // If contact doesn't exist, create a new one
       if (getResult.error) {
-        console.log('Creating new contact', email);
+        logger.newsletter.debug('Creating new contact', { email });
         const createResult = await this.resend.contacts.create({
           email,
           audienceId: this.audienceId,
@@ -59,10 +60,10 @@ export class ResendNewsletterProvider implements NewsletterProvider {
         });
 
         if (createResult.error) {
-          console.error('Error creating contact', createResult.error);
+          logger.newsletter.error('Error creating contact', createResult.error);
           return false;
         }
-        console.log('Created new contact', email);
+        logger.newsletter.info('Created new contact', { email });
         return true;
       }
 
@@ -74,14 +75,14 @@ export class ResendNewsletterProvider implements NewsletterProvider {
       });
 
       if (updateResult.error) {
-        console.error('Error updating contact', updateResult.error);
+        logger.newsletter.error('Error updating contact', updateResult.error);
         return false;
       }
 
-      console.log('Subscribed newsletter', email);
+      logger.newsletter.info('Subscribed newsletter', { email });
       return true;
     } catch (error) {
-      console.error('Error subscribing newsletter', error);
+      logger.newsletter.error('Error subscribing newsletter', error);
       return false;
     }
   }
@@ -100,16 +101,15 @@ export class ResendNewsletterProvider implements NewsletterProvider {
         unsubscribed: true,
       });
 
-      // console.log('Unsubscribe result:', result);
       if (result.error) {
-        console.error('Error unsubscribing newsletter', result.error);
+        logger.newsletter.error('Error unsubscribing newsletter', result.error);
         return false;
       }
 
-      console.log('Unsubscribed newsletter', email);
+      logger.newsletter.info('Unsubscribed newsletter', { email });
       return true;
     } catch (error) {
-      console.error('Error unsubscribing newsletter', error);
+      logger.newsletter.error('Error unsubscribing newsletter', error);
       return false;
     }
   }
@@ -129,15 +129,15 @@ export class ResendNewsletterProvider implements NewsletterProvider {
       });
 
       if (result.error) {
-        console.error('Error getting contact:', result.error);
+        logger.newsletter.error('Error getting contact', result.error);
         return false;
       }
 
       const status = !result.data?.unsubscribed;
-      console.log('Check subscribe status:', { email, status });
+      logger.newsletter.debug('Check subscribe status', { email, status });
       return status;
     } catch (error) {
-      console.error('Error checking subscribe status:', error);
+      logger.newsletter.error('Error checking subscribe status', error);
       return false;
     }
   }

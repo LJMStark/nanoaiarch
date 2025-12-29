@@ -2,14 +2,18 @@
 
 import { getImageProjects } from '@/actions/image-project';
 import { getProjectMessages } from '@/actions/project-message';
-import type { AspectRatioId, StylePresetId } from '@/ai/image/lib/arch-types';
-import { ARCH_TEMPLATES, type ArchTemplate } from '@/ai/image/lib/templates';
 import { TemplateDetailModal } from '@/ai/image/components/TemplateDetailModal';
 import { useTemplateApply } from '@/ai/image/hooks/use-template-apply';
+import type {
+  ArchTemplate,
+  AspectRatioId,
+  StylePresetId,
+} from '@/ai/image/lib/arch-types';
+import { ARCH_TEMPLATES } from '@/ai/image/lib/templates';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ConversationArea } from './ConversationArea';
 import { ConversationHeader } from './ConversationHeader';

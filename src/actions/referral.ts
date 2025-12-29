@@ -9,6 +9,7 @@ import {
 import { getDb } from '@/db';
 import { referral, user } from '@/db/schema';
 import { auth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 import { and, count, eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 
@@ -29,7 +30,7 @@ export async function getReferralCode(): Promise<{
     const code = await getOrCreateReferralCode(session.user.id);
     return { success: true, code };
   } catch (error) {
-    console.error('getReferralCode error:', error);
+    logger.actions.error('getReferralCode error', error);
     return { success: false, error: 'Failed to get referral code' };
   }
 }
@@ -46,7 +47,7 @@ export async function validateReferralCode(code: string): Promise<{
     const result = await validateCode(code);
     return { success: true, valid: result.valid };
   } catch (error) {
-    console.error('validateReferralCode error:', error);
+    logger.actions.error('validateReferralCode error', error);
     return { success: false, valid: false, error: 'Failed to validate code' };
   }
 }
@@ -61,7 +62,7 @@ export async function applyReferralCode(
   try {
     return await applyReferral(userId, code);
   } catch (error) {
-    console.error('applyReferralCode error:', error);
+    logger.actions.error('applyReferralCode error', error);
     return { success: false, error: 'Failed to apply referral code' };
   }
 }
@@ -129,7 +130,7 @@ export async function getReferralStats(): Promise<{
       },
     };
   } catch (error) {
-    console.error('getReferralStats error:', error);
+    logger.actions.error('getReferralStats error', error);
     return { success: false, error: 'Failed to get referral stats' };
   }
 }
@@ -182,7 +183,7 @@ export async function getReferralList(): Promise<{
       })),
     };
   } catch (error) {
-    console.error('getReferralList error:', error);
+    logger.actions.error('getReferralList error', error);
     return { success: false, error: 'Failed to get referral list' };
   }
 }

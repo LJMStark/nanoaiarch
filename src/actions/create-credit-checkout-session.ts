@@ -3,6 +3,7 @@
 import { websiteConfig } from '@/config/website';
 import { getCreditPackageById } from '@/credits/server';
 import type { User } from '@/lib/auth-types';
+import { logger } from '@/lib/logger';
 import { userActionClient } from '@/lib/safe-action';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 import { createCreditCheckout } from '@/payment';
@@ -81,13 +82,12 @@ export const createCreditCheckoutSession = userActionClient
       };
 
       const result = await createCreditCheckout(params);
-      // console.log('create credit checkout session result:', result);
       return {
         success: true,
         data: result,
       };
     } catch (error) {
-      console.error('Create credit checkout session error:', error);
+      logger.actions.error('Create credit checkout session error:', error);
       return {
         success: false,
         error:

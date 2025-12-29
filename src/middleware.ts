@@ -8,6 +8,7 @@ import {
   routing,
 } from './i18n/routing';
 import type { Session } from './lib/auth-types';
+import { logger } from './lib/logger';
 import {
   DEFAULT_LOGIN_REDIRECT,
   protectedRoutes,
@@ -38,7 +39,7 @@ function getBaseUrlFromRequest(req: NextRequest): string {
  */
 export default async function middleware(req: NextRequest) {
   const { nextUrl } = req;
-  console.log('>> middleware start, pathname', nextUrl.pathname);
+  logger.general.debug('middleware start', { pathname: nextUrl.pathname });
 
   // Handle internal docs link redirection for internationalization
   // Check if this is a docs page without locale prefix
@@ -54,10 +55,9 @@ export default async function middleware(req: NextRequest) {
       LOCALES.includes(preferredLocale)
     ) {
       const localizedPath = `/${preferredLocale}${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
-      console.log(
-        '<< middleware end, redirecting docs link to preferred locale:',
-        localizedPath
-      );
+      logger.general.debug('redirecting docs link to preferred locale', {
+        localizedPath,
+      });
       return NextResponse.redirect(new URL(localizedPath, nextUrl));
     }
   }
@@ -79,7 +79,9 @@ export default async function middleware(req: NextRequest) {
   } catch (error) {
     // Fetch failed - likely during initial server startup or port mismatch
     // Treat as not logged in and continue with intl middleware
-    console.warn('Session fetch failed, treating as not logged in:', error);
+    logger.general.warn('Session fetch failed, treating as not logged in', {
+      error,
+    });
   }
   // console.log('middleware, isLoggedIn', isLoggedIn);
 
@@ -95,8 +97,8 @@ export default async function middleware(req: NextRequest) {
       new RegExp(`^${route}$`).test(pathnameWithoutLocale)
     );
     if (isNotAllowedRoute) {
-      console.log(
-        '<< middleware end, not allowed route, already logged in, redirecting to dashboard'
+      logger.general.debug(
+        'not allowed route, already logged in, redirecting to dashboard'
       );
       return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
     }
@@ -114,17 +116,16 @@ export default async function middleware(req: NextRequest) {
       callbackUrl += nextUrl.search;
     }
     const encodedCallbackUrl = encodeURIComponent(callbackUrl);
-    console.log(
-      '<< middleware end, not logged in, redirecting to login, callbackUrl',
-      callbackUrl
-    );
+    logger.general.debug('not logged in, redirecting to login', {
+      callbackUrl,
+    });
     return NextResponse.redirect(
       new URL(`/auth/login?callbackUrl=${encodedCallbackUrl}`, nextUrl)
     );
   }
 
   // Apply intlMiddleware for all routes
-  console.log('<< middleware end, applying intlMiddleware');
+  logger.general.debug('applying intlMiddleware');
   return intlMiddleware(req);
 }
 

@@ -1,4 +1,5 @@
 import { websiteConfig } from '@/config/website';
+import { logger } from '@/lib/logger';
 import type { Price, PricePlan } from '@/payment/types';
 
 /**
@@ -49,7 +50,7 @@ export const findPriceInPlan = (
 ): Price | undefined => {
   const plan = findPlanByPlanId(planId);
   if (!plan) {
-    console.error(`findPriceInPlan, Plan with ID ${planId} not found`);
+    logger.general.error(`findPriceInPlan, Plan with ID ${planId} not found`);
     return undefined;
   }
   return plan.prices.find((price) => price.priceId === priceId);

@@ -6,6 +6,7 @@ import * as LucideIcons from 'lucide-react';
 import { createElement } from 'react';
 import { author, blog, category, changelog, docs, pages } from '../../.source';
 import { docsI18nConfig } from './docs/i18n';
+import { logger } from './logger';
 
 /**
  * Turn a content source into a unified interface
@@ -27,7 +28,7 @@ export const source = loader({
       return createElement(IconComponent);
     }
 
-    console.warn(`Icon not found: ${iconName}`);
+    logger.general.warn(`Icon not found: ${iconName}`);
     return undefined;
   },
 });
@@ -43,8 +44,7 @@ export const changelogSource = loader({
 
 /**
  * Pages source
- *
- * TODO: how to set the baseUrl for pages?
+ * Uses '/pages' as the base URL for rendering static pages like legal documents
  */
 export const pagesSource = loader({
   baseUrl: '/pages',

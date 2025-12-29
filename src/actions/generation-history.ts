@@ -3,6 +3,7 @@
 import { getDb } from '@/db';
 import { generationHistory } from '@/db/schema';
 import { auth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 
@@ -79,7 +80,7 @@ export async function saveGeneration(data: {
 
     return { success: true, id };
   } catch (error) {
-    console.error('Failed to save generation:', error);
+    logger.actions.error('Failed to save generation', error);
     return { success: false, error: 'Failed to save generation' };
   }
 }
@@ -118,7 +119,7 @@ export async function getGenerationHistory(options?: {
 
     return { success: true, data: items as GenerationHistoryItem[] };
   } catch (error) {
-    console.error('Failed to get generation history:', error);
+    logger.actions.error('Failed to get generation history', error);
     return { success: false, error: 'Failed to get history', data: [] };
   }
 }
@@ -184,7 +185,7 @@ export async function getGenerationStats(): Promise<{
       },
     };
   } catch (error) {
-    console.error('Failed to get generation stats:', error);
+    logger.actions.error('Failed to get generation stats', error);
     return { success: false, error: 'Failed to get stats' };
   }
 }
@@ -233,7 +234,7 @@ export async function toggleFavorite(generationId: string) {
 
     return { success: true, isFavorite: !current[0].isFavorite };
   } catch (error) {
-    console.error('Failed to toggle favorite:', error);
+    logger.actions.error('Failed to toggle favorite', error);
     return { success: false, error: 'Failed to update' };
   }
 }
@@ -260,7 +261,7 @@ export async function deleteGeneration(generationId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to delete generation:', error);
+    logger.actions.error('Failed to delete generation', error);
     return { success: false, error: 'Failed to delete' };
   }
 }
@@ -294,7 +295,7 @@ export async function updateGenerationImage(
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to update generation image:', error);
+    logger.actions.error('Failed to update generation image', error);
     return { success: false, error: 'Failed to update' };
   }
 }

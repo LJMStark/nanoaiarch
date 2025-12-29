@@ -1,5 +1,6 @@
 import { checkPaymentCompletionAction } from '@/actions/check-payment-completion';
 import { PAYMENT_POLL_INTERVAL } from '@/lib/constants';
+import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
 
 // Query keys for payment completion
@@ -22,17 +23,22 @@ export function usePaymentCompletion(
           isPaid: false,
         };
       }
-      console.log('>>> Check payment completion for sessionId:', sessionId);
+      logger.payment.debug('>>> Check payment completion for sessionId:', {
+        sessionId,
+      });
       const result = await checkPaymentCompletionAction({ sessionId });
       if (!result?.data?.success) {
-        console.log('<<< Check payment completion error:', result?.data?.error);
+        logger.payment.error(
+          '<<< Check payment completion error:',
+          result?.data?.error
+        );
         throw new Error(
           result?.data?.error || 'Failed to check payment completion'
         );
       }
 
       const { isPaid } = result.data;
-      console.log('<<< Check payment completion, paid:', isPaid);
+      logger.payment.debug('<<< Check payment completion, paid:', { isPaid });
       return {
         isPaid,
       };

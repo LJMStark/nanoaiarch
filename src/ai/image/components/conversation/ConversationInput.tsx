@@ -5,9 +5,8 @@ import { addAssistantMessage, addUserMessage } from '@/actions/project-message';
 import { AspectRatioSelect } from '@/ai/image/components/AspectRatioSelect';
 import { ImageUploader } from '@/ai/image/components/ImageUploader';
 import { StylePresetSelect } from '@/ai/image/components/StylePresetSelect';
+import type { AspectRatioId, StylePresetId } from '@/ai/image/lib/arch-types';
 import { generateImage, validateBase64Image } from '@/ai/image/lib/api-utils';
-import type { AspectRatioId } from '@/ai/image/lib/aspect-ratios';
-import type { StylePresetId } from '@/ai/image/lib/style-presets';
 import { buildArchPrompt } from '@/ai/image/lib/system-prompts';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +15,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
+import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
@@ -89,7 +89,7 @@ export function ConversationInput() {
     });
 
     if (!userResult.success || !userResult.data) {
-      console.error('Failed to add user message');
+      logger.ai.error('Failed to add user message');
       return;
     }
 
@@ -101,10 +101,11 @@ export function ConversationInput() {
 
     try {
       // Build enhanced prompt
-      const enhancedPrompt = buildArchPrompt(prompt, {
-        style: stylePreset || undefined,
-        aspectRatio: aspectRatio,
-      });
+      const enhancedPrompt = buildArchPrompt(
+        prompt,
+        stylePreset || undefined,
+        aspectRatio
+      );
 
       // Generate image
       const result = await generateImage({
@@ -156,7 +157,7 @@ export function ConversationInput() {
         }
       }
     } catch (error) {
-      console.error('Generation error:', error);
+      logger.ai.error('Generation error:', error);
       // Add error message
       const assistantResult = await addAssistantMessage(currentProjectId, {
         content: 'An unexpected error occurred',
@@ -195,13 +196,12 @@ export function ConversationInput() {
             >
               <div className="pb-3 space-y-2">
                 <ImageUploader
-                  currentImage={referenceImage}
+                  currentImage={referenceImage ?? undefined}
                   onImageSelect={handleImageSelect}
                   onImageClear={() => {
                     setReferenceImage(null);
                     setImageError(null);
                   }}
-                  compact
                 />
                 {imageError && (
                   <p className="text-sm text-destructive px-1">{imageError}</p>

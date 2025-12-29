@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import {
   GEMINI_MODEL_IDS,
   type GeminiModelId,
@@ -84,7 +85,9 @@ export interface ImageValidationResult {
   sizeBytes?: number;
 }
 
-export function validateBase64Image(base64: string | undefined | null): ImageValidationResult {
+export function validateBase64Image(
+  base64: string | undefined | null
+): ImageValidationResult {
   if (!base64) {
     return { valid: true }; // No image is valid
   }
@@ -184,7 +187,7 @@ export async function generateImage(
       error: data.error || 'No image generated',
     };
   } catch (error) {
-    console.error('Generate image error:', error);
+    logger.ai.error('Generate image error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

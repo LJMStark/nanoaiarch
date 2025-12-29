@@ -1,5 +1,6 @@
 import { getUsersAction } from '@/actions/get-users';
 import { authClient } from '@/lib/auth-client';
+import { logger } from '@/lib/logger';
 import {
   keepPreviousData,
   useMutation,
@@ -38,7 +39,7 @@ export function useUsers(
       });
 
       if (!result?.data?.success) {
-        console.log('useUsers error:', result?.data?.error);
+        logger.general.error('useUsers error:', result?.data?.error);
         throw new Error(result?.data?.error || 'Failed to fetch users');
       }
 
@@ -65,7 +66,7 @@ export function useBanUser() {
       banReason: string;
       banExpiresIn?: number;
     }) => {
-      console.log('useBanUser, userId:', userId);
+      logger.auth.debug('useBanUser, userId:', { userId });
       return authClient.admin.banUser({
         userId,
         banReason,
@@ -87,7 +88,7 @@ export function useUnbanUser() {
 
   return useMutation({
     mutationFn: async ({ userId }: { userId: string }) => {
-      console.log('useUnbanUser, userId:', userId);
+      logger.auth.debug('useUnbanUser, userId:', { userId });
       return authClient.admin.unbanUser({
         userId,
       });

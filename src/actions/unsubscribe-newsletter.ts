@@ -1,5 +1,6 @@
 'use server';
 
+import { logger } from '@/lib/logger';
 import { userActionClient } from '@/lib/safe-action';
 import { unsubscribe } from '@/newsletter';
 import { z } from 'zod';
@@ -17,7 +18,7 @@ export const unsubscribeNewsletterAction = userActionClient
       const unsubscribed = await unsubscribe(email);
 
       if (!unsubscribed) {
-        console.error('unsubscribe newsletter error:', email);
+        logger.actions.error('unsubscribe newsletter error:', null, { email });
         return {
           success: false,
           error: 'Failed to unsubscribe from the newsletter',
@@ -28,7 +29,7 @@ export const unsubscribeNewsletterAction = userActionClient
         success: true,
       };
     } catch (error) {
-      console.error('unsubscribe newsletter error:', error);
+      logger.actions.error('unsubscribe newsletter error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Something went wrong',

@@ -9,6 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import {
   AlertCircle,
@@ -103,7 +104,7 @@ function AssistantMessage({
         ]);
       }
     } catch (error) {
-      console.error('Share failed:', error);
+      logger.ai.error('Share failed:', error);
     }
   };
 

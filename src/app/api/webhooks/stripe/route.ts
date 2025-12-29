@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { handleWebhookEvent } from '@/payment';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Return success
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (error) {
-    console.error('Error in webhook route:', error);
+    logger.api.error('Error in webhook route', error);
 
     // Return error
     return NextResponse.json(

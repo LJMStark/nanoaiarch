@@ -4,6 +4,7 @@ import { getDb } from '@/db';
 import { creditTransaction } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
 import { CREDITS_EXPIRATION_DAYS } from '@/lib/constants';
+import { logger } from '@/lib/logger';
 import { userActionClient } from '@/lib/safe-action';
 import { addDays } from 'date-fns';
 import { and, eq, gt, gte, isNotNull, lte, sum } from 'drizzle-orm';
@@ -50,7 +51,7 @@ export const getCreditStatsAction = userActionClient.action(async ({ ctx }) => {
       },
     };
   } catch (error) {
-    console.error('get credit stats error:', error);
+    logger.actions.error('get credit stats error:', error);
     return {
       success: false,
       error:

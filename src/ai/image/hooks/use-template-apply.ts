@@ -1,9 +1,13 @@
 'use client';
 
 import { createImageProject } from '@/actions/image-project';
-import type { AspectRatioId, StylePresetId } from '@/ai/image/lib/arch-types';
-import type { ArchTemplate } from '@/ai/image/lib/templates';
+import type {
+  ArchTemplate,
+  AspectRatioId,
+  StylePresetId,
+} from '@/ai/image/lib/arch-types';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 import { useProjectStore } from '@/stores/project-store';
 import { useCallback, useState } from 'react';
 
@@ -86,7 +90,7 @@ export function useTemplateApply(): UseTemplateApplyReturn {
 
         return true;
       } catch (error) {
-        console.error('Failed to apply template:', error);
+        logger.ai.error('Failed to apply template:', error);
         toast({
           title: 'Error',
           description: 'An unexpected error occurred',
@@ -143,7 +147,7 @@ export function useTemplateApply(): UseTemplateApplyReturn {
 
         return true;
       } catch (error) {
-        console.error('Failed to create project:', error);
+        logger.ai.error('Failed to create project:', error);
         toast({
           title: 'Error',
           description: 'An unexpected error occurred',

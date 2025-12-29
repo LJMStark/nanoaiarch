@@ -1,7 +1,8 @@
 'use client';
 
+import type { ArchTemplate } from '@/ai/image/lib/arch-types';
 import { TEMPLATE_CATEGORIES } from '@/ai/image/lib/template-categories';
-import { ARCH_TEMPLATES, type ArchTemplate } from '@/ai/image/lib/templates';
+import { ARCH_TEMPLATES } from '@/ai/image/lib/templates';
 import Container from '@/components/layout/container';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';

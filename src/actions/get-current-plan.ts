@@ -3,6 +3,7 @@
 import { getDb } from '@/db';
 import { payment } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
+import { logger } from '@/lib/logger';
 import { findPlanByPriceId, getAllPricePlans } from '@/lib/price-plan';
 import { userActionClient } from '@/lib/safe-action';
 import {
@@ -30,7 +31,7 @@ export const getCurrentPlanAction = userActionClient
     const userId = currentUser.id;
 
     try {
-      console.log('Check current plan start for userId:', userId);
+      logger.actions.debug('Check current plan start for userId', { userId });
 
       const db = await getDb();
       const plans = getAllPricePlans();
@@ -78,9 +79,9 @@ export const getCurrentPlanAction = userActionClient
         )
         .orderBy(desc(payment.createdAt));
 
-      console.log(
-        `Check current plan, found ${payments.length} relevant payments`
-      );
+      logger.actions.debug('Check current plan, found relevant payments', {
+        count: payments.length,
+      });
 
       // Analyze payments to determine current plan
       let userLifetimePlan: PricePlan | null = null;
@@ -97,10 +98,9 @@ export const getCurrentPlanAction = userActionClient
           const pricePlan = findPlanByPriceId(paymentRecord.priceId);
           if (pricePlan && lifetimePlanIds.includes(pricePlan.id)) {
             userLifetimePlan = pricePlan;
-            console.log(
-              'Check current plan, found lifetime plan:',
-              pricePlan.id
-            );
+            logger.actions.debug('Check current plan, found lifetime plan', {
+              planId: pricePlan.id,
+            });
           }
         }
 
@@ -126,16 +126,18 @@ export const getCurrentPlanAction = userActionClient
             trialEndDate: paymentRecord.trialEnd || undefined,
             createdAt: paymentRecord.createdAt,
           };
-          console.log(
-            'Check current plan, found active subscription:',
-            activeSubscription.id
+          logger.actions.debug(
+            'Check current plan, found active subscription',
+            {
+              subscriptionId: activeSubscription.id,
+            }
           );
         }
       }
 
       // Return results based on priority: lifetime > subscription > free
       if (userLifetimePlan) {
-        console.log('Check current plan, user is lifetime member');
+        logger.actions.debug('Check current plan, user is lifetime member');
         return {
           success: true,
           data: {
@@ -146,7 +148,9 @@ export const getCurrentPlanAction = userActionClient
       }
 
       if (activeSubscription) {
-        console.log('Check current plan, user has active subscription');
+        logger.actions.debug(
+          'Check current plan, user has active subscription'
+        );
         // Find the corresponding plan for the subscription
         const subscriptionPlan =
           plans.find((p) =>
@@ -165,7 +169,7 @@ export const getCurrentPlanAction = userActionClient
       }
 
       // Default to free plan
-      console.log('Check current plan, return free plan');
+      logger.actions.debug('Check current plan, return free plan');
       return {
         success: true,
         data: {
@@ -174,7 +178,7 @@ export const getCurrentPlanAction = userActionClient
         },
       };
     } catch (error) {
-      console.error('Check current plan error:', error);
+      logger.actions.error('Check current plan error', error);
       return {
         success: false,
         error:

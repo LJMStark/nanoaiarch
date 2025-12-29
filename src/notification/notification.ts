@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { sendMessageToDiscord } from './discord';
 import { sendMessageToFeishu } from './feishu';
 
@@ -14,7 +15,12 @@ export async function sendNotification(
   userName: string,
   amount: number
 ): Promise<void> {
-  console.log('sendNotification', sessionId, customerId, userName, amount);
+  logger.general.info('sendNotification', {
+    sessionId,
+    customerId,
+    userName,
+    amount,
+  });
 
   // Send message to Discord channel
   await sendMessageToDiscord(sessionId, customerId, userName, amount);

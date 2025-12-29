@@ -1,4 +1,5 @@
 import { authClient } from '@/lib/auth-client';
+import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
 
 // Query keys
@@ -23,7 +24,7 @@ export function useUserAccounts(userId: string | undefined) {
         return accounts.data;
       }
 
-      console.log('useUserAccounts error:', accounts?.error);
+      logger.auth.error('useUserAccounts error:', accounts?.error);
       throw new Error('Failed to fetch user accounts');
     },
     enabled: !!userId,
@@ -36,7 +37,7 @@ export function useHasCredentialProvider(userId: string | undefined) {
 
   const hasCredentialProvider =
     accounts?.some((account) => account.provider === 'credential') ?? false;
-  console.log('has credential provider:', hasCredentialProvider);
+  logger.auth.debug('has credential provider:', { hasCredentialProvider });
 
   return {
     hasCredentialProvider,

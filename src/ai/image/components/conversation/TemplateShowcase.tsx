@@ -1,10 +1,14 @@
 'use client';
 
-import { TEMPLATE_CATEGORIES } from '@/ai/image/lib/template-categories';
-import { ARCH_TEMPLATES, type ArchTemplate } from '@/ai/image/lib/templates';
 import { TemplateDetailModal } from '@/ai/image/components/TemplateDetailModal';
 import { useTemplateApply } from '@/ai/image/hooks/use-template-apply';
-import type { AspectRatioId, StylePresetId } from '@/ai/image/lib/arch-types';
+import type {
+  ArchTemplate,
+  AspectRatioId,
+  StylePresetId,
+} from '@/ai/image/lib/arch-types';
+import { TEMPLATE_CATEGORIES } from '@/ai/image/lib/template-categories';
+import { ARCH_TEMPLATES } from '@/ai/image/lib/templates';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles } from 'lucide-react';

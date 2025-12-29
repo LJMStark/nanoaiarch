@@ -1,6 +1,7 @@
 'use server';
 
 import { validateTurnstileToken } from '@/lib/captcha';
+import { logger } from '@/lib/logger';
 import { actionClient } from '@/lib/safe-action';
 import { z } from 'zod';
 
@@ -23,7 +24,7 @@ export const validateCaptchaAction = actionClient
         valid: isValid,
       };
     } catch (error) {
-      console.error('Captcha validation error:', error);
+      logger.actions.error('Captcha validation error:', error);
       return {
         success: false,
         valid: false,

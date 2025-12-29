@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 /**
  * Send a message to Feishu when a user makes a purchase
  * @param sessionId The Stripe checkout session ID
@@ -15,7 +17,7 @@ export async function sendMessageToFeishu(
     const webhookUrl = process.env.FEISHU_WEBHOOK_URL;
 
     if (!webhookUrl) {
-      console.warn(
+      logger.general.warn(
         'FEISHU_WEBHOOK_URL is not set, skipping Feishu notification'
       );
       return;
@@ -39,17 +41,18 @@ export async function sendMessageToFeishu(
     });
 
     if (!response.ok) {
-      console.error(
-        `<< Failed to send Feishu notification for user ${userName}:`,
-        response
+      logger.general.error(
+        'Failed to send Feishu notification',
+        new Error(`Response not ok for user ${userName}`),
+        { status: response.status, userName }
       );
+    } else {
+      logger.general.info('Successfully sent Feishu notification', {
+        userName,
+      });
     }
-
-    console.log(
-      `<< Successfully sent Feishu notification for user ${userName}`
-    );
   } catch (error) {
-    console.error('<< Failed to send Feishu notification:', error);
+    logger.general.error('Failed to send Feishu notification', error);
     // Don't rethrow the error to avoid interrupting the payment flow
   }
 }

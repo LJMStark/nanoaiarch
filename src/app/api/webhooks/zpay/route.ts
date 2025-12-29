@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { handleWebhookEvent } from '@/payment';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -30,11 +31,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     if (Object.keys(params).length === 0) {
-      console.error('zpay webhook: no parameters received');
+      logger.api.error('zpay webhook: no parameters received');
       return new NextResponse('fail', { status: 400 });
     }
 
-    console.log('zpay webhook POST received:', Object.keys(params));
+    logger.api.info('zpay webhook POST received', { keys: Object.keys(params) });
 
     const payload = JSON.stringify(params);
     const signature = params.sign || '';
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       headers: { 'Content-Type': 'text/plain' },
     });
   } catch (error) {
-    console.error('zpay webhook POST error:', error);
+    logger.api.error('zpay webhook POST error:', error);
     return new NextResponse('fail', { status: 400 });
   }
 }
@@ -63,11 +64,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
 
     if (Object.keys(params).length === 0) {
-      console.error('zpay webhook: no parameters received');
+      logger.api.error('zpay webhook: no parameters received');
       return new NextResponse('fail', { status: 400 });
     }
 
-    console.log('zpay webhook GET received:', Object.keys(params));
+    logger.api.info('zpay webhook GET received', { keys: Object.keys(params) });
 
     const payload = JSON.stringify(params);
     const signature = params.sign || '';
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       headers: { 'Content-Type': 'text/plain' },
     });
   } catch (error) {
-    console.error('zpay webhook GET error:', error);
+    logger.api.error('zpay webhook GET error:', error);
     return new NextResponse('fail', { status: 400 });
   }
 }

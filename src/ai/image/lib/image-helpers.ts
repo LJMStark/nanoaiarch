@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 // 将 base64 转换为 Blob
 export function base64ToBlob(base64Data: string, type = 'image/png'): Blob {
   const byteString = atob(base64Data);
@@ -56,7 +58,7 @@ export async function shareImage(
     }
   } catch (error) {
     // 分享被取消或出错，则下载
-    console.error('Error sharing:', error);
+    logger.ai.error('Error sharing:', error);
     await downloadImage(imageData, 'forma');
   }
 }
@@ -103,7 +105,7 @@ export const imageHelpers = {
         throw new Error('Share API not available');
       }
     } catch (error) {
-      console.error('Error sharing/downloading:', error);
+      logger.ai.error('Error sharing/downloading:', error);
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;

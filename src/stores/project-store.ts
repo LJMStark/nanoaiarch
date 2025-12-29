@@ -1,7 +1,6 @@
 import type { ImageProjectItem } from '@/actions/image-project';
-import type { AspectRatioId } from '@/ai/image/lib/aspect-ratios';
-import type { GeminiModelId } from '@/ai/image/lib/gemini-models';
-import type { StylePresetId } from '@/ai/image/lib/style-presets';
+import type { AspectRatioId, StylePresetId } from '@/ai/image/lib/arch-types';
+import type { GeminiModelId } from '@/ai/image/lib/provider-config';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 

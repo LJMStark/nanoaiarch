@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { logger } from '@/lib/logger';
 import { s3mini } from 's3mini';
 import { storageConfig } from '../config/storage-config';
 import {
@@ -121,19 +122,19 @@ export class S3Provider implements StorageProvider {
       if (publicUrl) {
         // Use custom domain if provided
         url = `${publicUrl.replace(/\/$/, '')}/${key}`;
-        console.log('uploadFile, public url', url);
+        logger.storage.debug('uploadFile using public url', { url });
       } else {
         // For s3mini, we construct the URL manually
         // Since bucket is included in endpoint, we just append the key
         const baseUrl = this.config.endpoint?.replace(/\/$/, '') || '';
         url = `${baseUrl}/${key}`;
-        console.log('uploadFile, constructed url', url);
+        logger.storage.debug('uploadFile using constructed url', { url });
       }
 
       return { url, key };
     } catch (error) {
       if (error instanceof ConfigurationError) {
-        console.error('uploadFile, configuration error', error);
+        logger.storage.error('uploadFile configuration error', error);
         throw error;
       }
 
@@ -141,7 +142,7 @@ export class S3Provider implements StorageProvider {
         error instanceof Error
           ? error.message
           : 'Unknown error occurred during file upload';
-      console.error('uploadFile, error', message);
+      logger.storage.error('uploadFile error', new Error(message));
       throw new UploadError(message);
     }
   }
@@ -156,16 +157,16 @@ export class S3Provider implements StorageProvider {
       const wasDeleted = await s3.deleteObject(key);
 
       if (!wasDeleted) {
-        console.warn(
-          `File with key ${key} was not found or could not be deleted`
-        );
+        logger.storage.warn('File was not found or could not be deleted', {
+          key,
+        });
       }
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
           : 'Unknown error occurred during file deletion';
-      console.error('deleteFile, error', message);
+      logger.storage.error('deleteFile error', new Error(message));
       throw new StorageError(message);
     }
   }

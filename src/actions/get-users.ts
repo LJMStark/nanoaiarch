@@ -3,6 +3,7 @@
 import { getDb } from '@/db';
 import { user } from '@/db/schema';
 import { isDemoWebsite } from '@/lib/demo';
+import { logger } from '@/lib/logger';
 import { adminActionClient } from '@/lib/safe-action';
 import { asc, desc, ilike, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -91,7 +92,7 @@ export const getUsersAction = adminActionClient
         },
       };
     } catch (error) {
-      console.error('get users error:', error);
+      logger.actions.error('get users error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to fetch users',

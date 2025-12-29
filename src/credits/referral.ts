@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { websiteConfig } from '@/config/website';
 import { getDb } from '@/db';
 import { referral, user } from '@/db/schema';
+import { logger } from '@/lib/logger';
 import { and, eq } from 'drizzle-orm';
 import { addCredits } from './credits';
 import { CREDIT_TRANSACTION_TYPE } from './types';
@@ -135,14 +136,16 @@ export async function applyReferral(
       description: `Referral signup bonus: ${amount} credits`,
       expireDays: expireDays || undefined,
     });
-    console.log(
-      `applyReferral: Added ${amount} signup bonus to user ${newUserId}`
-    );
+    logger.credits.info('Added signup bonus to user', {
+      amount,
+      userId: newUserId,
+    });
   }
 
-  console.log(
-    `applyReferral: Created referral from ${referrerId} to ${newUserId}`
-  );
+  logger.credits.info('Created referral', {
+    referrerId,
+    referredId: newUserId,
+  });
   return { success: true };
 }
 
@@ -207,9 +210,10 @@ export async function completeReferral(
       })
       .where(eq(referral.id, pendingReferral.id));
 
-    console.log(
-      `completeReferral: Awarded ${amount} commission to referrer ${pendingReferral.referrerId}`
-    );
+    logger.credits.info('Awarded commission to referrer', {
+      amount,
+      referrerId: pendingReferral.referrerId,
+    });
   }
 
   return { success: true };

@@ -1,4 +1,5 @@
 import { websiteConfig } from '@/config/website';
+import { logger } from '@/lib/logger';
 import { getTemplate } from '@/mail';
 import type {
   MailProvider,
@@ -71,7 +72,7 @@ export class ResendProvider implements MailProvider {
         text: mailTemplate.text,
       });
     } catch (error) {
-      console.error('Error sending template email:', error);
+      logger.mail.error('Error sending template email', error);
       return {
         success: false,
         error,
@@ -90,7 +91,7 @@ export class ResendProvider implements MailProvider {
     const { to, subject, html, text } = params;
 
     if (!this.from || !to || !subject || !html) {
-      console.warn('Missing required fields for email send', {
+      logger.mail.warn('Missing required fields for email send', {
         from: this.from,
         to,
         subject,
@@ -112,7 +113,7 @@ export class ResendProvider implements MailProvider {
       });
 
       if (error) {
-        console.error('Error sending email', error);
+        logger.mail.error('Error sending email', error);
         return {
           success: false,
           error,
@@ -124,7 +125,7 @@ export class ResendProvider implements MailProvider {
         messageId: data?.id,
       };
     } catch (error) {
-      console.error('Error sending email:', error);
+      logger.mail.error('Error sending email', error);
       return {
         success: false,
         error,

@@ -10,6 +10,7 @@ import { editImageWithConversation } from '@/ai/image/lib/gemini-client';
 import type { GeminiModelId } from '@/ai/image/lib/provider-config';
 import { consumeCredits, hasEnoughCredits } from '@/credits/credits';
 import { auth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 import { type NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
     // 验证请求参数
     if (!messages || messages.length === 0 || !modelId) {
       const error = 'Invalid request parameters';
-      console.error(`${error} [requestId=${requestId}]`);
+      logger.api.error(`${error} [requestId=${requestId}]`);
       return NextResponse.json({ error }, { status: 400 });
     }
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!session?.user?.id) {
-      console.error(`Unauthorized request [requestId=${requestId}]`);
+      logger.api.error(`Unauthorized request [requestId=${requestId}]`);
       return NextResponse.json(
         { error: 'Please sign in to edit images' },
         { status: 401 }
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!hasCredits) {
-      console.error(
+      logger.api.error(
         `Insufficient credits [requestId=${requestId}, userId=${userId}, required=${creditCost}]`
       );
       return NextResponse.json(
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
     const geminiModelKey = mapModelIdToGeminiKey(modelId);
     const startstamp = performance.now();
 
-    console.log(
+    logger.api.info(
       `Starting image edit [requestId=${requestId}, userId=${userId}, model=${modelId}, messageCount=${messages.length}, creditCost=${creditCost}]`
     );
 
@@ -89,17 +90,17 @@ export async function POST(req: NextRequest) {
             amount: creditCost,
             description: `Image edit: ${modelId}`,
           });
-          console.log(
+          logger.api.info(
             `Consumed ${creditCost} credits [requestId=${requestId}, userId=${userId}]`
           );
         } catch (creditError) {
-          console.error(
+          logger.api.error(
             `Failed to consume credits [requestId=${requestId}, userId=${userId}]: `,
             creditError
           );
         }
 
-        console.log(
+        logger.api.info(
           `Completed image edit [requestId=${requestId}, model=${modelId}, elapsed=${elapsed}s]`
         );
         return {
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
         };
       }
 
-      console.error(
+      logger.api.error(
         `Image edit failed [requestId=${requestId}, model=${modelId}, elapsed=${elapsed}s]: ${result.error}`
       );
       return {
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest) {
       status: 'image' in result && result.image ? 200 : 500,
     });
   } catch (error) {
-    console.error(
+    logger.api.error(
       `Error editing image [requestId=${requestId}, model=${modelId}]: `,
       error
     );
