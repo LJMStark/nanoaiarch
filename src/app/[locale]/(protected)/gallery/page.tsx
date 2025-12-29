@@ -5,6 +5,7 @@ import {
   deleteGeneration,
   getGenerationHistory,
   toggleFavorite,
+  togglePublic,
 } from '@/actions/generation-history';
 import { shareImage, urlToBase64 } from '@/ai/image/lib/image-helpers';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
@@ -34,6 +35,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import {
   IconDownload,
+  IconEye,
+  IconEyeOff,
   IconFilter,
   IconGridDots,
   IconHeart,
@@ -43,6 +46,7 @@ import {
   IconShare,
   IconSparkles,
   IconTrash,
+  IconWorld,
 } from '@tabler/icons-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { enUS, zhCN } from 'date-fns/locale';
@@ -117,6 +121,26 @@ export default function GalleryPage() {
             g.id === id ? { ...g, isFavorite: result.isFavorite ?? false } : g
           )
         );
+      }
+    });
+  };
+
+  const handleTogglePublic = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    startTransition(async () => {
+      const result = await togglePublic(id);
+      if (result.success) {
+        setGenerations((prev) =>
+          prev.map((g) =>
+            g.id === id ? { ...g, isPublic: result.isPublic ?? false } : g
+          )
+        );
+        // Update selected generation if it's the one being toggled
+        if (selectedGeneration?.id === id) {
+          setSelectedGeneration((prev) =>
+            prev ? { ...prev, isPublic: result.isPublic ?? false } : null
+          );
+        }
       }
     });
   };
@@ -295,12 +319,17 @@ export default function GalleryPage() {
                     </div>
                   )}
 
-                  {/* Favorite indicator */}
-                  {generation.isFavorite && (
-                    <div className="absolute top-2 right-2">
+                  {/* Status indicators */}
+                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                    {generation.isPublic && (
+                      <div className="rounded-full bg-black/50 p-1">
+                        <IconWorld className="size-4 text-white" />
+                      </div>
+                    )}
+                    {generation.isFavorite && (
                       <IconHeartFilled className="size-5 text-red-500 drop-shadow" />
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
 
                 {/* Info */}
@@ -435,6 +464,26 @@ export default function GalleryPage() {
                           <>
                             <IconHeart className="mr-2 size-4" />
                             {t('detail.favorite')}
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        onClick={(e) =>
+                          handleTogglePublic(selectedGeneration.id, e)
+                        }
+                        disabled={isPending}
+                      >
+                        {selectedGeneration.isPublic ? (
+                          <>
+                            <IconEyeOff className="mr-2 size-4" />
+                            {t('detail.makePrivate')}
+                          </>
+                        ) : (
+                          <>
+                            <IconEye className="mr-2 size-4" />
+                            {t('detail.makePublic')}
                           </>
                         )}
                       </Button>

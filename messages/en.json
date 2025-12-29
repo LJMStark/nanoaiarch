@@ -29,6 +29,8 @@
       "credits": "Credits Used",
       "favorite": "Add to Favorites",
       "unfavorite": "Remove from Favorites",
+      "makePublic": "Make Public",
+      "makePrivate": "Make Private",
       "download": "Download",
       "share": "Share",
       "delete": "Delete"
@@ -38,6 +40,129 @@
       "description": "This action cannot be undone. Are you sure you want to delete this generation?",
       "cancel": "Cancel",
       "confirm": "Delete"
+    }
+  },
+  "Help": {
+    "title": "Help Center",
+    "description": "Find answers to common questions and learn how to use Forma AI",
+    "backToHelp": "Back to Help Center",
+    "stillNeedHelp": "Still need help?",
+    "contactSupport": "Contact Support",
+    "categories": {
+      "getting-started": "Getting Started",
+      "billing": "Credits & Billing",
+      "ai-features": "AI Features",
+      "account": "Account",
+      "troubleshooting": "Troubleshooting"
+    },
+    "contact": {
+      "title": "Can't find what you're looking for?",
+      "description": "Our support team is here to help"
+    }
+  },
+  "Explore": {
+    "title": "Explore",
+    "description": "Discover stunning architectural visualizations from the community",
+    "filters": "Filters",
+    "allStyles": "All Styles",
+    "allTemplates": "All Templates",
+    "sortLatest": "Latest",
+    "sortPopular": "Popular",
+    "clearFilters": "Clear",
+    "loadMore": "Load More",
+    "viewCreation": "View Creation",
+    "prompt": "Prompt",
+    "copy": "Copy",
+    "download": "Download",
+    "share": "Share",
+    "promptCopied": "Prompt copied to clipboard",
+    "copyFailed": "Failed to copy prompt",
+    "downloadStarted": "Download started",
+    "downloadFailed": "Failed to download",
+    "linkCopied": "Link copied to clipboard",
+    "makePublic": "Make Public",
+    "makePrivate": "Make Private",
+    "publicBadge": "Public"
+  },
+  "UserProfile": {
+    "joined": "Joined",
+    "works": "works",
+    "private": "Private",
+    "noWorks": "No public works yet",
+    "loading": "Loading...",
+    "loadMore": "Load More",
+    "privateProfile": "Private Profile",
+    "privateProfileDesc": "This user's profile is private"
+  },
+  "Onboarding": {
+    "modal": {
+      "title": "Welcome to Forma AI"
+    },
+    "welcome": {
+      "title": "Welcome to Forma AI",
+      "description": "Transform your architectural ideas into stunning visualizations with AI",
+      "features": {
+        "ai": {
+          "title": "AI-Powered",
+          "description": "Advanced AI models for photorealistic renders"
+        },
+        "templates": {
+          "title": "20+ Templates",
+          "description": "Professional architectural templates"
+        },
+        "fast": {
+          "title": "Fast Results",
+          "description": "Generate in seconds, not hours"
+        },
+        "credits": {
+          "title": "Free Credits",
+          "description": "Start with free credits to explore"
+        }
+      },
+      "skip": "Skip for now",
+      "start": "Get Started"
+    },
+    "template": {
+      "title": "Choose a Template",
+      "description": "Select a template to start with, or skip to create from scratch",
+      "back": "Back",
+      "skip": "Skip"
+    },
+    "generate": {
+      "title": "Create Your First Image",
+      "description": "Try generating your first architectural visualization",
+      "descriptionWithTemplate": "Generate with {template} template",
+      "promptLabel": "Describe your vision",
+      "promptPlaceholder": "A modern minimalist house with large glass windows...",
+      "defaultPrompt": "A modern minimalist house with floor-to-ceiling glass windows, white concrete walls, and a flat roof, surrounded by a landscaped garden with mature trees",
+      "back": "Back",
+      "generate": "Generate",
+      "generating": "Generating...",
+      "success": "Image generated successfully!",
+      "creditsUsed": "{credits} credits used",
+      "error": "Failed to generate image. Please try again.",
+      "noImage": "No image was generated. Please try a different prompt.",
+      "insufficientCredits": "Insufficient credits. Please purchase more to continue.",
+      "unauthorized": "Please sign in to generate images.",
+      "editTitle": "Refine Your Creation",
+      "editDescription": "Chat with AI to modify your image, or complete when satisfied",
+      "chatLabel": "Tell AI how to modify",
+      "editPlaceholder": "e.g., Add more greenery, change to evening lighting...",
+      "editHint": "Press Enter to send. Each edit uses credits.",
+      "editing": "Editing...",
+      "editSuccess": "Image updated!",
+      "editError": "Failed to edit image. Please try again.",
+      "regenerate": "Start Over",
+      "complete": "Looks Good!"
+    },
+    "complete": {
+      "title": "You're All Set!",
+      "description": "Your account is ready. Start creating amazing architectural visualizations.",
+      "yourFirstCreation": "Your first creation",
+      "exploreGallery": "Explore Gallery",
+      "createMore": "Create More",
+      "goToDashboard": "Go to Dashboard",
+      "startCreating": "Start Creating"
     }
   },
   "Common": {
@@ -479,6 +604,7 @@
         "items": {
           "blog": "Blog",
           "docs": "Documentation",
+          "help": "Help Center",
           "changelog": "Changelog",
           "roadmap": "Roadmap"
         }
@@ -623,6 +749,29 @@
           "fail": "Failed to update name",
           "saving": "Saving...",
           "save": "Save"
+        },
+        "bio": {
+          "title": "Bio",
+          "description": "Write a short bio to tell others about yourself",
+          "placeholder": "Write something about yourself...",
+          "maxLength": "Bio must be 200 characters or less",
+          "characters": "characters",
+          "success": "Bio updated successfully",
+          "fail": "Failed to update bio",
+          "saving": "Saving...",
+          "save": "Save"
+        },
+        "visibility": {
+          "title": "Profile Visibility",
+          "description": "Control who can see your profile and public works",
+          "public": "Public Profile",
+          "private": "Private Profile",
+          "publicDesc": "Your profile and public works are visible to everyone",
+          "privateDesc": "Your profile is hidden from others",
+          "madePublic": "Profile is now public",
+          "madePrivate": "Profile is now private",
+          "fail": "Failed to update visibility",
+          "viewProfile": "View my profile"
         }
       },
       "billing": {

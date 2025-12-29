@@ -5,8 +5,8 @@ import { addAssistantMessage, addUserMessage } from '@/actions/project-message';
 import { AspectRatioSelect } from '@/ai/image/components/AspectRatioSelect';
 import { ImageUploader } from '@/ai/image/components/ImageUploader';
 import { StylePresetSelect } from '@/ai/image/components/StylePresetSelect';
-import type { AspectRatioId, StylePresetId } from '@/ai/image/lib/arch-types';
 import { generateImage, validateBase64Image } from '@/ai/image/lib/api-utils';
+import type { AspectRatioId, StylePresetId } from '@/ai/image/lib/arch-types';
 import { buildArchPrompt } from '@/ai/image/lib/system-prompts';
 import { Button } from '@/components/ui/button';
 import {

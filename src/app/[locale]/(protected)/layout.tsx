@@ -1,4 +1,5 @@
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
+import { OnboardingProvider } from '@/components/onboarding';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type { PropsWithChildren } from 'react';
 
@@ -19,6 +20,8 @@ export default function DashboardLayout({ children }: PropsWithChildren) {
       <DashboardSidebar variant="inset" />
 
       <SidebarInset>{children}</SidebarInset>
+
+      <OnboardingProvider>{null}</OnboardingProvider>
     </SidebarProvider>
   );
 }

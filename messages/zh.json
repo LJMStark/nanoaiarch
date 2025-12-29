@@ -29,6 +29,8 @@
       "credits": "消耗积分",
       "favorite": "添加到收藏",
       "unfavorite": "取消收藏",
+      "makePublic": "公开作品",
+      "makePrivate": "设为私密",
       "download": "下载",
       "share": "分享",
       "delete": "删除"
@@ -38,6 +40,129 @@
       "description": "此操作无法撤销，确定要删除这个作品吗？",
       "cancel": "取消",
       "confirm": "删除"
+    }
+  },
+  "Help": {
+    "title": "帮助中心",
+    "description": "查找常见问题的解答，了解如何使用 Forma AI",
+    "backToHelp": "返回帮助中心",
+    "stillNeedHelp": "仍需帮助？",
+    "contactSupport": "联系客服",
+    "categories": {
+      "getting-started": "入门指南",
+      "billing": "积分与计费",
+      "ai-features": "AI 功能",
+      "account": "账户",
+      "troubleshooting": "故障排除"
+    },
+    "contact": {
+      "title": "找不到您需要的内容？",
+      "description": "我们的支持团队随时为您服务"
+    }
+  },
+  "Explore": {
+    "title": "发现",
+    "description": "探索社区中精彩的建筑可视化作品",
+    "filters": "筛选",
+    "allStyles": "全部风格",
+    "allTemplates": "全部模板",
+    "sortLatest": "最新",
+    "sortPopular": "热门",
+    "clearFilters": "清除",
+    "loadMore": "加载更多",
+    "viewCreation": "查看作品",
+    "prompt": "提示词",
+    "copy": "复制",
+    "download": "下载",
+    "share": "分享",
+    "promptCopied": "提示词已复制",
+    "copyFailed": "复制失败",
+    "downloadStarted": "开始下载",
+    "downloadFailed": "下载失败",
+    "linkCopied": "链接已复制",
+    "makePublic": "公开作品",
+    "makePrivate": "设为私密",
+    "publicBadge": "公开"
+  },
+  "UserProfile": {
+    "joined": "加入于",
+    "works": "作品",
+    "private": "私密",
+    "noWorks": "暂无公开作品",
+    "loading": "加载中...",
+    "loadMore": "加载更多",
+    "privateProfile": "私密主页",
+    "privateProfileDesc": "该用户的主页已设为私密"
+  },
+  "Onboarding": {
+    "modal": {
+      "title": "欢迎使用 Forma AI"
+    },
+    "welcome": {
+      "title": "欢迎使用 Forma AI",
+      "description": "用 AI 将您的建筑创意转化为惊艳的可视化效果",
+      "features": {
+        "ai": {
+          "title": "AI 驱动",
+          "description": "先进的 AI 模型生成逼真渲染"
+        },
+        "templates": {
+          "title": "20+ 模板",
+          "description": "专业建筑设计模板"
+        },
+        "fast": {
+          "title": "快速出图",
+          "description": "秒级生成，告别漫长等待"
+        },
+        "credits": {
+          "title": "免费积分",
+          "description": "注册即赠积分，立即体验"
+        }
+      },
+      "skip": "稍后再说",
+      "start": "开始使用"
+    },
+    "template": {
+      "title": "选择模板",
+      "description": "选择一个模板开始，或跳过从头创建",
+      "back": "返回",
+      "skip": "跳过"
+    },
+    "generate": {
+      "title": "创建您的第一张图",
+      "description": "尝试生成您的第一张建筑可视化作品",
+      "descriptionWithTemplate": "使用 {template} 模板生成",
+      "promptLabel": "描述您的创意",
+      "promptPlaceholder": "一栋现代简约的房屋，配有大面积玻璃窗...",
+      "defaultPrompt": "一栋现代简约的房屋，落地玻璃窗、白色混凝土墙、平屋顶，周围环绕着成熟树木的景观花园",
+      "back": "返回",
+      "generate": "生成",
+      "generating": "生成中...",
+      "success": "图像生成成功！",
+      "creditsUsed": "已消耗 {credits} 积分",
+      "error": "生成失败，请重试。",
+      "noImage": "未生成图像，请尝试不同的描述。",
+      "insufficientCredits": "积分不足，请购买积分后继续。",
+      "unauthorized": "请登录后生成图像。",
+      "editTitle": "优化您的作品",
+      "editDescription": "与 AI 对话修改图像，满意后点击完成",
+      "chatLabel": "告诉 AI 如何修改",
+      "editPlaceholder": "例如：添加更多绿植、改为傍晚光线...",
+      "editHint": "按 Enter 发送。每次编辑消耗积分。",
+      "editing": "编辑中...",
+      "editSuccess": "图像已更新！",
+      "editError": "编辑失败，请重试。",
+      "regenerate": "重新开始",
+      "complete": "看起来不错！"
+    },
+    "complete": {
+      "title": "准备就绪！",
+      "description": "您的账户已准备好，开始创建精彩的建筑可视化作品吧。",
+      "yourFirstCreation": "您的第一件作品",
+      "exploreGallery": "浏览作品",
+      "createMore": "继续创作",
+      "goToDashboard": "进入仪表盘",
+      "startCreating": "开始创作"
     }
   },
   "Common": {
@@ -479,6 +604,7 @@
         "items": {
           "blog": "博客",
           "docs": "文档",
+          "help": "帮助中心",
           "changelog": "更新日志",
           "roadmap": "路线图"
         }
@@ -623,6 +749,29 @@
           "fail": "更新名字失败",
           "saving": "保存中...",
           "save": "保存"
+        },
+        "bio": {
+          "title": "个人简介",
+          "description": "写一段简短的介绍让其他人了解你",
+          "placeholder": "介绍一下你自己...",
+          "maxLength": "简介最多 200 个字符",
+          "characters": "字符",
+          "success": "简介更新成功",
+          "fail": "更新简介失败",
+          "saving": "保存中...",
+          "save": "保存"
+        },
+        "visibility": {
+          "title": "主页可见性",
+          "description": "控制谁可以查看您的主页和公开作品",
+          "public": "公开主页",
+          "private": "私密主页",
+          "publicDesc": "所有人都可以看到您的主页和公开作品",
+          "privateDesc": "您的主页对其他人不可见",
+          "madePublic": "主页已设为公开",
+          "madePrivate": "主页已设为私密",
+          "fail": "更新可见性失败",
+          "viewProfile": "查看我的主页"
         }
       },
       "billing": {

@@ -7,6 +7,7 @@ import {
   BellIcon,
   CircleUserRoundIcon,
   CoinsIcon,
+  CompassIcon,
   CreditCardIcon,
   GiftIcon,
   ImageIcon,
@@ -33,6 +34,7 @@ import { websiteConfig } from './website';
 export function useSidebarLinks(): NestedMenuItem[] {
   const t = useTranslations('Dashboard');
   const tGallery = useTranslations('Gallery');
+  const tExplore = useTranslations('Explore');
 
   // if is demo website, allow user to access admin and user pages, but data is fake
   const isDemo = isDemoWebsite();
@@ -48,6 +50,12 @@ export function useSidebarLinks(): NestedMenuItem[] {
       title: tGallery('title'),
       icon: <ImageIcon className="size-4 shrink-0" />,
       href: Routes.Gallery,
+      external: false,
+    },
+    {
+      title: tExplore('title'),
+      icon: <CompassIcon className="size-4 shrink-0" />,
+      href: Routes.Explore,
       external: false,
     },
     {

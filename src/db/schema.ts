@@ -16,6 +16,13 @@ export const user = pgTable("user", {
 	// Referral fields
 	referralCode: text('referral_code').unique(),
 	referredBy: text('referred_by'),
+	// Onboarding fields
+	onboardingCompleted: boolean('onboarding_completed').notNull().default(false),
+	onboardingStep: integer('onboarding_step').notNull().default(0),
+	onboardingCompletedAt: timestamp('onboarding_completed_at'),
+	// Profile fields
+	bio: text('bio'),
+	isProfilePublic: boolean('is_profile_public').notNull().default(true),
 }, (table) => ({
 	userIdIdx: index("user_id_idx").on(table.id),
 	userCustomerIdIdx: index("user_customer_id_idx").on(table.customerId),

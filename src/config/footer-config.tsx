@@ -61,6 +61,11 @@ export function useFooterLinks(): NestedMenuItem[] {
             ]
           : []),
         {
+          title: t('resources.items.help'),
+          href: Routes.Help,
+          external: false,
+        },
+        {
           title: t('resources.items.changelog'),
           href: Routes.Changelog,
           external: false,

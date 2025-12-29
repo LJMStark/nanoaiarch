@@ -10,6 +10,7 @@ import PromotekitScript from '@/components/affiliate/promotekit';
 import { TailwindIndicator } from '@/components/layout/tailwind-indicator';
 import { routing } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
+import type { Viewport } from 'next';
 import { type Locale, NextIntlClientProvider, hasLocale } from 'next-intl';
 import { notFound } from 'next/navigation';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
@@ -18,6 +19,22 @@ import { Toaster } from 'sonner';
 import { Providers } from './providers';
 
 import '@/styles/globals.css';
+
+/**
+ * Viewport configuration for PWA
+ * https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ */
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+  ],
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+};
 
 interface LocaleLayoutProps {
   children: ReactNode;
@@ -45,6 +62,14 @@ export default async function LocaleLayout({
   return (
     <html suppressHydrationWarning lang={locale}>
       <head>
+        {/* PWA meta tags for iOS */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="Nano AI" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <AffonsoScript />
         <PromotekitScript />
       </head>

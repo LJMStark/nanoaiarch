@@ -267,6 +267,55 @@ export async function deleteGeneration(generationId: string) {
 }
 
 /**
+ * Toggle public status of a generation
+ */
+export async function togglePublic(generationId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    const db = await getDb();
+
+    // First get the current status
+    const current = await db
+      .select({ isPublic: generationHistory.isPublic })
+      .from(generationHistory)
+      .where(
+        and(
+          eq(generationHistory.id, generationId),
+          eq(generationHistory.userId, session.user.id)
+        )
+      )
+      .limit(1);
+
+    if (!current.length) {
+      return { success: false, error: 'Generation not found' };
+    }
+
+    // Toggle the status
+    await db
+      .update(generationHistory)
+      .set({
+        isPublic: !current[0].isPublic,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(generationHistory.id, generationId),
+          eq(generationHistory.userId, session.user.id)
+        )
+      );
+
+    return { success: true, isPublic: !current[0].isPublic };
+  } catch (error) {
+    logger.actions.error('Failed to toggle public status', error);
+    return { success: false, error: 'Failed to update' };
+  }
+}
+
+/**
  * Update generation image URL (used after upload to storage)
  */
 export async function updateGenerationImage(

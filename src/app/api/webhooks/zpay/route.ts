@@ -35,7 +35,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return new NextResponse('fail', { status: 400 });
     }
 
-    logger.api.info('zpay webhook POST received', { keys: Object.keys(params) });
+    logger.api.info('zpay webhook POST received', {
+      keys: Object.keys(params),
+    });
 
     const payload = JSON.stringify(params);
     const signature = params.sign || '';

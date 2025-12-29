@@ -100,3 +100,25 @@ export const blog = defineCollections({
     author: z.string(),
   }),
 });
+
+/**
+ * Help center articles
+ *
+ * title is required, description and icon are optional
+ */
+export const help = defineCollections({
+  type: 'doc',
+  dir: 'content/help',
+  schema: frontmatterSchema.extend({
+    icon: z.string().optional(),
+    category: z.enum([
+      'getting-started',
+      'billing',
+      'ai-features',
+      'account',
+      'troubleshooting',
+    ]),
+    order: z.number().default(0),
+    published: z.boolean().default(true),
+  }),
+});

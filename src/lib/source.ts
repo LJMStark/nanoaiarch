@@ -4,7 +4,15 @@ import { type InferPageType, loader } from 'fumadocs-core/source';
 import { createMDXSource } from 'fumadocs-mdx';
 import * as LucideIcons from 'lucide-react';
 import { createElement } from 'react';
-import { author, blog, category, changelog, docs, pages } from '../../.source';
+import {
+  author,
+  blog,
+  category,
+  changelog,
+  docs,
+  help,
+  pages,
+} from '../../.source';
 import { docsI18nConfig } from './docs/i18n';
 import { logger } from './logger';
 
@@ -71,6 +79,15 @@ export const categorySource = loader({
 });
 
 /**
+ * Help center source
+ */
+export const helpSource = loader({
+  baseUrl: '/help',
+  i18n: docsI18nConfig,
+  source: createMDXSource(help),
+});
+
+/**
  * Calculate estimated reading time in minutes from content
  */
 function calculateReadTimeFromContent(content: string): number {
@@ -130,6 +147,7 @@ export type PagesType = InferPageType<typeof pagesSource>;
 export type AuthorType = InferPageType<typeof authorSource>;
 export type CategoryType = InferPageType<typeof categorySource>;
 export type BlogType = InferPageType<typeof blogSource>;
+export type HelpType = InferPageType<typeof helpSource>;
 
 /**
  * Get blog posts with optional filtering and pagination

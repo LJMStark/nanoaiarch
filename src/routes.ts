@@ -46,6 +46,12 @@ export enum Routes {
 
   // Gallery route
   Gallery = '/gallery',
+
+  // Public explore route
+  Explore = '/explore',
+
+  // Help center
+  Help = '/help',
 }
 
 /**

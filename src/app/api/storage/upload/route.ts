@@ -29,7 +29,9 @@ export async function POST(request: NextRequest) {
     // Validate file type (optional, based on your requirements)
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      logger.api.warn('uploadFile, file type not supported', { type: file.type });
+      logger.api.warn('uploadFile, file type not supported', {
+        type: file.type,
+      });
       return NextResponse.json(
         { error: 'File type not supported' },
         { status: 400 }
