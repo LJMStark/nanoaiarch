@@ -102,7 +102,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
   const selectHistoryItem = useCallback((item: EditHistoryItem) => {
     setReferenceImage(item.afterImage);
     setImage({
-      provider: 'gemini',
+      provider: 'duomi',
       image: item.afterImage,
     });
   }, []);
@@ -125,7 +125,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prompt,
-            provider: 'gemini',
+            provider: 'duomi',
             modelId: selectedModel,
             referenceImage: mode === 'edit' ? referenceImage : undefined,
           }),
@@ -170,7 +170,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           }
 
           setImage({
-            provider: 'gemini',
+            provider: 'duomi',
             image: data.image,
             modelId: selectedModel,
             text: data.text,
@@ -197,7 +197,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
       } catch (err) {
         logger.ai.error('Image generation error:', err);
         setError({
-          provider: 'gemini',
+          provider: 'duomi',
           message:
             err instanceof Error ? err.message : 'An unexpected error occurred',
         });
@@ -214,7 +214,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
     async (prompt: string) => {
       if (!referenceImage) {
         setError({
-          provider: 'gemini',
+          provider: 'duomi',
           message: 'Please upload an image first',
         });
         return;
@@ -306,7 +306,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           setConversationHistory((prev) => [...prev, modelMessage]);
 
           setImage({
-            provider: 'gemini',
+            provider: 'duomi',
             image: data.image,
             modelId: selectedModel,
             text: data.text,
@@ -332,7 +332,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
       } catch (err) {
         logger.ai.error('Image edit error:', err);
         setError({
-          provider: 'gemini',
+          provider: 'duomi',
           message:
             err instanceof Error ? err.message : 'An unexpected error occurred',
         });
