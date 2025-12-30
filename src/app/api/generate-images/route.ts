@@ -1,3 +1,4 @@
+import { DEFAULT_IMAGE_QUALITY } from '@/ai/image/components/ImageQualitySelect';
 import type { GenerateImageRequest } from '@/ai/image/lib/api-types';
 import {
   TIMEOUT_MILLIS,
@@ -42,6 +43,18 @@ export async function POST(req: NextRequest) {
       );
       return NextResponse.json(
         { error: promptValidation.error },
+        { status: 400 }
+      );
+    }
+
+    // 验证 imageSize
+    const validImageSizes = ['1K', '2K', '4K'];
+    if (imageSize && !validImageSizes.includes(imageSize)) {
+      logger.api.error(
+        `Invalid imageSize [requestId=${requestId}]: ${imageSize}`
+      );
+      return NextResponse.json(
+        { error: 'Invalid image size. Must be 1K, 2K, or 4K' },
         { status: 400 }
       );
     }
@@ -97,8 +110,7 @@ export async function POST(req: NextRequest) {
       error?: string;
     }>;
 
-    // 使用请求中的画质设置，默认为 1K
-    const selectedImageSize = imageSize || '1K';
+    const selectedImageSize = imageSize || DEFAULT_IMAGE_QUALITY;
 
     if (referenceImage) {
       // 有参考图时使用图片编辑 API

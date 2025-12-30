@@ -3,13 +3,9 @@
 import { updateProjectActivity } from '@/actions/image-project';
 import { addAssistantMessage, addUserMessage } from '@/actions/project-message';
 import { AspectRatioSelect } from '@/ai/image/components/AspectRatioSelect';
-import {
-  type ImageQuality,
-  ImageQualitySelect,
-} from '@/ai/image/components/ImageQualitySelect';
+import { ImageQualitySelect } from '@/ai/image/components/ImageQualitySelect';
 import { ImageUploader } from '@/ai/image/components/ImageUploader';
 import { generateImage, validateBase64Image } from '@/ai/image/lib/api-utils';
-import type { AspectRatioId } from '@/ai/image/lib/arch-types';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -279,7 +275,7 @@ export function ConversationInput() {
                   </label>
                   <ImageQualitySelect
                     value={imageQuality}
-                    onChange={(value) => setImageQuality(value as ImageQuality)}
+                    onChange={setImageQuality}
                   />
                 </div>
                 <div className="space-y-2">
@@ -288,7 +284,7 @@ export function ConversationInput() {
                   </label>
                   <AspectRatioSelect
                     value={aspectRatio}
-                    onChange={(value) => setAspectRatio(value as AspectRatioId)}
+                    onChange={setAspectRatio}
                   />
                 </div>
               </div>

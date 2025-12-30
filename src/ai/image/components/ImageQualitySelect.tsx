@@ -17,11 +17,18 @@ import { useTranslations } from 'next-intl';
 // 画质类型
 export type ImageQuality = '1K' | '2K' | '4K';
 
+// 默认画质
+export const DEFAULT_IMAGE_QUALITY: ImageQuality = '1K';
+
+// 翻译键类型
+type QualityLabelKey = 'standard' | '2k' | '4k';
+type QualityDescKey = 'standardDesc' | '2kDesc' | '4kDesc';
+
 // 画质选项配置
 const QUALITY_OPTIONS: {
   id: ImageQuality;
-  labelKey: string;
-  descKey: string;
+  labelKey: QualityLabelKey;
+  descKey: QualityDescKey;
 }[] = [
   { id: '1K', labelKey: 'standard', descKey: 'standardDesc' },
   { id: '2K', labelKey: '2k', descKey: '2kDesc' },
@@ -58,9 +65,7 @@ export function ImageQualitySelect({
         >
           <Sparkles className="h-4 w-4" />
           <span className="truncate">
-            {selectedOption
-              ? t(selectedOption.labelKey as any)
-              : tControls('quality')}
+            {selectedOption ? t(selectedOption.labelKey) : tControls('quality')}
           </span>
           <ChevronDown className="h-3 w-3 opacity-50 flex-shrink-0" />
         </Button>
@@ -73,9 +78,9 @@ export function ImageQualitySelect({
             className={cn(value === option.id && 'bg-accent')}
           >
             <div className="flex flex-col">
-              <span className="font-medium">{t(option.labelKey as any)}</span>
+              <span className="font-medium">{t(option.labelKey)}</span>
               <span className="text-xs text-muted-foreground">
-                {t(option.descKey as any)}
+                {t(option.descKey)}
               </span>
             </div>
           </DropdownMenuItem>

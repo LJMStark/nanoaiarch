@@ -1,5 +1,8 @@
 import type { ImageProjectItem } from '@/actions/image-project';
-import type { ImageQuality } from '@/ai/image/components/ImageQualitySelect';
+import {
+  DEFAULT_IMAGE_QUALITY,
+  type ImageQuality,
+} from '@/ai/image/components/ImageQualitySelect';
 import type { AspectRatioId } from '@/ai/image/lib/arch-types';
 import type { GeminiModelId } from '@/ai/image/lib/provider-config';
 import { create } from 'zustand';
@@ -64,7 +67,7 @@ const initialState = {
   projects: [] as ImageProjectItem[],
   currentProjectId: null as string | null,
   isLoadingProjects: false,
-  imageQuality: '1K' as ImageQuality,
+  imageQuality: DEFAULT_IMAGE_QUALITY,
   aspectRatio: '1:1' as AspectRatioId,
   selectedModel: 'forma' as GeminiModelId,
   draftPrompt: '',
@@ -145,22 +148,23 @@ export const useProjectStore = create<ProjectState>()(
     }),
     {
       name: 'project-store',
-      version: 2, // 版本升级，触发迁移
+      version: 2,
       partialize: (state) => ({
         currentProjectId: state.currentProjectId,
         imageQuality: state.imageQuality,
         aspectRatio: state.aspectRatio,
         selectedModel: state.selectedModel,
       }),
-      // 处理旧版本状态迁移
-      migrate: (persistedState: any, version: number) => {
-        if (version < 2) {
-          // 从旧版本迁移：移除 stylePreset，添加 imageQuality
-          const { stylePreset, ...rest } = persistedState;
+      migrate: (persistedState: unknown, version: number) => {
+        if (version < 2 && persistedState && typeof persistedState === 'object') {
+          // Migrate from v1: remove stylePreset, add imageQuality
+          const { stylePreset, ...rest } = persistedState as Record<
+            string,
+            unknown
+          >;
           return {
             ...rest,
-            imageQuality: '1K',
-            // 如果旧的 selectedModel 无效，重置为默认值
+            imageQuality: DEFAULT_IMAGE_QUALITY,
             selectedModel:
               rest.selectedModel === 'forma' ||
               rest.selectedModel === 'forma-pro'

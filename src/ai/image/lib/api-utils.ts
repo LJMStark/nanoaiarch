@@ -1,3 +1,7 @@
+import {
+  DEFAULT_IMAGE_QUALITY,
+  type ImageQuality,
+} from '@/ai/image/components/ImageQualitySelect';
 import { logger } from '@/lib/logger';
 import type { DuomiAspectRatio, DuomiModelId } from './duomi-client';
 import { DUOMI_MODEL_IDS, type GeminiModelId } from './provider-config';
@@ -164,7 +168,7 @@ export interface GenerateImageParams {
   referenceImage?: string;
   aspectRatio?: string;
   model?: string;
-  imageSize?: '1K' | '2K' | '4K';
+  imageSize?: ImageQuality;
 }
 
 export interface GenerateImageResult {
@@ -189,7 +193,7 @@ export async function generateImage(
         modelId: params.model || 'forma',
         referenceImage: params.referenceImage,
         aspectRatio: params.aspectRatio,
-        imageSize: params.imageSize || '1K',
+        imageSize: params.imageSize || DEFAULT_IMAGE_QUALITY,
       }),
     });
 

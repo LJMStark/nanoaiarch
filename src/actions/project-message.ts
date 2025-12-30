@@ -32,6 +32,7 @@ export type ProjectMessageItem = {
 export type GenerationParams = {
   prompt: string;
   enhancedPrompt?: string;
+  /** @deprecated Legacy field for historical data display in gallery */
   style?: string;
   aspectRatio?: string;
   model?: string;
