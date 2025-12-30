@@ -38,6 +38,8 @@ export function ConversationInput() {
         setImageError(validation.error || 'Image too large');
         return;
       }
+      // 选择图片后自动关闭上传区域，显示小预览
+      setShowImageUpload(false);
     }
     setImageError(null);
     setReferenceImage(image);
