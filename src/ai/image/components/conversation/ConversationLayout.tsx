@@ -4,11 +4,7 @@ import { getImageProjects } from '@/actions/image-project';
 import { getProjectMessages } from '@/actions/project-message';
 import { TemplateDetailModal } from '@/ai/image/components/TemplateDetailModal';
 import { useTemplateApply } from '@/ai/image/hooks/use-template-apply';
-import type {
-  ArchTemplate,
-  AspectRatioId,
-  StylePresetId,
-} from '@/ai/image/lib/arch-types';
+import type { ArchTemplate, AspectRatioId } from '@/ai/image/lib/arch-types';
 import { ARCH_TEMPLATES } from '@/ai/image/lib/templates';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { useConversationStore } from '@/stores/conversation-store';
@@ -70,12 +66,11 @@ export function ConversationLayout() {
   const handleApplyUrlTemplate = async (
     template: ArchTemplate,
     prompt: string,
-    style: StylePresetId | null,
     ratio: AspectRatioId
   ) => {
     setIsTemplateModalOpen(false);
     setUrlTemplate(null);
-    await applyTemplateWithProject({ template, prompt, style, ratio });
+    await applyTemplateWithProject({ template, prompt, ratio });
   };
 
   // Load messages when project changes

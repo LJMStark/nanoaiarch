@@ -1,11 +1,7 @@
 'use client';
 
 import { createImageProject } from '@/actions/image-project';
-import type {
-  ArchTemplate,
-  AspectRatioId,
-  StylePresetId,
-} from '@/ai/image/lib/arch-types';
+import type { ArchTemplate, AspectRatioId } from '@/ai/image/lib/arch-types';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
 import { useProjectStore } from '@/stores/project-store';
@@ -14,7 +10,6 @@ import { useCallback, useState } from 'react';
 interface ApplyTemplateParams {
   template: ArchTemplate;
   prompt: string;
-  style: StylePresetId | null;
   ratio: AspectRatioId;
 }
 
@@ -44,12 +39,7 @@ export function useTemplateApply(): UseTemplateApplyReturn {
    * Creates a new project if none exists
    */
   const applyTemplateWithProject = useCallback(
-    async ({
-      template,
-      prompt,
-      style,
-      ratio,
-    }: ApplyTemplateParams): Promise<boolean> => {
+    async ({ template, prompt, ratio }: ApplyTemplateParams): Promise<boolean> => {
       setIsApplying(true);
 
       try {
@@ -57,7 +47,6 @@ export function useTemplateApply(): UseTemplateApplyReturn {
           // Apply to existing project
           applyTemplate({
             promptTemplate: prompt,
-            defaultStyle: style ?? undefined,
             defaultAspectRatio: ratio,
           });
           return true;
@@ -67,7 +56,6 @@ export function useTemplateApply(): UseTemplateApplyReturn {
         const result = await createImageProject({
           title: template.id,
           templateId: template.id,
-          stylePreset: style ?? undefined,
           aspectRatio: ratio,
         });
 
@@ -84,7 +72,6 @@ export function useTemplateApply(): UseTemplateApplyReturn {
         addProject(result.data);
         selectProjectWithTemplate(result.data.id, {
           promptTemplate: prompt,
-          defaultStyle: style ?? undefined,
           defaultAspectRatio: ratio,
         });
 

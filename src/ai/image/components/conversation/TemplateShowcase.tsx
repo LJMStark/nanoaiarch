@@ -2,11 +2,7 @@
 
 import { TemplateDetailModal } from '@/ai/image/components/TemplateDetailModal';
 import { useTemplateApply } from '@/ai/image/hooks/use-template-apply';
-import type {
-  ArchTemplate,
-  AspectRatioId,
-  StylePresetId,
-} from '@/ai/image/lib/arch-types';
+import type { ArchTemplate, AspectRatioId } from '@/ai/image/lib/arch-types';
 import { TEMPLATE_CATEGORIES } from '@/ai/image/lib/template-categories';
 import { ARCH_TEMPLATES } from '@/ai/image/lib/templates';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -54,11 +50,10 @@ export function TemplateShowcase({
   const handleApplyTemplate = async (
     template: ArchTemplate,
     prompt: string,
-    style: StylePresetId | null,
     ratio: AspectRatioId
   ) => {
     setIsModalOpen(false);
-    await applyTemplateWithProject({ template, prompt, style, ratio });
+    await applyTemplateWithProject({ template, prompt, ratio });
   };
 
   // Handle quick prompt click

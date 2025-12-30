@@ -13,25 +13,15 @@ import { ArrowRight, ImageIcon, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import type {
-  ArchTemplate,
-  AspectRatioId,
-  StylePresetId,
-} from '../lib/arch-types';
+import type { ArchTemplate, AspectRatioId } from '../lib/arch-types';
 import { getTemplateCategory } from '../lib/template-categories';
 import { AspectRatioSelect } from './AspectRatioSelect';
-import { StylePresetSelect } from './StylePresetSelect';
 
 interface TemplateDetailModalProps {
   template: ArchTemplate | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onApply: (
-    template: ArchTemplate,
-    prompt: string,
-    style: StylePresetId | null,
-    ratio: AspectRatioId
-  ) => void;
+  onApply: (template: ArchTemplate, prompt: string, ratio: AspectRatioId) => void;
 }
 
 export function TemplateDetailModal({
@@ -44,9 +34,6 @@ export function TemplateDetailModal({
 
   // Local state
   const [editedPrompt, setEditedPrompt] = useState('');
-  const [selectedStyle, setSelectedStyle] = useState<StylePresetId | null>(
-    null
-  );
   const [selectedRatio, setSelectedRatio] = useState<AspectRatioId>('16:9');
   const [previewImageError, setPreviewImageError] = useState(false);
   const [inputImageError, setInputImageError] = useState(false);
@@ -55,7 +42,6 @@ export function TemplateDetailModal({
   useEffect(() => {
     if (template) {
       setEditedPrompt(template.promptTemplate);
-      setSelectedStyle(template.defaultStyle ?? null);
       setSelectedRatio(template.defaultAspectRatio ?? '16:9');
       setPreviewImageError(false);
       setInputImageError(false);
@@ -68,7 +54,7 @@ export function TemplateDetailModal({
   const CategoryIcon = category.icon;
 
   const handleApply = () => {
-    onApply(template, editedPrompt, selectedStyle, selectedRatio);
+    onApply(template, editedPrompt, selectedRatio);
   };
 
   return (
@@ -214,28 +200,16 @@ export function TemplateDetailModal({
             />
           </div>
 
-          {/* 样式和比例 */}
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-                {t('ArchPage.controls.style')}
-              </label>
-              <StylePresetSelect
-                value={selectedStyle}
-                onChange={setSelectedStyle}
-                className="w-full"
-              />
-            </div>
-            <div className="w-28">
-              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-                {t('ArchPage.controls.aspectRatio')}
-              </label>
-              <AspectRatioSelect
-                value={selectedRatio}
-                onChange={setSelectedRatio}
-                className="w-full"
-              />
-            </div>
+          {/* 比例选择 */}
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+              {t('ArchPage.controls.aspectRatio')}
+            </label>
+            <AspectRatioSelect
+              value={selectedRatio}
+              onChange={setSelectedRatio}
+              className="w-full"
+            />
           </div>
 
           {/* 标签 */}

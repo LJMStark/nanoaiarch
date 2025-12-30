@@ -103,8 +103,7 @@ export const useProjectStore = create<ProjectState>()(
         const project = get().projects.find((p) => p.id === projectId);
         set({
           currentProjectId: projectId,
-          // Restore project config
-          imageQuality: (project?.imageQuality as ImageQuality) ?? '1K',
+          // Restore project aspect ratio, keep user's quality preference
           aspectRatio: (project?.aspectRatio as AspectRatioId) ?? '1:1',
           // Clear draft when switching projects
           draftPrompt: '',

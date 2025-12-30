@@ -11,7 +11,6 @@ import { useArchGeneration } from '../hooks/use-arch-generation';
 import type {
   ArchTemplate,
   AspectRatioId,
-  StylePresetId,
   TemplateCategoryId,
 } from '../lib/arch-types';
 import {
@@ -115,14 +114,8 @@ export function ArchPlayground() {
 
   // Handle template apply from modal
   const handleTemplateApply = useCallback(
-    (
-      template: ArchTemplate,
-      prompt: string,
-      style: StylePresetId | null,
-      ratio: AspectRatioId
-    ) => {
+    (template: ArchTemplate, prompt: string, ratio: AspectRatioId) => {
       setPromptValue(prompt);
-      setStylePreset(style);
       setAspectRatio(ratio);
       setShowTemplateModal(false);
 
@@ -132,13 +125,7 @@ export function ArchPlayground() {
         setMode('generate');
       }
     },
-    [
-      setPromptValue,
-      setStylePreset,
-      setAspectRatio,
-      setShowTemplateModal,
-      setMode,
-    ]
+    [setPromptValue, setAspectRatio, setShowTemplateModal, setMode]
   );
 
   // Handle category change
