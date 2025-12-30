@@ -1,5 +1,6 @@
 import type { ImageProjectItem } from '@/actions/image-project';
-import type { AspectRatioId, StylePresetId } from '@/ai/image/lib/arch-types';
+import type { ImageQuality } from '@/ai/image/components/ImageQualitySelect';
+import type { AspectRatioId } from '@/ai/image/lib/arch-types';
 import type { GeminiModelId } from '@/ai/image/lib/provider-config';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
@@ -11,7 +12,7 @@ interface ProjectState {
   isLoadingProjects: boolean;
 
   // Current project config
-  stylePreset: StylePresetId | null;
+  imageQuality: ImageQuality;
   aspectRatio: AspectRatioId;
   selectedModel: GeminiModelId;
 
@@ -31,7 +32,7 @@ interface ProjectState {
   setLoadingProjects: (loading: boolean) => void;
 
   // Config actions
-  setStylePreset: (preset: StylePresetId | null) => void;
+  setImageQuality: (quality: ImageQuality) => void;
   setAspectRatio: (ratio: AspectRatioId) => void;
   setSelectedModel: (model: GeminiModelId) => void;
 
@@ -43,7 +44,6 @@ interface ProjectState {
   // Apply template
   applyTemplate: (template: {
     promptTemplate: string;
-    defaultStyle?: StylePresetId;
     defaultAspectRatio?: AspectRatioId;
   }) => void;
 
@@ -52,7 +52,6 @@ interface ProjectState {
     projectId: string,
     template: {
       promptTemplate: string;
-      defaultStyle?: StylePresetId;
       defaultAspectRatio?: AspectRatioId;
     }
   ) => void;
@@ -65,9 +64,9 @@ const initialState = {
   projects: [] as ImageProjectItem[],
   currentProjectId: null as string | null,
   isLoadingProjects: false,
-  stylePreset: null as StylePresetId | null,
+  imageQuality: '1K' as ImageQuality,
   aspectRatio: '1:1' as AspectRatioId,
-  selectedModel: 'gemini-2.0-flash-exp' as GeminiModelId,
+  selectedModel: 'forma' as GeminiModelId,
   draftPrompt: '',
   draftImage: null as string | null,
 };
@@ -105,7 +104,7 @@ export const useProjectStore = create<ProjectState>()(
         set({
           currentProjectId: projectId,
           // Restore project config
-          stylePreset: (project?.stylePreset as StylePresetId) ?? null,
+          imageQuality: (project?.imageQuality as ImageQuality) ?? '1K',
           aspectRatio: (project?.aspectRatio as AspectRatioId) ?? '1:1',
           // Clear draft when switching projects
           draftPrompt: '',
@@ -115,7 +114,7 @@ export const useProjectStore = create<ProjectState>()(
 
       setLoadingProjects: (loading) => set({ isLoadingProjects: loading }),
 
-      setStylePreset: (preset) => set({ stylePreset: preset }),
+      setImageQuality: (quality) => set({ imageQuality: quality }),
 
       setAspectRatio: (ratio) => set({ aspectRatio: ratio }),
 
@@ -130,7 +129,6 @@ export const useProjectStore = create<ProjectState>()(
       applyTemplate: (template) => {
         set({
           draftPrompt: template.promptTemplate,
-          stylePreset: template.defaultStyle ?? null,
           aspectRatio: template.defaultAspectRatio ?? '1:1',
         });
       },
@@ -139,7 +137,6 @@ export const useProjectStore = create<ProjectState>()(
         set({
           currentProjectId: projectId,
           draftPrompt: template.promptTemplate,
-          stylePreset: template.defaultStyle ?? null,
           aspectRatio: template.defaultAspectRatio ?? '1:1',
           draftImage: null,
         });
@@ -151,7 +148,7 @@ export const useProjectStore = create<ProjectState>()(
       name: 'project-store',
       partialize: (state) => ({
         currentProjectId: state.currentProjectId,
-        stylePreset: state.stylePreset,
+        imageQuality: state.imageQuality,
         aspectRatio: state.aspectRatio,
         selectedModel: state.selectedModel,
       }),

@@ -3,11 +3,13 @@
 import { updateProjectActivity } from '@/actions/image-project';
 import { addAssistantMessage, addUserMessage } from '@/actions/project-message';
 import { AspectRatioSelect } from '@/ai/image/components/AspectRatioSelect';
+import {
+  type ImageQuality,
+  ImageQualitySelect,
+} from '@/ai/image/components/ImageQualitySelect';
 import { ImageUploader } from '@/ai/image/components/ImageUploader';
-import { StylePresetSelect } from '@/ai/image/components/StylePresetSelect';
 import { generateImage, validateBase64Image } from '@/ai/image/lib/api-utils';
-import type { AspectRatioId, StylePresetId } from '@/ai/image/lib/arch-types';
-import { buildArchPrompt } from '@/ai/image/lib/system-prompts';
+import type { AspectRatioId } from '@/ai/image/lib/arch-types';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -20,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUp, ImageIcon, Loader2, Settings2, X } from 'lucide-react';
+import { ArrowUp, ImageIcon, Loader2, Settings2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
@@ -48,11 +50,11 @@ export function ConversationInput() {
   const {
     currentProjectId,
     draftPrompt,
-    stylePreset,
+    imageQuality,
     aspectRatio,
     selectedModel,
     setDraftPrompt,
-    setStylePreset,
+    setImageQuality,
     setAspectRatio,
     clearDraft,
   } = useProjectStore();
@@ -102,19 +104,13 @@ export function ConversationInput() {
     const startTime = Date.now();
 
     try {
-      // Build enhanced prompt
-      const enhancedPrompt = buildArchPrompt(
-        prompt,
-        stylePreset || undefined,
-        aspectRatio
-      );
-
-      // Generate image
+      // Generate image with quality setting
       const result = await generateImage({
-        prompt: enhancedPrompt,
+        prompt,
         referenceImage: inputImage || undefined,
         aspectRatio: aspectRatio,
         model: selectedModel,
+        imageSize: imageQuality,
       });
 
       const generationTime = Date.now() - startTime;
@@ -126,10 +122,9 @@ export function ConversationInput() {
           outputImage: result.image,
           generationParams: {
             prompt,
-            enhancedPrompt,
-            style: stylePreset || undefined,
             aspectRatio,
             model: selectedModel,
+            imageQuality,
           },
           creditsUsed: result.creditsUsed || 1,
           generationTime,
@@ -279,12 +274,10 @@ export function ConversationInput() {
             <PopoverContent align="end" className="w-72">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Style</label>
-                  <StylePresetSelect
-                    value={stylePreset}
-                    onChange={(value) =>
-                      setStylePreset(value as StylePresetId | null)
-                    }
+                  <label className="text-sm font-medium">Quality</label>
+                  <ImageQualitySelect
+                    value={imageQuality}
+                    onChange={(value) => setImageQuality(value as ImageQuality)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -312,21 +305,10 @@ export function ConversationInput() {
           </Button>
         </div>
 
-        {/* Quick style chips */}
+        {/* Quick settings chips */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          {stylePreset && (
-            <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
-              <span>{stylePreset}</span>
-              <button
-                onClick={() => setStylePreset(null)}
-                className="hover:bg-primary/20 rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
           <div className="text-xs text-muted-foreground px-2">
-            {aspectRatio}
+            {imageQuality} · {aspectRatio}
           </div>
         </div>
       </div>

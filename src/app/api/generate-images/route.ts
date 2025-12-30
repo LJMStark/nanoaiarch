@@ -20,8 +20,11 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   const requestId = generateRequestId();
-  const { prompt, modelId, referenceImage, aspectRatio } =
-    (await req.json()) as GenerateImageRequest & { aspectRatio?: string };
+  const { prompt, modelId, referenceImage, aspectRatio, imageSize } =
+    (await req.json()) as GenerateImageRequest & {
+      aspectRatio?: string;
+      imageSize?: '1K' | '2K' | '4K';
+    };
 
   try {
     // 验证请求参数
@@ -94,6 +97,9 @@ export async function POST(req: NextRequest) {
       error?: string;
     }>;
 
+    // 使用请求中的画质设置，默认为 1K
+    const selectedImageSize = imageSize || '1K';
+
     if (referenceImage) {
       // 有参考图时使用图片编辑 API
       // 注意：Duomi API 需要图片 URL，这里假设 referenceImage 已经是 URL
@@ -112,7 +118,7 @@ export async function POST(req: NextRequest) {
           prompt,
           model: duomiModel,
           aspectRatio: duomiAspectRatio,
-          imageSize: modelId === 'forma-pro' ? '2K' : '1K',
+          imageSize: selectedImageSize,
         });
       } else {
         generatePromise = editImageWithDuomi({
@@ -120,7 +126,7 @@ export async function POST(req: NextRequest) {
           imageUrls: [imageUrl],
           model: duomiModel,
           aspectRatio: duomiAspectRatio,
-          imageSize: modelId === 'forma-pro' ? '2K' : '1K',
+          imageSize: selectedImageSize,
         });
       }
     } else {
@@ -129,7 +135,7 @@ export async function POST(req: NextRequest) {
         prompt,
         model: duomiModel,
         aspectRatio: duomiAspectRatio,
-        imageSize: modelId === 'forma-pro' ? '2K' : '1K',
+        imageSize: selectedImageSize,
       });
     }
 

@@ -164,6 +164,7 @@ export interface GenerateImageParams {
   referenceImage?: string;
   aspectRatio?: string;
   model?: string;
+  imageSize?: '1K' | '2K' | '4K';
 }
 
 export interface GenerateImageResult {
@@ -188,6 +189,7 @@ export async function generateImage(
         modelId: params.model || 'forma',
         referenceImage: params.referenceImage,
         aspectRatio: params.aspectRatio,
+        imageSize: params.imageSize || '1K',
       }),
     });
 
