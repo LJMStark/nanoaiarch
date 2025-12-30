@@ -35,6 +35,7 @@ export type GenerationParams = {
   style?: string;
   aspectRatio?: string;
   model?: string;
+  imageQuality?: string;
 };
 
 /**
