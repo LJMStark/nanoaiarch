@@ -1375,10 +1375,31 @@
       "style": "Style",
       "clearStyle": "No style filter",
       "aspectRatio": "Aspect Ratio",
+      "quality": "Quality",
       "generate": "Generate",
       "generating": "Generating...",
       "credits": "{count} credits",
-      "prompt": "Describe your architectural vision..."
+      "prompt": "Describe your architectural vision...",
+      "promptNoProject": "Select or create a project to start",
+      "referenceAttached": "Reference image attached"
+    },
+    "quality": {
+      "standard": "Standard",
+      "standardDesc": "1K resolution, faster",
+      "2k": "2K",
+      "2kDesc": "2K resolution, balanced",
+      "4k": "4K",
+      "4kDesc": "4K resolution, highest quality"
+    },
+    "upload": {
+      "dropHere": "Drop image here",
+      "uploadToEdit": "Upload an image to edit",
+      "dragOrClick": "Drag and drop or click to select",
+      "fileTypes": "PNG, JPG, WebP, GIF up to 10MB",
+      "removeHint": "Click X to remove and upload a different image",
+      "invalidType": "Please select a valid image file (PNG, JPG, WebP, or GIF)",
+      "fileTooLarge": "File size must be less than 10MB",
+      "readFailed": "Failed to read file"
     },
     "styles": {
       "modernMinimalist": "Modern Minimalist",

@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { ChevronDown, Sparkles } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 // 画质类型
 export type ImageQuality = '1K' | '2K' | '4K';
@@ -19,12 +20,12 @@ export type ImageQuality = '1K' | '2K' | '4K';
 // 画质选项配置
 const QUALITY_OPTIONS: {
   id: ImageQuality;
-  label: string;
-  description: string;
+  labelKey: string;
+  descKey: string;
 }[] = [
-  { id: '1K', label: 'Standard', description: '1K resolution, faster' },
-  { id: '2K', label: '2K', description: '2K resolution, balanced' },
-  { id: '4K', label: '4K', description: '4K resolution, highest quality' },
+  { id: '1K', labelKey: 'standard', descKey: 'standardDesc' },
+  { id: '2K', labelKey: '2k', descKey: '2kDesc' },
+  { id: '4K', labelKey: '4k', descKey: '4kDesc' },
 ];
 
 interface ImageQualitySelectProps {
@@ -38,6 +39,8 @@ export function ImageQualitySelect({
   onChange,
   className,
 }: ImageQualitySelectProps) {
+  const t = useTranslations('ArchPage.quality');
+  const tControls = useTranslations('ArchPage.controls');
   const selectedOption = QUALITY_OPTIONS.find((opt) => opt.id === value);
 
   return (
@@ -54,7 +57,11 @@ export function ImageQualitySelect({
           )}
         >
           <Sparkles className="h-4 w-4" />
-          <span className="truncate">{selectedOption?.label || 'Quality'}</span>
+          <span className="truncate">
+            {selectedOption
+              ? t(selectedOption.labelKey as any)
+              : tControls('quality')}
+          </span>
           <ChevronDown className="h-3 w-3 opacity-50 flex-shrink-0" />
         </Button>
       </DropdownMenuTrigger>
@@ -66,9 +73,9 @@ export function ImageQualitySelect({
             className={cn(value === option.id && 'bg-accent')}
           >
             <div className="flex flex-col">
-              <span className="font-medium">{option.label}</span>
+              <span className="font-medium">{t(option.labelKey as any)}</span>
               <span className="text-xs text-muted-foreground">
-                {option.description}
+                {t(option.descKey as any)}
               </span>
             </div>
           </DropdownMenuItem>

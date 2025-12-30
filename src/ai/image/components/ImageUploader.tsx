@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ImageIcon, Upload, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useCallback, useRef, useState } from 'react';
 
@@ -26,6 +27,7 @@ export function ImageUploader({
   className,
   disabled = false,
 }: ImageUploaderProps) {
+  const t = useTranslations('ArchPage.upload');
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,13 +39,13 @@ export function ImageUploader({
 
       // 验证文件类型
       if (!ACCEPTED_TYPES.includes(file.type)) {
-        setError('Please select a valid image file (PNG, JPG, WebP, or GIF)');
+        setError(t('invalidType'));
         return;
       }
 
       // 验证文件大小
       if (file.size > MAX_FILE_SIZE) {
-        setError('File size must be less than 10MB');
+        setError(t('fileTooLarge'));
         return;
       }
 
@@ -56,11 +58,11 @@ export function ImageUploader({
         onImageSelect(base64);
       };
       reader.onerror = () => {
-        setError('Failed to read file');
+        setError(t('readFailed'));
       };
       reader.readAsDataURL(file);
     },
-    [onImageSelect]
+    [onImageSelect, t]
   );
 
   // 处理拖拽事件
@@ -136,7 +138,7 @@ export function ImageUploader({
           </Button>
         </div>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          Click X to remove and upload a different image
+          {t('removeHint')}
         </p>
       </div>
     );
@@ -175,14 +177,10 @@ export function ImageUploader({
           )}
           <div className="space-y-1">
             <p className="text-sm font-medium">
-              {isDragging ? 'Drop image here' : 'Upload an image to edit'}
+              {isDragging ? t('dropHere') : t('uploadToEdit')}
             </p>
-            <p className="text-xs text-muted-foreground">
-              Drag and drop or click to select
-            </p>
-            <p className="text-xs text-muted-foreground">
-              PNG, JPG, WebP, GIF up to 10MB
-            </p>
+            <p className="text-xs text-muted-foreground">{t('dragOrClick')}</p>
+            <p className="text-xs text-muted-foreground">{t('fileTypes')}</p>
           </div>
         </div>
       </div>

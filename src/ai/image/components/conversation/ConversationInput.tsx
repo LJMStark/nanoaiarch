@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUp, ImageIcon, Loader2, Settings2 } from 'lucide-react';
+import { ArrowUp, ImageIcon, Loader2, Settings2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
@@ -219,7 +219,7 @@ export function ConversationInput() {
               />
             </div>
             <span className="text-sm text-muted-foreground flex-1">
-              Reference image attached
+              {t('controls.referenceAttached')}
             </span>
             <Button
               variant="ghost"
@@ -253,8 +253,8 @@ export function ConversationInput() {
             onKeyDown={handleKeyDown}
             placeholder={
               currentProjectId
-                ? 'Describe the image you want to create...'
-                : 'Select or create a project to start'
+                ? t('controls.prompt')
+                : t('controls.promptNoProject')
             }
             disabled={!currentProjectId}
             className="flex-1 resize-none bg-transparent border-0 focus-visible:ring-0 min-h-[36px] max-h-[200px] py-2"
@@ -274,14 +274,18 @@ export function ConversationInput() {
             <PopoverContent align="end" className="w-72">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Quality</label>
+                  <label className="text-sm font-medium">
+                    {t('controls.quality')}
+                  </label>
                   <ImageQualitySelect
                     value={imageQuality}
                     onChange={(value) => setImageQuality(value as ImageQuality)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Aspect Ratio</label>
+                  <label className="text-sm font-medium">
+                    {t('controls.aspectRatio')}
+                  </label>
                   <AspectRatioSelect
                     value={aspectRatio}
                     onChange={(value) => setAspectRatio(value as AspectRatioId)}

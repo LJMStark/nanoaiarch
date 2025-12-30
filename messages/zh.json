@@ -1375,10 +1375,31 @@
       "style": "风格",
       "clearStyle": "无风格筛选",
       "aspectRatio": "画幅比例",
+      "quality": "画质",
       "generate": "生成",
       "generating": "生成中...",
       "credits": "{count} 积分",
-      "prompt": "描述您的建筑设想..."
+      "prompt": "描述您的建筑设想...",
+      "promptNoProject": "请选择或创建项目",
+      "referenceAttached": "已添加参考图"
+    },
+    "quality": {
+      "standard": "标准",
+      "standardDesc": "1K 分辨率，更快速",
+      "2k": "2K",
+      "2kDesc": "2K 分辨率，平衡之选",
+      "4k": "4K",
+      "4kDesc": "4K 分辨率，最高画质"
+    },
+    "upload": {
+      "dropHere": "将图片拖放到这里",
+      "uploadToEdit": "上传图片进行编辑",
+      "dragOrClick": "拖放或点击选择",
+      "fileTypes": "支持 PNG、JPG、WebP、GIF，最大 10MB",
+      "removeHint": "点击 X 移除并上传新图片",
+      "invalidType": "请选择有效的图片文件（PNG、JPG、WebP 或 GIF）",
+      "fileTooLarge": "文件大小不能超过 10MB",
+      "readFailed": "读取文件失败"
     },
     "styles": {
       "modernMinimalist": "现代极简",
