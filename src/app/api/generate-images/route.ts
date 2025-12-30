@@ -2,17 +2,17 @@ import type { GenerateImageRequest } from '@/ai/image/lib/api-types';
 import {
   TIMEOUT_MILLIS,
   generateRequestId,
-  mapModelIdToGeminiKey,
+  mapAspectRatioToDuomi,
+  mapModelIdToDuomiModel,
   validatePrompt,
   withTimeout,
 } from '@/ai/image/lib/api-utils';
 import { getCreditCost } from '@/ai/image/lib/credit-costs';
-import { generateImageWithGemini } from '@/ai/image/lib/gemini-client';
 import {
-  type GeminiModelId,
-  isVertexImagenModel,
-} from '@/ai/image/lib/provider-config';
-import { generateImageWithImagen } from '@/ai/image/lib/vertex-client';
+  editImageWithDuomi,
+  generateImageWithDuomi,
+} from '@/ai/image/lib/duomi-client';
+import type { GeminiModelId } from '@/ai/image/lib/provider-config';
 import { consumeCredits, hasEnoughCredits } from '@/credits/credits';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
@@ -20,8 +20,8 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   const requestId = generateRequestId();
-  const { prompt, modelId, referenceImage } =
-    (await req.json()) as GenerateImageRequest;
+  const { prompt, modelId, referenceImage, aspectRatio } =
+    (await req.json()) as GenerateImageRequest & { aspectRatio?: string };
 
   try {
     // 验证请求参数
@@ -79,13 +79,14 @@ export async function POST(req: NextRequest) {
     }
 
     const startstamp = performance.now();
-    const isVertexModel = isVertexImagenModel(modelId);
+    const duomiModel = mapModelIdToDuomiModel(modelId);
+    const duomiAspectRatio = mapAspectRatioToDuomi(aspectRatio);
 
     logger.api.info(
-      `Starting image generation [requestId=${requestId}, userId=${userId}, model=${modelId}, isVertex=${isVertexModel}, creditCost=${creditCost}]`
+      `Starting image generation [requestId=${requestId}, userId=${userId}, model=${modelId}, duomiModel=${duomiModel}, creditCost=${creditCost}]`
     );
 
-    // 根据模型类型选择不同的生成方法
+    // 根据是否有参考图选择生成方式
     let generatePromise: Promise<{
       success: boolean;
       image?: string;
@@ -93,20 +94,42 @@ export async function POST(req: NextRequest) {
       error?: string;
     }>;
 
-    if (isVertexModel) {
-      // 使用 Vertex AI Imagen 生成图像
-      generatePromise = generateImageWithImagen({
-        prompt,
-        modelKey: 'nano-banana-pro',
-        aspectRatio: '16:9',
-      });
+    if (referenceImage) {
+      // 有参考图时使用图片编辑 API
+      // 注意：Duomi API 需要图片 URL，这里假设 referenceImage 已经是 URL
+      // 如果是 base64，需要先上传到存储服务获取 URL
+      const imageUrl = referenceImage.startsWith('http')
+        ? referenceImage
+        : `data:image/png;base64,${referenceImage}`;
+
+      // 如果是 base64 格式，使用文生图 API（Duomi 编辑 API 需要 URL）
+      if (!referenceImage.startsWith('http')) {
+        logger.api.info(
+          `[requestId=${requestId}] Reference image is base64, using text-to-image with enhanced prompt`
+        );
+        // 使用文生图，但在 prompt 中说明要参考图片风格
+        generatePromise = generateImageWithDuomi({
+          prompt,
+          model: duomiModel,
+          aspectRatio: duomiAspectRatio,
+          imageSize: modelId === 'forma-pro' ? '2K' : '1K',
+        });
+      } else {
+        generatePromise = editImageWithDuomi({
+          prompt,
+          imageUrls: [imageUrl],
+          model: duomiModel,
+          aspectRatio: duomiAspectRatio,
+          imageSize: modelId === 'forma-pro' ? '2K' : '1K',
+        });
+      }
     } else {
-      // 使用 Gemini 客户端生成图像
-      const geminiModelKey = mapModelIdToGeminiKey(modelId);
-      generatePromise = generateImageWithGemini({
+      // 无参考图时使用文生图 API
+      generatePromise = generateImageWithDuomi({
         prompt,
-        modelKey: geminiModelKey,
-        referenceImage,
+        model: duomiModel,
+        aspectRatio: duomiAspectRatio,
+        imageSize: modelId === 'forma-pro' ? '2K' : '1K',
       });
     }
 

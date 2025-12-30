@@ -1,25 +1,31 @@
-// Forma AI 配置 - 支持 Gemini 和 Vertex AI Imagen 模型
-export type ProviderKey = 'gemini' | 'vertex';
-export type ModelMode = 'fast' | 'quality' | 'premium';
+// Forma AI 配置 - 支持 Duomi API 模型
+export type ProviderKey = 'duomi';
+export type ModelMode = 'fast' | 'quality';
 
-// Gemini 模型 ID
-export const GEMINI_MODEL_IDS = {
-  // Forma AI - Gemini 2.0 Flash (快速，支持原生图像生成)
-  forma: 'gemini-2.0-flash-exp',
-  // Forma Pro - Gemini 2.0 Flash (高质量，高级渲染)
-  'forma-pro': 'gemini-2.0-flash-exp',
-  // Nano Banana Pro - Vertex AI Imagen 4 Fast (专业级图像生成)
-  'nano-banana-pro': 'imagen-4.0-fast-generate-001',
+// Duomi 模型 ID
+export const DUOMI_MODEL_IDS = {
+  // Duomi Gemini 2.5 Pro (快速，高效图像生成)
+  forma: 'gemini-2.5-pro-image-preview',
+  // Duomi Gemini 3 Pro (高质量，支持更高分辨率)
+  'forma-pro': 'gemini-3-pro-image-preview',
 } as const;
 
-export type GeminiModelId = keyof typeof GEMINI_MODEL_IDS;
+export type GeminiModelId = keyof typeof DUOMI_MODEL_IDS;
 
-// 标识哪些模型使用 Vertex AI Imagen
-export const VERTEX_IMAGEN_MODELS: GeminiModelId[] = ['nano-banana-pro'];
+// 向后兼容：保留 GEMINI_MODEL_IDS 别名
+export const GEMINI_MODEL_IDS = DUOMI_MODEL_IDS;
 
-// 检查模型是否使用 Vertex AI Imagen
-export function isVertexImagenModel(modelId: string): boolean {
-  return VERTEX_IMAGEN_MODELS.includes(modelId as GeminiModelId);
+// Duomi 模型列表（全部使用 Duomi API）
+export const DUOMI_MODELS: GeminiModelId[] = ['forma', 'forma-pro'];
+
+// 检查模型是否使用 Duomi API（现在所有模型都使用 Duomi）
+export function isDuomiModel(modelId: string): boolean {
+  return DUOMI_MODELS.includes(modelId as GeminiModelId);
+}
+
+// 向后兼容：保留 isVertexImagenModel 函数（现在始终返回 false）
+export function isVertexImagenModel(_modelId: string): boolean {
+  return false;
 }
 
 // Provider 配置
@@ -32,17 +38,11 @@ export const PROVIDERS: Record<
     models: GeminiModelId[];
   }
 > = {
-  gemini: {
-    displayName: 'Forma AI',
+  duomi: {
+    displayName: 'Nano AI',
     iconPath: '/provider-icons/gemini.svg',
     color: 'from-violet-500 to-purple-600',
     models: ['forma', 'forma-pro'],
-  },
-  vertex: {
-    displayName: 'Nano Banana',
-    iconPath: '/provider-icons/vertex.svg',
-    color: 'from-amber-500 to-orange-600',
-    models: ['nano-banana-pro'],
   },
 };
 
@@ -50,29 +50,26 @@ export const PROVIDERS: Record<
 export const MODEL_DISPLAY_NAMES: Record<GeminiModelId, string> = {
   forma: 'Forma',
   'forma-pro': 'Forma Pro',
-  'nano-banana-pro': 'Nano Banana Pro',
 };
 
 // 模型描述
 export const MODEL_DESCRIPTIONS: Record<GeminiModelId, string> = {
   forma: 'Fast and efficient architectural visualization',
-  'forma-pro': 'Higher quality with advanced rendering',
-  'nano-banana-pro': 'Premium quality with Imagen 4 (Vertex AI)',
+  'forma-pro': 'Higher quality with advanced rendering and 4K support',
 };
 
 // 模型模式配置
 export const MODEL_CONFIGS: Record<ModelMode, GeminiModelId> = {
   fast: 'forma',
   quality: 'forma-pro',
-  premium: 'nano-banana-pro',
 };
 
 // 默认配置
 export const DEFAULT_MODEL: GeminiModelId = 'forma';
-export const DEFAULT_PROVIDER: ProviderKey = 'gemini';
+export const DEFAULT_PROVIDER: ProviderKey = 'duomi';
 
 // Provider 顺序
-export const PROVIDER_ORDER: ProviderKey[] = ['gemini', 'vertex'];
+export const PROVIDER_ORDER: ProviderKey[] = ['duomi'];
 
 // 初始化 Provider 记录的辅助函数
 export const initializeProviderRecord = <T>(defaultValue?: T) =>

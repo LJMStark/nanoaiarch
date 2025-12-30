@@ -1,15 +1,12 @@
 import { logger } from '@/lib/logger';
-import {
-  GEMINI_MODEL_IDS,
-  type GeminiModelId,
-  isVertexImagenModel,
-} from './provider-config';
+import type { DuomiAspectRatio, DuomiModelId } from './duomi-client';
+import { DUOMI_MODEL_IDS, type GeminiModelId } from './provider-config';
 
 /**
- * 请求超时时间（55 秒）
- * 略低于运行时最大执行时间，以便优雅地终止请求
+ * 请求超时时间（120 秒）
+ * Duomi API 是异步任务型，需要更长的等待时间
  */
-export const TIMEOUT_MILLIS = 55 * 1000;
+export const TIMEOUT_MILLIS = 120 * 1000;
 
 /**
  * 带超时的 Promise 包装器
@@ -34,27 +31,56 @@ export const generateRequestId = (): string => {
 };
 
 /**
- * Gemini 模型 Key 类型
+ * Duomi 模型 Key 类型
  */
-export type GeminiModelKey = 'forma' | 'gemini-flash';
+export type DuomiModelKey = 'forma' | 'forma-pro';
 
 /**
- * 将 Forma AI 模型 ID 映射到 Gemini 客户端的模型 key
- * 注意：Vertex AI Imagen 模型不需要映射，直接使用 modelId
+ * 将前端模型 ID 映射到 Duomi API 的模型 ID
  */
-export const mapModelIdToGeminiKey = (modelId: string): GeminiModelKey => {
-  // Vertex AI Imagen 模型不走这个映射
-  if (isVertexImagenModel(modelId)) {
-    return 'forma'; // 返回默认值，实际不会使用
+export const mapModelIdToDuomiModel = (modelId: string): DuomiModelId => {
+  if (modelId === 'forma' || modelId === DUOMI_MODEL_IDS.forma) {
+    return 'gemini-2.5-pro-image-preview';
   }
+  if (modelId === 'forma-pro' || modelId === DUOMI_MODEL_IDS['forma-pro']) {
+    return 'gemini-3-pro-image-preview';
+  }
+  // 默认使用 gemini-2.5-pro
+  return 'gemini-2.5-pro-image-preview';
+};
 
-  if (modelId === 'forma' || modelId === GEMINI_MODEL_IDS.forma) {
+/**
+ * 将前端画幅比例映射到 Duomi API 格式
+ */
+export const mapAspectRatioToDuomi = (
+  aspectRatio?: string
+): DuomiAspectRatio => {
+  const mapping: Record<string, DuomiAspectRatio> = {
+    '1:1': '1:1',
+    '16:9': '16:9',
+    '9:16': '9:16',
+    '4:3': '4:3',
+    '3:4': '3:4',
+    '3:2': '3:2',
+    '2:3': '2:3',
+    '21:9': '21:9',
+  };
+  return mapping[aspectRatio || ''] || 'auto';
+};
+
+// 向后兼容：保留 GeminiModelKey 类型别名
+export type GeminiModelKey = DuomiModelKey;
+
+/**
+ * 向后兼容：映射到 Gemini Key（实际返回 Duomi key）
+ */
+export const mapModelIdToGeminiKey = (modelId: string): DuomiModelKey => {
+  if (modelId === 'forma' || modelId === DUOMI_MODEL_IDS.forma) {
     return 'forma';
   }
-  if (modelId === 'forma-pro' || modelId === GEMINI_MODEL_IDS['forma-pro']) {
-    return 'gemini-flash';
+  if (modelId === 'forma-pro' || modelId === DUOMI_MODEL_IDS['forma-pro']) {
+    return 'forma-pro';
   }
-  // 默认使用 forma
   return 'forma';
 };
 
@@ -159,8 +185,9 @@ export async function generateImage(
       },
       body: JSON.stringify({
         prompt: params.prompt,
-        modelId: params.model || 'gemini-2.0-flash-exp',
+        modelId: params.model || 'forma',
         referenceImage: params.referenceImage,
+        aspectRatio: params.aspectRatio,
       }),
     });
 
