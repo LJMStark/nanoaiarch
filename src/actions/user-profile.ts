@@ -41,7 +41,9 @@ interface ProfileAccessResult {
 /**
  * Check if current user can access a profile (shared logic)
  */
-async function checkProfileAccess(userId: string): Promise<ProfileAccessResult> {
+async function checkProfileAccess(
+  userId: string
+): Promise<ProfileAccessResult> {
   const session = await auth.api.getSession({ headers: await headers() });
   const isOwner = session?.user?.id === userId;
 

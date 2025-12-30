@@ -1525,6 +1525,42 @@
       "axonometricView": {
         "title": "Axonometric View",
         "description": "Create exploded axonometric diagrams"
+      },
+      "multiReferenceRender": {
+        "title": "Multi-Reference Render",
+        "description": "Combine multiple reference images to generate composite designs"
+      },
+      "aerialToStreet": {
+        "title": "Aerial to Street View",
+        "description": "Transform bird's eye views into street-level perspectives"
+      },
+      "redlineLandscape": {
+        "title": "Redline Landscape",
+        "description": "Design landscape within site boundary lines"
+      },
+      "interiorAnnotate": {
+        "title": "Interior from Annotation",
+        "description": "Generate interiors based on annotated floor plans"
+      },
+      "buildingMigration": {
+        "title": "Building Migration",
+        "description": "Transplant buildings onto different terrains"
+      },
+      "interiorRenovation": {
+        "title": "Interior Renovation",
+        "description": "Transform unfinished spaces into polished interiors"
+      },
+      "groundFloorDesign": {
+        "title": "Ground Floor Design",
+        "description": "Design ground floor amenity spaces"
+      },
+      "redlineToDesign": {
+        "title": "Redline to Design",
+        "description": "Generate masterplan from site boundary"
+      },
+      "dayToNight": {
+        "title": "Day to Night",
+        "description": "Transform daytime scenes into dramatic night views"
       }
     },
     "modal": {

@@ -1525,6 +1525,42 @@
       "axonometricView": {
         "title": "轴测图",
         "description": "创建爆炸轴测图"
+      },
+      "multiReferenceRender": {
+        "title": "多参考生成",
+        "description": "结合多个参考图片生成复合设计"
+      },
+      "aerialToStreet": {
+        "title": "大场景转局部",
+        "description": "将鸟瞰图转换为人视角透视"
+      },
+      "redlineLandscape": {
+        "title": "红线景观设计",
+        "description": "在场地红线范围内设计景观"
+      },
+      "interiorAnnotate": {
+        "title": "室内标注设计",
+        "description": "根据标注平面图生成室内效果"
+      },
+      "buildingMigration": {
+        "title": "建筑迁移",
+        "description": "将建筑移植到不同地形"
+      },
+      "interiorRenovation": {
+        "title": "室内改造",
+        "description": "将未完成空间转换为精致室内"
+      },
+      "groundFloorDesign": {
+        "title": "架空层设计",
+        "description": "设计首层公共配套空间"
+      },
+      "redlineToDesign": {
+        "title": "红线生成方案",
+        "description": "根据场地红线生成总平面方案"
+      },
+      "dayToNight": {
+        "title": "白天转夜景",
+        "description": "将白天场景转换为夜景效果"
       }
     },
     "modal": {

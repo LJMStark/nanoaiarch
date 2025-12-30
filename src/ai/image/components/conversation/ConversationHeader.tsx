@@ -2,14 +2,14 @@
 
 import { updateImageProject } from '@/actions/image-project';
 import { LoginWrapper } from '@/components/auth/login-wrapper';
-import { Logo } from '@/components/layout/logo';
 import LocaleSwitcher from '@/components/layout/locale-switcher';
+import { Logo } from '@/components/layout/logo';
 import { ModeSwitcher } from '@/components/layout/mode-switcher';
 import { UserButton } from '@/components/layout/user-button';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useSidebar } from '@/components/ui/sidebar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { LocaleLink } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';

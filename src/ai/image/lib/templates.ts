@@ -1,5 +1,5 @@
-// Architectural template definitions (20+ templates)
-// 建筑模版定义（20+ 个模版）
+// Architectural template definitions (35 templates)
+// 建筑模版定义（35 个模版）
 
 import type { ArchTemplate } from './arch-types';
 
@@ -83,7 +83,7 @@ export const ARCH_TEMPLATES: ArchTemplate[] = [
     promptTemplate:
       'Transform this block/volumetric model into a detailed architectural render. Keep the massing and form but add realistic facade treatments, materials, windows, balconies, and rooftop details. Include urban context and atmospheric lighting.',
     previewImage: '/arch/templates/block-model-render-output.png',
-    inputImage: '/arch/templates/block-model-render-input.png',
+    inputImage: '/arch/templates/block-model-render-input-1.png',
     defaultAspectRatio: '16:9',
     requiresInput: true,
     tags: ['model', 'block', 'render', 'volumetric'],
@@ -210,8 +210,8 @@ export const ARCH_TEMPLATES: ArchTemplate[] = [
     descriptionKey: 'ArchPage.templates.materialReplace.description',
     promptTemplate:
       'Replace the facade materials on this building while maintaining the original form, window positions, and proportions. Apply new material treatments including cladding, glazing patterns, and surface finishes. Keep the architectural character intact.',
-    previewImage: '/arch/templates/material-replace-output.png',
-    inputImage: '/arch/templates/material-replace-input.png',
+    previewImage: '/arch/templates/material-replace-output.jpg',
+    inputImage: '/arch/templates/material-replace-input-1.png',
     defaultAspectRatio: '16:9',
     requiresInput: true,
     tags: ['material', 'facade', 'replace', 'renovation'],
@@ -275,9 +275,8 @@ export const ARCH_TEMPLATES: ArchTemplate[] = [
     promptTemplate:
       'Create a Sasaki-style site analysis diagram with clean, minimal graphic style, limited sophisticated color palette, transparent overlays showing different analysis layers, clear iconography and simple geometric shapes, soft gradients for zone identification, thin precise linework, and professional diagrammatic quality.',
     previewImage: '/arch/templates/sasaki-analysis-output.png',
-    inputImage: '/arch/templates/sasaki-analysis-input.png',
     defaultAspectRatio: '1:1',
-    requiresInput: true,
+    requiresInput: false,
     tags: ['sasaki', 'analysis', 'diagram', 'site'],
     featured: true,
     order: 17,
@@ -421,6 +420,137 @@ export const ARCH_TEMPLATES: ArchTemplate[] = [
     requiresInput: false,
     tags: ['axonometric', 'exploded', 'diagram', 'technical'],
     order: 26,
+  },
+
+  // ============================================
+  // New Templates (新增模版) - 9 templates
+  // ============================================
+  {
+    id: 'multi-reference-render',
+    categoryId: 'model-to-render',
+    titleKey: 'ArchPage.templates.multiReferenceRender.title',
+    descriptionKey: 'ArchPage.templates.multiReferenceRender.description',
+    promptTemplate:
+      'Based on the provided site boundary (red line), combine the architectural style from reference image with the landscape design from another reference to generate a residential community visualization. Maintain reasonable building layout within the site, create rich and refined landscape flow lines, and ensure proper floor area ratio.',
+    previewImage: '/arch/templates/multi-reference-render-output.png',
+    inputImage: '/arch/templates/multi-reference-render-input-1.png',
+    defaultAspectRatio: '16:9',
+    requiresInput: true,
+    tags: ['multi-reference', 'composite', 'residential', 'masterplan'],
+    featured: true,
+    order: 27,
+  },
+  {
+    id: 'aerial-to-street',
+    categoryId: 'perspective',
+    titleKey: 'ArchPage.templates.aerialToStreet.title',
+    descriptionKey: 'ArchPage.templates.aerialToStreet.description',
+    promptTemplate:
+      'Transform this aerial/bird-eye view into a street-level human perspective. Generate a close-up view focusing on the main entrance or key architectural feature. Maintain the building design while adding realistic ground-level details, pedestrian scale elements, and eye-level atmosphere.',
+    previewImage: '/arch/templates/aerial-to-street-output.png',
+    inputImage: '/arch/templates/aerial-to-street-input.png',
+    defaultAspectRatio: '16:9',
+    requiresInput: true,
+    tags: ['perspective', 'street', 'entrance', 'human-scale'],
+    order: 28,
+  },
+  {
+    id: 'redline-landscape',
+    categoryId: 'masterplan',
+    titleKey: 'ArchPage.templates.redlineLandscape.title',
+    descriptionKey: 'ArchPage.templates.redlineLandscape.description',
+    promptTemplate:
+      'Design a pocket park within the red boundary lines. Include winding pathways, scattered small structures, and three landscape nodes: a small stage plaza, children playground, and camping lawn. Create a natural and harmonious layout with rich landscape flow. Maintain the site outline and road positions.',
+    previewImage: '/arch/templates/redline-landscape-output.png',
+    inputImage: '/arch/templates/redline-landscape-input.png',
+    defaultAspectRatio: '16:9',
+    requiresInput: true,
+    tags: ['landscape', 'park', 'pocket-park', 'redline'],
+    order: 29,
+  },
+  {
+    id: 'interior-annotate',
+    categoryId: 'floor-plan',
+    titleKey: 'ArchPage.templates.interiorAnnotate.title',
+    descriptionKey: 'ArchPage.templates.interiorAnnotate.description',
+    promptTemplate:
+      'Generate an interior visualization based on the annotated floor plan. Interpret the red annotations as design requirements and layout specifications. Create a modern minimalist interior with proper furniture placement following the annotations. Apply cinematic lighting with natural light and shadow effects. Remove all annotation marks in the final render.',
+    previewImage: '/arch/templates/interior-annotate-output.jpg',
+    inputImage: '/arch/templates/interior-annotate-input.png',
+    defaultAspectRatio: '16:9',
+    requiresInput: true,
+    tags: ['interior', 'annotate', 'kitchen', 'floor-plan'],
+    order: 30,
+  },
+  {
+    id: 'building-migration',
+    categoryId: 'model-to-render',
+    titleKey: 'ArchPage.templates.buildingMigration.title',
+    descriptionKey: 'ArchPage.templates.buildingMigration.description',
+    promptTemplate:
+      'Transplant the building from the reference image onto the target site terrain. Adapt the building to the slope or landscape while maintaining its original architectural character. Ensure proper integration with the site context and natural surroundings.',
+    previewImage: '/arch/templates/building-migration-output.png',
+    inputImage: '/arch/templates/building-migration-input-1.png',
+    defaultAspectRatio: '16:9',
+    requiresInput: true,
+    tags: ['migration', 'site', 'terrain', 'composite'],
+    order: 31,
+  },
+  {
+    id: 'interior-renovation',
+    categoryId: 'renovation',
+    titleKey: 'ArchPage.templates.interiorRenovation.title',
+    descriptionKey: 'ArchPage.templates.interiorRenovation.description',
+    promptTemplate:
+      'Transform this messy or unfinished interior space into a polished living room design. Remove construction elements and clutter while preserving the original spatial structure and ceiling. Apply modern luxury style with proper furniture layout. Add cinematic lighting with natural light and shadow effects.',
+    previewImage: '/arch/templates/interior-renovation-output.jpg',
+    inputImage: '/arch/templates/interior-renovation-input.jpg',
+    defaultAspectRatio: '16:9',
+    requiresInput: true,
+    tags: ['interior', 'renovation', 'living-room', 'modern'],
+    order: 32,
+  },
+  {
+    id: 'ground-floor-design',
+    categoryId: 'renovation',
+    titleKey: 'ArchPage.templates.groundFloorDesign.title',
+    descriptionKey: 'ArchPage.templates.groundFloorDesign.description',
+    promptTemplate:
+      'Transform this ground floor or podium space into a functional amenity area. Add fitness facilities, reading lounge, and gathering spaces while preserving existing columns and ceiling structure. Remove temporary barriers and create an inviting atmosphere with proper lighting and furnishing.',
+    previewImage: '/arch/templates/ground-floor-design-output.png',
+    inputImage: '/arch/templates/ground-floor-design-input.png',
+    defaultAspectRatio: '16:9',
+    requiresInput: true,
+    tags: ['ground-floor', 'amenity', 'lobby', 'renovation'],
+    order: 33,
+  },
+  {
+    id: 'redline-to-design',
+    categoryId: 'masterplan',
+    titleKey: 'ArchPage.templates.redlineToDesign.title',
+    descriptionKey: 'ArchPage.templates.redlineToDesign.description',
+    promptTemplate:
+      'Based on the site boundary (red line) and road structure, redesign the site and transform it into a professional bird-eye architectural visualization. Maintain the original site shape and surrounding context. Apply BIG studio style with rational building arrangement, enhanced greenery and landscape. Remove the red line in the final render.',
+    previewImage: '/arch/templates/redline-to-design-output.png',
+    inputImage: '/arch/templates/redline-to-design-input.png',
+    defaultAspectRatio: '1:1',
+    requiresInput: true,
+    tags: ['redline', 'masterplan', 'birdseye', 'urban'],
+    order: 34,
+  },
+  {
+    id: 'day-to-night',
+    categoryId: 'render-style',
+    titleKey: 'ArchPage.templates.dayToNight.title',
+    descriptionKey: 'ArchPage.templates.dayToNight.description',
+    promptTemplate:
+      'Transform this daytime architectural scene into a night view while maintaining the spatial relationships. Add interior lighting, facade lighting, and ambient nighttime atmosphere. Enhance the warm glow from interior spaces and create dramatic lighting effects.',
+    previewImage: '/arch/templates/day-to-night-output.png',
+    inputImage: '/arch/templates/day-to-night-input.png',
+    defaultAspectRatio: '16:9',
+    requiresInput: true,
+    tags: ['night', 'lighting', 'atmosphere', 'style-transfer'],
+    order: 35,
   },
 ];
 
