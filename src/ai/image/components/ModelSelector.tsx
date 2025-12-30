@@ -29,7 +29,6 @@ interface ModelSelectorProps {
 const MODEL_ICONS: Record<GeminiModelId, React.ReactNode> = {
   forma: <Zap className="h-4 w-4 text-violet-500" />,
   'forma-pro': <Sparkles className="h-4 w-4 text-purple-500" />,
-  'nano-banana-pro': <Crown className="h-4 w-4 text-amber-500" />,
 };
 
 export function ModelSelector({
