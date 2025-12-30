@@ -146,12 +146,31 @@ export const useProjectStore = create<ProjectState>()(
     }),
     {
       name: 'project-store',
+      version: 2, // 版本升级，触发迁移
       partialize: (state) => ({
         currentProjectId: state.currentProjectId,
         imageQuality: state.imageQuality,
         aspectRatio: state.aspectRatio,
         selectedModel: state.selectedModel,
       }),
+      // 处理旧版本状态迁移
+      migrate: (persistedState: any, version: number) => {
+        if (version < 2) {
+          // 从旧版本迁移：移除 stylePreset，添加 imageQuality
+          const { stylePreset, ...rest } = persistedState;
+          return {
+            ...rest,
+            imageQuality: '1K',
+            // 如果旧的 selectedModel 无效，重置为默认值
+            selectedModel:
+              rest.selectedModel === 'forma' ||
+              rest.selectedModel === 'forma-pro'
+                ? rest.selectedModel
+                : 'forma',
+          };
+        }
+        return persistedState;
+      },
     }
   )
 );
