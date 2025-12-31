@@ -62,7 +62,7 @@ export const websiteConfig: WebsiteConfig = {
     enableSpeedInsights: false,
   },
   auth: {
-    enableGoogleLogin: true,
+    enableGoogleLogin: false,
     enableGithubLogin: false,
     enableCredentialLogin: true,
   },
