@@ -17,15 +17,43 @@ import type { GeminiModelId } from '@/ai/image/lib/provider-config';
 import { consumeCredits, hasEnoughCredits } from '@/credits/credits';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { uploadFile } from '@/storage';
 import { type NextRequest, NextResponse } from 'next/server';
+
+/**
+ * 将 base64 图片上传到 S3 获取 URL
+ */
+async function uploadBase64ToS3(
+  base64: string,
+  index: number
+): Promise<string> {
+  // 转换 base64 为 Buffer
+  const buffer = Buffer.from(base64, 'base64');
+
+  // 上传到 S3
+  const result = await uploadFile(
+    buffer,
+    `ref-${Date.now()}-${index}.jpg`,
+    'image/jpeg',
+    'reference-images'
+  );
+
+  return result.url;
+}
 
 export async function POST(req: NextRequest) {
   const requestId = generateRequestId();
-  const { prompt, modelId, referenceImage, aspectRatio, imageSize } =
-    (await req.json()) as GenerateImageRequest & {
-      aspectRatio?: string;
-      imageSize?: '1K' | '2K' | '4K';
-    };
+  const {
+    prompt,
+    modelId,
+    referenceImage,
+    referenceImages,
+    aspectRatio,
+    imageSize,
+  } = (await req.json()) as GenerateImageRequest & {
+    aspectRatio?: string;
+    imageSize?: '1K' | '2K' | '4K';
+  };
 
   try {
     // 验证请求参数
@@ -112,30 +140,59 @@ export async function POST(req: NextRequest) {
 
     const selectedImageSize = imageSize || DEFAULT_IMAGE_QUALITY;
 
-    if (referenceImage) {
-      // 有参考图时使用图片编辑 API
-      // 注意：Duomi API 需要图片 URL，这里假设 referenceImage 已经是 URL
-      // 如果是 base64，需要先上传到存储服务获取 URL
-      const imageUrl = referenceImage.startsWith('http')
-        ? referenceImage
-        : `data:image/png;base64,${referenceImage}`;
+    // 收集所有参考图（支持单图和多图）
+    const allReferenceImages: string[] = [];
+    if (referenceImages && referenceImages.length > 0) {
+      allReferenceImages.push(...referenceImages);
+    } else if (referenceImage) {
+      allReferenceImages.push(referenceImage);
+    }
 
-      // 如果是 base64 格式，使用文生图 API（Duomi 编辑 API 需要 URL）
-      if (!referenceImage.startsWith('http')) {
+    if (allReferenceImages.length > 0) {
+      // 有参考图时使用图片编辑 API
+      // 将所有 base64 图片上传到 S3 获取 URL
+      const imageUrls: string[] = [];
+
+      for (let i = 0; i < allReferenceImages.length; i++) {
+        const img = allReferenceImages[i];
+        if (img.startsWith('http')) {
+          imageUrls.push(img);
+        } else {
+          // base64 格式，上传到 S3
+          try {
+            const url = await uploadBase64ToS3(img, i);
+            imageUrls.push(url);
+            logger.api.info(
+              `[requestId=${requestId}] Uploaded reference image ${i + 1}/${allReferenceImages.length}`
+            );
+          } catch (uploadError) {
+            logger.api.error(
+              `[requestId=${requestId}] Failed to upload reference image ${i + 1}:`,
+              uploadError
+            );
+            // 继续处理其他图片
+          }
+        }
+      }
+
+      if (imageUrls.length > 0) {
         logger.api.info(
-          `[requestId=${requestId}] Reference image is base64, using text-to-image with enhanced prompt`
+          `[requestId=${requestId}] Using edit API with ${imageUrls.length} reference images`
         );
-        // 使用文生图，但在 prompt 中说明要参考图片风格
-        generatePromise = generateImageWithDuomi({
+        generatePromise = editImageWithDuomi({
           prompt,
+          imageUrls,
           model: duomiModel,
           aspectRatio: duomiAspectRatio,
           imageSize: selectedImageSize,
         });
       } else {
-        generatePromise = editImageWithDuomi({
+        // 所有图片上传失败，回退到文生图
+        logger.api.warn(
+          `[requestId=${requestId}] All reference images failed to upload, falling back to text-to-image`
+        );
+        generatePromise = generateImageWithDuomi({
           prompt,
-          imageUrls: [imageUrl],
           model: duomiModel,
           aspectRatio: duomiAspectRatio,
           imageSize: selectedImageSize,

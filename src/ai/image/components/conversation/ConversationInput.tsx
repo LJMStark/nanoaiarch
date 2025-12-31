@@ -4,7 +4,7 @@ import { updateProjectActivity } from '@/actions/image-project';
 import { addAssistantMessage, addUserMessage } from '@/actions/project-message';
 import { AspectRatioSelect } from '@/ai/image/components/AspectRatioSelect';
 import { ImageQualitySelect } from '@/ai/image/components/ImageQualitySelect';
-import { ImageUploader } from '@/ai/image/components/ImageUploader';
+import { MultiImageUploader } from '@/ai/image/components/MultiImageUploader';
 import { generateImage, validateBase64Image } from '@/ai/image/lib/api-utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,21 +26,24 @@ export function ConversationInput() {
   const t = useTranslations('ArchPage');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showImageUpload, setShowImageUpload] = useState(false);
-  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
 
-  const handleImageSelect = (image: string | null) => {
-    if (image) {
+  const handleImagesChange = (images: string[]) => {
+    // 验证所有图片
+    for (const image of images) {
       const validation = validateBase64Image(image);
       if (!validation.valid) {
         setImageError(validation.error || 'Image too large');
         return;
       }
-      // 选择图片后自动关闭上传区域，显示小预览
-      setShowImageUpload(false);
     }
     setImageError(null);
-    setReferenceImage(image);
+    setReferenceImages(images);
+    // 有图片时自动关闭上传区域，显示预览
+    if (images.length > 0) {
+      setShowImageUpload(false);
+    }
   };
 
   const {
@@ -75,17 +78,21 @@ export function ConversationInput() {
     if (!draftPrompt.trim() || isGenerating || !currentProjectId) return;
 
     const prompt = draftPrompt.trim();
-    const inputImage = referenceImage || getLastOutputImage();
+    // 多图支持：优先使用用户上传的图片，否则使用最后一次生成的图片
+    const inputImages =
+      referenceImages.length > 0
+        ? referenceImages
+        : ([getLastOutputImage()].filter(Boolean) as string[]);
 
     // Clear input immediately
     clearDraft();
-    setReferenceImage(null);
+    setReferenceImages([]);
     setShowImageUpload(false);
 
-    // Add user message
+    // Add user message (只显示第一张图作为预览)
     const userResult = await addUserMessage(currentProjectId, {
       content: prompt,
-      inputImage: inputImage || undefined,
+      inputImage: inputImages[0] || undefined,
     });
 
     if (!userResult.success || !userResult.data) {
@@ -100,10 +107,10 @@ export function ConversationInput() {
     const startTime = Date.now();
 
     try {
-      // Generate image with quality setting
+      // Generate image with quality setting (支持多图参考)
       const result = await generateImage({
         prompt,
-        referenceImage: inputImage || undefined,
+        referenceImages: inputImages.length > 0 ? inputImages : undefined,
         aspectRatio: aspectRatio,
         model: selectedModel,
         imageSize: imageQuality,
@@ -188,13 +195,9 @@ export function ConversationInput() {
               className="overflow-hidden"
             >
               <div className="pb-3 space-y-2">
-                <ImageUploader
-                  currentImage={referenceImage ?? undefined}
-                  onImageSelect={handleImageSelect}
-                  onImageClear={() => {
-                    setReferenceImage(null);
-                    setImageError(null);
-                  }}
+                <MultiImageUploader
+                  currentImages={referenceImages}
+                  onImagesChange={handleImagesChange}
                 />
                 {imageError && (
                   <p className="text-sm text-destructive px-1">{imageError}</p>
@@ -204,24 +207,36 @@ export function ConversationInput() {
           )}
         </AnimatePresence>
 
-        {/* Reference image preview */}
-        {referenceImage && !showImageUpload && (
+        {/* Reference images preview */}
+        {referenceImages.length > 0 && !showImageUpload && (
           <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-            <div className="relative h-12 w-12 rounded overflow-hidden">
-              <img
-                src={`data:image/png;base64,${referenceImage}`}
-                alt="Reference"
-                className="h-full w-full object-cover"
-              />
+            <div className="flex gap-1">
+              {referenceImages.slice(0, 3).map((img, idx) => (
+                <div
+                  key={idx}
+                  className="relative h-10 w-10 rounded overflow-hidden"
+                >
+                  <img
+                    src={`data:image/png;base64,${img}`}
+                    alt={`Reference ${idx + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              ))}
+              {referenceImages.length > 3 && (
+                <div className="h-10 w-10 rounded bg-background/50 flex items-center justify-center text-xs text-muted-foreground">
+                  +{referenceImages.length - 3}
+                </div>
+              )}
             </div>
             <span className="text-sm text-muted-foreground flex-1">
-              {t('controls.referenceAttached')}
+              {t('controls.referenceCount', { count: referenceImages.length })}
             </span>
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setReferenceImage(null)}
+              onClick={() => setReferenceImages([])}
             >
               <X className="h-4 w-4" />
             </Button>

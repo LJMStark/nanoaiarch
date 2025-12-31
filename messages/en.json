@@ -1381,7 +1381,8 @@
       "credits": "{count} credits",
       "prompt": "Describe your architectural vision...",
       "promptNoProject": "Select or create a project to start",
-      "referenceAttached": "Reference image attached"
+      "referenceAttached": "Reference image attached",
+      "referenceCount": "{count} reference images"
     },
     "quality": {
       "standard": "Standard",
@@ -1396,7 +1397,10 @@
       "uploadToEdit": "Upload an image to edit",
       "dragOrClick": "Drag and drop or click to select",
       "fileTypes": "PNG, JPG, WebP, GIF (large images auto-compressed)",
+      "multiFileTypes": "PNG, JPG, WebP, GIF up to 5 images",
       "removeHint": "Click X to remove and upload a different image",
+      "maxImagesReached": "Maximum 5 images reached",
+      "imageCount": "{count}/{max} images",
       "invalidType": "Please select a valid image file (PNG, JPG, WebP, or GIF)",
       "fileTooLarge": "File size must be less than 10MB",
       "readFailed": "Failed to read file",

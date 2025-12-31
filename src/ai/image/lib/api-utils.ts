@@ -155,6 +155,7 @@ export function validatePrompt(prompt: string): PromptValidationResult {
 export interface GenerateImageParams {
   prompt: string;
   referenceImage?: string;
+  referenceImages?: string[]; // 多图参考 (base64 数组，最多 5 张)
   aspectRatio?: string;
   model?: string;
   imageSize?: ImageQuality;
@@ -181,6 +182,7 @@ export async function generateImage(
         prompt: params.prompt,
         modelId: params.model || 'forma',
         referenceImage: params.referenceImage,
+        referenceImages: params.referenceImages,
         aspectRatio: params.aspectRatio,
         imageSize: params.imageSize || DEFAULT_IMAGE_QUALITY,
       }),

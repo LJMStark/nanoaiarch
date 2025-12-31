@@ -23,78 +23,80 @@ const TARGET_SIZE = 3 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 
 /**
- * 压缩图片到指定大小
+ * 压缩图片到指定大小（使用迭代避免栈溢出）
  */
 async function compressImage(
   file: File,
   targetSize: number = TARGET_SIZE
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new window.Image();
-    img.onload = () => {
-      // 计算压缩参数
-      let { width, height } = img;
-      const quality = 0.9;
+  const objectUrl = URL.createObjectURL(file);
 
-      // 如果图片很大，先缩小尺寸
-      const maxDimension = 4096;
-      if (width > maxDimension || height > maxDimension) {
-        const scale = maxDimension / Math.max(width, height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
+  try {
+    return await new Promise((resolve, reject) => {
+      const img = new window.Image();
+      img.onload = () => {
+        // 计算压缩参数
+        let { width, height } = img;
 
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error('Canvas context not available'));
-        return;
-      }
-
-      // 迭代压缩直到满足大小要求
-      const compress = (
-        currentQuality: number,
-        currentScale: number
-      ): string => {
-        const scaledWidth = Math.round(width * currentScale);
-        const scaledHeight = Math.round(height * currentScale);
-
-        canvas.width = scaledWidth;
-        canvas.height = scaledHeight;
-        ctx.clearRect(0, 0, scaledWidth, scaledHeight);
-        ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
-
-        // 使用 JPEG 格式压缩（压缩率更好）
-        const dataUrl = canvas.toDataURL('image/jpeg', currentQuality);
-        const base64 = dataUrl.split(',')[1];
-        const size = Math.round((base64.length * 3) / 4);
-
-        if (
-          size <= targetSize ||
-          currentQuality <= 0.1 ||
-          currentScale <= 0.3
-        ) {
-          return base64;
+        // 如果图片很大，先缩小尺寸
+        const maxDimension = 4096;
+        if (width > maxDimension || height > maxDimension) {
+          const scale = maxDimension / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
         }
 
-        // 继续降低质量或尺寸
-        if (currentQuality > 0.5) {
-          return compress(currentQuality - 0.1, currentScale);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas context not available'));
+          return;
         }
-        return compress(currentQuality, currentScale - 0.1);
+
+        // 迭代压缩直到满足大小要求
+        let currentQuality = 0.9;
+        let currentScale = 1;
+        let base64 = '';
+
+        while (true) {
+          const scaledWidth = Math.round(width * currentScale);
+          const scaledHeight = Math.round(height * currentScale);
+
+          canvas.width = scaledWidth;
+          canvas.height = scaledHeight;
+          ctx.clearRect(0, 0, scaledWidth, scaledHeight);
+          ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
+
+          // 使用 JPEG 格式压缩（压缩率更好）
+          const dataUrl = canvas.toDataURL('image/jpeg', currentQuality);
+          base64 = dataUrl.split(',')[1];
+          const size = Math.round((base64.length * 3) / 4);
+
+          if (
+            size <= targetSize ||
+            currentQuality <= 0.1 ||
+            currentScale <= 0.3
+          ) {
+            break;
+          }
+
+          // 继续降低质量或尺寸
+          if (currentQuality > 0.5) {
+            currentQuality -= 0.1;
+          } else {
+            currentScale -= 0.1;
+          }
+        }
+
+        resolve(base64);
       };
 
-      try {
-        const result = compress(quality, 1);
-        resolve(result);
-      } catch (error) {
-        reject(error);
-      }
-    };
-
-    img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = URL.createObjectURL(file);
-  });
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = objectUrl;
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl); // 清理 Blob URL 防止内存泄漏
+  }
 }
 
 export function ImageUploader({
