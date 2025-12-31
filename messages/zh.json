@@ -400,7 +400,11 @@
       "emailRequired": "请输入邮箱",
       "passwordRequired": "请输入密码",
       "captchaInvalid": "验证码验证失败",
-      "captchaError": "验证码验证出错"
+      "captchaError": "验证码验证出错",
+      "resendEmail": "重新发送验证邮件",
+      "resendEmailIn": "{seconds}秒后可重新发送",
+      "resendEmailSuccess": "验证邮件已发送",
+      "resendEmailError": "发送验证邮件失败"
     },
     "forgotPassword": {
       "title": "忘记密码",

@@ -400,7 +400,11 @@
       "emailRequired": "Please enter your email",
       "passwordRequired": "Please enter your password",
       "captchaInvalid": "Captcha verification failed",
-      "captchaError": "Captcha verification error"
+      "captchaError": "Captcha verification error",
+      "resendEmail": "Resend verification email",
+      "resendEmailIn": "Resend in {seconds}s",
+      "resendEmailSuccess": "Verification email sent successfully",
+      "resendEmailError": "Failed to send verification email"
     },
     "forgotPassword": {
       "title": "Forgot Password",

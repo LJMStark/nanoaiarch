@@ -21,10 +21,10 @@ import { logger } from '@/lib/logger';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, Loader2Icon, MailIcon } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import * as z from 'zod';
 import { Captcha } from '../shared/captcha';
@@ -51,6 +51,9 @@ export const RegisterForm = ({
   const [success, setSuccess] = useState<string | undefined>('');
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string | undefined>();
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
   const captchaRef = useRef<any>(null);
 
   // Check if credential login is enabled
@@ -101,6 +104,38 @@ export const RegisterForm = ({
     }
   };
 
+  // Countdown timer for resend button
+  useEffect(() => {
+    if (resendCountdown > 0) {
+      const timer = setTimeout(() => {
+        setResendCountdown(resendCountdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCountdown]);
+
+  // Handle resend verification email
+  const handleResendEmail = useCallback(async () => {
+    if (!registeredEmail || resendCountdown > 0 || isResending) return;
+
+    setIsResending(true);
+    setError('');
+
+    try {
+      await authClient.sendVerificationEmail({
+        email: registeredEmail,
+        callbackURL: callbackUrl,
+      });
+      setSuccess(t('resendEmailSuccess'));
+      setResendCountdown(60); // 60 seconds cooldown
+    } catch (err) {
+      logger.auth.error('resend verification email error', err);
+      setError(t('resendEmailError'));
+    } finally {
+      setIsResending(false);
+    }
+  }, [registeredEmail, resendCountdown, isResending, callbackUrl, t]);
+
   const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
     // Validate captcha token if turnstile is enabled and site key is available
     if (captchaConfigured && values.captchaToken) {
@@ -147,6 +182,8 @@ export const RegisterForm = ({
         onSuccess: async (ctx) => {
           // sign up success, user information stored in ctx.data
           setSuccess(t('checkEmail'));
+          setRegisteredEmail(values.email);
+          setResendCountdown(60); // Start cooldown immediately after registration
 
           // Apply referral code if present
           if (refCode && ctx.data?.user?.id) {
@@ -275,6 +312,28 @@ export const RegisterForm = ({
             </div>
             <FormError message={error} />
             <FormSuccess message={success} />
+            {/* Resend verification email button - shown after successful registration */}
+            {registeredEmail && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResendEmail}
+                disabled={resendCountdown > 0 || isResending}
+                className="w-full flex items-center justify-center gap-2"
+              >
+                {isResending ? (
+                  <Loader2Icon className="size-4 animate-spin" />
+                ) : (
+                  <MailIcon className="size-4" />
+                )}
+                <span>
+                  {resendCountdown > 0
+                    ? t('resendEmailIn', { seconds: resendCountdown })
+                    : t('resendEmail')}
+                </span>
+              </Button>
+            )}
             {captchaConfigured && (
               <Captcha
                 ref={captchaRef}

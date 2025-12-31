@@ -104,7 +104,7 @@ export const websiteConfig: WebsiteConfig = {
     provider: 's3',
   },
   payment: {
-    provider: 'stripe',
+    provider: 'zpay',
   },
   price: {
     plans: {
@@ -121,6 +121,7 @@ export const websiteConfig: WebsiteConfig = {
       },
       pro: {
         id: 'pro',
+        disabled: true, // zpay 不支持订阅，隐藏此计划
         prices: [
           {
             type: PaymentTypes.SUBSCRIPTION,
@@ -148,6 +149,7 @@ export const websiteConfig: WebsiteConfig = {
       },
       lifetime: {
         id: 'lifetime',
+        disabled: true, // 隐藏终身版
         prices: [
           {
             type: PaymentTypes.ONE_TIME,
@@ -180,12 +182,12 @@ export const websiteConfig: WebsiteConfig = {
       basic: {
         id: 'basic',
         popular: false,
-        amount: 100,
+        amount: 10, // 约 10 张图片
         expireDays: 30,
         price: {
           priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_BASIC!,
-          amount: 990,
-          currency: 'USD',
+          amount: 990, // ¥9.9
+          currency: 'CNY',
           allowPromotionCode: true,
           zpayAmount: getZpayPrice('ZPAY_PRICE_CREDITS_BASIC'),
         },
@@ -193,12 +195,12 @@ export const websiteConfig: WebsiteConfig = {
       standard: {
         id: 'standard',
         popular: true,
-        amount: 200,
+        amount: 60, // 约 60 张图片
         expireDays: 30,
         price: {
           priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_STANDARD!,
-          amount: 1490,
-          currency: 'USD',
+          amount: 4900, // ¥49
+          currency: 'CNY',
           allowPromotionCode: true,
           zpayAmount: getZpayPrice('ZPAY_PRICE_CREDITS_STANDARD'),
         },
@@ -206,12 +208,12 @@ export const websiteConfig: WebsiteConfig = {
       premium: {
         id: 'premium',
         popular: false,
-        amount: 500,
+        amount: 150, // 约 150 张图片
         expireDays: 30,
         price: {
           priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_PREMIUM!,
-          amount: 3990,
-          currency: 'USD',
+          amount: 9900, // ¥99
+          currency: 'CNY',
           allowPromotionCode: true,
           zpayAmount: getZpayPrice('ZPAY_PRICE_CREDITS_PREMIUM'),
         },
@@ -219,12 +221,12 @@ export const websiteConfig: WebsiteConfig = {
       enterprise: {
         id: 'enterprise',
         popular: false,
-        amount: 1000,
+        amount: 350, // 约 350 张图片
         expireDays: 30,
         price: {
           priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_ENTERPRISE!,
-          amount: 6990,
-          currency: 'USD',
+          amount: 19900, // ¥199
+          currency: 'CNY',
           allowPromotionCode: true,
           zpayAmount: getZpayPrice('ZPAY_PRICE_CREDITS_ENTERPRISE'),
         },
