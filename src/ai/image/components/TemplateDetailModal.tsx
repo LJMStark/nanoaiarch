@@ -21,7 +21,11 @@ interface TemplateDetailModalProps {
   template: ArchTemplate | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onApply: (template: ArchTemplate, prompt: string, ratio: AspectRatioId) => void;
+  onApply: (
+    template: ArchTemplate,
+    prompt: string,
+    ratio: AspectRatioId
+  ) => void;
 }
 
 export function TemplateDetailModal({

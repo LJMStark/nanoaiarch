@@ -39,7 +39,11 @@ export function useTemplateApply(): UseTemplateApplyReturn {
    * Creates a new project if none exists
    */
   const applyTemplateWithProject = useCallback(
-    async ({ template, prompt, ratio }: ApplyTemplateParams): Promise<boolean> => {
+    async ({
+      template,
+      prompt,
+      ratio,
+    }: ApplyTemplateParams): Promise<boolean> => {
       setIsApplying(true);
 
       try {

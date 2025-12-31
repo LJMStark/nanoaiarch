@@ -156,7 +156,11 @@ export const useProjectStore = create<ProjectState>()(
         selectedModel: state.selectedModel,
       }),
       migrate: (persistedState: unknown, version: number) => {
-        if (version < 2 && persistedState && typeof persistedState === 'object') {
+        if (
+          version < 2 &&
+          persistedState &&
+          typeof persistedState === 'object'
+        ) {
           // Migrate from v1: remove stylePreset, add imageQuality
           // Always use 'forma' as it's the only model now (gemini-3-pro-image-preview)
           const { stylePreset, ...rest } = persistedState as Record<

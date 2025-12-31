@@ -1399,7 +1399,9 @@
       "removeHint": "Click X to remove and upload a different image",
       "invalidType": "Please select a valid image file (PNG, JPG, WebP, or GIF)",
       "fileTooLarge": "File size must be less than 10MB",
-      "readFailed": "Failed to read file"
+      "readFailed": "Failed to read file",
+      "compressing": "Compressing image...",
+      "compressFailed": "Failed to compress image"
     },
     "styles": {
       "modernMinimalist": "Modern Minimalist",

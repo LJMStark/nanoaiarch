@@ -1399,7 +1399,9 @@
       "removeHint": "点击 X 移除并上传新图片",
       "invalidType": "请选择有效的图片文件（PNG、JPG、WebP 或 GIF）",
       "fileTooLarge": "文件大小不能超过 10MB",
-      "readFailed": "读取文件失败"
+      "readFailed": "读取文件失败",
+      "compressing": "正在压缩图片...",
+      "compressFailed": "图片压缩失败"
     },
     "styles": {
       "modernMinimalist": "现代极简",
