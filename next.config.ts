@@ -12,6 +12,13 @@ const nextConfig: NextConfig = {
   /* config options here */
   devIndicators: false,
 
+  // Increase Server Actions body size limit for image uploads (default 1MB)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
+
   // https://nextjs.org/docs/architecture/nextjs-compiler#remove-console
   // Remove all console.* calls in production only
   compiler: {
