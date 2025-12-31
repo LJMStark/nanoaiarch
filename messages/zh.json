@@ -1395,7 +1395,7 @@
       "dropHere": "将图片拖放到这里",
       "uploadToEdit": "上传图片进行编辑",
       "dragOrClick": "拖放或点击选择",
-      "fileTypes": "支持 PNG、JPG、WebP、GIF，最大 10MB",
+      "fileTypes": "支持 PNG、JPG、WebP、GIF（大图自动压缩）",
       "removeHint": "点击 X 移除并上传新图片",
       "invalidType": "请选择有效的图片文件（PNG、JPG、WebP 或 GIF）",
       "fileTooLarge": "文件大小不能超过 10MB",

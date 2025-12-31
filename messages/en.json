@@ -1395,7 +1395,7 @@
       "dropHere": "Drop image here",
       "uploadToEdit": "Upload an image to edit",
       "dragOrClick": "Drag and drop or click to select",
-      "fileTypes": "PNG, JPG, WebP, GIF up to 10MB",
+      "fileTypes": "PNG, JPG, WebP, GIF (large images auto-compressed)",
       "removeHint": "Click X to remove and upload a different image",
       "invalidType": "Please select a valid image file (PNG, JPG, WebP, or GIF)",
       "fileTooLarge": "File size must be less than 10MB",

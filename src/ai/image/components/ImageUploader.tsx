@@ -15,10 +15,10 @@ interface ImageUploaderProps {
   disabled?: boolean;
 }
 
-// 最大文件大小 10MB（与 Server Actions 限制匹配）
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-// 压缩目标大小 8MB（留一些余量）
-const TARGET_SIZE = 8 * 1024 * 1024;
+// 触发压缩的阈值 4MB（考虑部署平台限制）
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
+// 压缩目标大小 3MB（留余量给 base64 编码膨胀）
+const TARGET_SIZE = 3 * 1024 * 1024;
 // 支持的图片格式
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 
