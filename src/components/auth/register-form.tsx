@@ -54,7 +54,8 @@ export const RegisterForm = ({
   const [registeredEmail, setRegisteredEmail] = useState<string | undefined>();
   const [resendCountdown, setResendCountdown] = useState(0);
   const [isResending, setIsResending] = useState(false);
-  const captchaRef = useRef<any>(null);
+  // Captcha ref type for reset functionality
+  const captchaRef = useRef<{ reset?: () => void }>(null);
 
   // Check if credential login is enabled
   const credentialLoginEnabled = websiteConfig.auth.enableCredentialLogin;
@@ -99,9 +100,7 @@ export const RegisterForm = ({
   const resetCaptcha = () => {
     form.setValue('captchaToken', '');
     // Try to reset the Turnstile widget if available
-    if (captchaRef.current && typeof captchaRef.current.reset === 'function') {
-      captchaRef.current.reset();
-    }
+    captchaRef.current?.reset?.();
   };
 
   // Countdown timer for resend button
@@ -120,6 +119,7 @@ export const RegisterForm = ({
 
     setIsResending(true);
     setError('');
+    setSuccess(''); // Clear previous success message before retry
 
     try {
       await authClient.sendVerificationEmail({
