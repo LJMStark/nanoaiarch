@@ -3,10 +3,8 @@ import { logger } from '@/lib/logger';
 // Duomi API 配置
 const DUOMI_API_BASE = 'https://duomiapi.com/api/gemini';
 
-// Duomi 模型类型
-export type DuomiModelId =
-  | 'gemini-3-pro-image-preview'
-  | 'gemini-2.5-pro-image-preview';
+// Duomi 模型类型 - 使用最新的 nano-banana-pro
+export type DuomiModelId = 'gemini-3-pro-image-preview';
 
 // 画幅比例类型
 export type DuomiAspectRatio =
@@ -22,7 +20,7 @@ export type DuomiAspectRatio =
   | '16:9'
   | '21:9';
 
-// 分辨率类型 (仅 gemini-3-pro 支持)
+// 分辨率类型 - 支持 1K/2K/4K，价格相同，分辨率越高耗时越长
 export type DuomiImageSize = '1K' | '2K' | '4K';
 
 // 任务状态类型
@@ -111,8 +109,8 @@ async function submitTextToImageTask(
     aspect_ratio: aspectRatio,
   };
 
-  // image_size 仅 gemini-3-pro 支持
-  if (imageSize && model === 'gemini-3-pro-image-preview') {
+  // 添加分辨率参数
+  if (imageSize) {
     requestBody.image_size = imageSize;
   }
 
@@ -272,8 +270,8 @@ async function submitEditImageTask(params: EditImageParams): Promise<string> {
     aspect_ratio: aspectRatio,
   };
 
-  // image_size 仅 gemini-3-pro 支持
-  if (imageSize && model === 'gemini-3-pro-image-preview') {
+  // 添加分辨率参数
+  if (imageSize) {
     requestBody.image_size = imageSize;
   }
 

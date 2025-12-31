@@ -4,7 +4,7 @@ import {
 } from '@/ai/image/components/ImageQualitySelect';
 import { logger } from '@/lib/logger';
 import type { DuomiAspectRatio, DuomiModelId } from './duomi-client';
-import { DUOMI_MODEL_IDS, type GeminiModelId } from './provider-config';
+import type { GeminiModelId } from './provider-config';
 
 /**
  * 请求超时时间（120 秒）
@@ -35,22 +35,17 @@ export const generateRequestId = (): string => {
 };
 
 /**
- * Duomi 模型 Key 类型
+ * Duomi 模型 Key 类型 - 只有 forma (gemini-3-pro-image-preview)
  */
-export type DuomiModelKey = 'forma' | 'forma-pro';
+export type DuomiModelKey = 'forma';
 
 /**
  * 将前端模型 ID 映射到 Duomi API 的模型 ID
+ * 当前只有一个模型: gemini-3-pro-image-preview (nano-banana-pro)
  */
-export const mapModelIdToDuomiModel = (modelId: string): DuomiModelId => {
-  if (modelId === 'forma' || modelId === DUOMI_MODEL_IDS.forma) {
-    return 'gemini-2.5-pro-image-preview';
-  }
-  if (modelId === 'forma-pro' || modelId === DUOMI_MODEL_IDS['forma-pro']) {
-    return 'gemini-3-pro-image-preview';
-  }
-  // 默认使用 gemini-2.5-pro
-  return 'gemini-2.5-pro-image-preview';
+export const mapModelIdToDuomiModel = (_modelId: string): DuomiModelId => {
+  // 只有一个模型，直接返回
+  return 'gemini-3-pro-image-preview';
 };
 
 /**
@@ -77,14 +72,9 @@ export type GeminiModelKey = DuomiModelKey;
 
 /**
  * 向后兼容：映射到 Gemini Key（实际返回 Duomi key）
+ * 当前只有一个模型: forma
  */
-export const mapModelIdToGeminiKey = (modelId: string): DuomiModelKey => {
-  if (modelId === 'forma' || modelId === DUOMI_MODEL_IDS.forma) {
-    return 'forma';
-  }
-  if (modelId === 'forma-pro' || modelId === DUOMI_MODEL_IDS['forma-pro']) {
-    return 'forma-pro';
-  }
+export const mapModelIdToGeminiKey = (_modelId: string): DuomiModelKey => {
   return 'forma';
 };
 

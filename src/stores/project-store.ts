@@ -158,6 +158,7 @@ export const useProjectStore = create<ProjectState>()(
       migrate: (persistedState: unknown, version: number) => {
         if (version < 2 && persistedState && typeof persistedState === 'object') {
           // Migrate from v1: remove stylePreset, add imageQuality
+          // Always use 'forma' as it's the only model now (gemini-3-pro-image-preview)
           const { stylePreset, ...rest } = persistedState as Record<
             string,
             unknown
@@ -165,11 +166,7 @@ export const useProjectStore = create<ProjectState>()(
           return {
             ...rest,
             imageQuality: DEFAULT_IMAGE_QUALITY,
-            selectedModel:
-              rest.selectedModel === 'forma' ||
-              rest.selectedModel === 'forma-pro'
-                ? rest.selectedModel
-                : 'forma',
+            selectedModel: 'forma',
           };
         }
         return persistedState;

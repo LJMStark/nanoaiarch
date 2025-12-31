@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
         imageUrls: limitedImageUrls,
         model: duomiModel,
         aspectRatio: 'auto',
-        imageSize: modelId === 'forma-pro' ? '2K' : '1K',
+        imageSize: '1K',
       });
     } else {
       // 没有图片 URL 时使用文生图 API
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
         prompt,
         model: duomiModel,
         aspectRatio: 'auto',
-        imageSize: modelId === 'forma-pro' ? '2K' : '1K',
+        imageSize: '1K',
       });
     }
 

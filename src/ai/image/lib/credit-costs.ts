@@ -2,12 +2,11 @@ import type { GeminiModelId } from './provider-config';
 
 /**
  * 每个模型生成一张图片所消耗的 Credits
+ * nano-banana-pro API 成本 0.14/次，所有分辨率价格相同
  */
 export const CREDIT_COSTS: Record<GeminiModelId, number> = {
-  // Forma (Gemini 2.5 Pro - 快速模式) - 1 credit/张
+  // Forma Pro (Gemini 3 Pro / nano-banana-pro) - 1 credit/张
   forma: 1,
-  // Forma Pro (Gemini 3 Pro - 高质量模式) - 3 credits/张
-  'forma-pro': 3,
 };
 
 /**
