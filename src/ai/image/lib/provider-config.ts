@@ -9,9 +9,6 @@ export const DUOMI_MODEL_IDS = {
 
 export type GeminiModelId = keyof typeof DUOMI_MODEL_IDS;
 
-// 向后兼容：保留 GEMINI_MODEL_IDS 别名
-export const GEMINI_MODEL_IDS = DUOMI_MODEL_IDS;
-
 // Duomi 模型列表
 export const DUOMI_MODELS: GeminiModelId[] = ['forma'];
 

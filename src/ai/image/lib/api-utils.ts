@@ -4,7 +4,6 @@ import {
 } from '@/ai/image/components/ImageQualitySelect';
 import { logger } from '@/lib/logger';
 import type { DuomiAspectRatio, DuomiModelId } from './duomi-client';
-import type { GeminiModelId } from './provider-config';
 
 /**
  * 请求超时时间（120 秒）
