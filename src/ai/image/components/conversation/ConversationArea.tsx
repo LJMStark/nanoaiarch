@@ -22,9 +22,10 @@ export function ConversationArea() {
     }
   }, [messages.length, isGenerating]);
 
+  // 没有项目时显示全屏瀑布流画廊
   if (!currentProjectId) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 overflow-hidden">
         <TemplateShowcase showFullView />
       </div>
     );
