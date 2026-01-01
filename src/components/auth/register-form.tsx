@@ -1,5 +1,6 @@
 'use client';
 
+import { handleUnverifiedRegistration } from '@/actions/handle-unverified-registration';
 import { applyReferralCode } from '@/actions/referral';
 import { validateCaptchaAction } from '@/actions/validate-captcha';
 import { AuthCard } from '@/components/auth/auth-card';
@@ -204,13 +205,57 @@ export const RegisterForm = ({
             window.Affonso.signup(values.email);
           }
         },
-        onError: (ctx) => {
+        onError: async (ctx) => {
           // sign up fail, display the error message
           logger.auth.error('register error', ctx.error, {
             status: ctx.error.status,
             message: ctx.error.message,
           });
-          setError(`${ctx.error.status}: ${ctx.error.message}`);
+
+          // Check if error is "user already exists"
+          const isUserExistsError =
+            ctx.error.message?.toLowerCase().includes('already exists') ||
+            ctx.error.message?.toLowerCase().includes('already registered') ||
+            ctx.error.status === 409 ||
+            ctx.error.status === 422;
+
+          if (isUserExistsError) {
+            logger.auth.info(
+              'register error: user already exists, checking verification status',
+              {
+                email: values.email,
+              }
+            );
+
+            // Handle unverified user registration
+            try {
+              const result = await handleUnverifiedRegistration(
+                values.email,
+                callbackUrl
+              );
+
+              if (result.success && result.status === 'unverified') {
+                // Successfully resent verification email
+                setSuccess(t('userExistsUnverifiedResent'));
+                setRegisteredEmail(values.email);
+                setResendCountdown(60);
+                setError('');
+              } else if (result.status === 'verified') {
+                // User is already verified - show login hint
+                setError(t('userExistsVerified'));
+              } else {
+                // Failed to resend verification email
+                setError(result.message || t('userExistsError'));
+              }
+            } catch (error) {
+              logger.auth.error('handleUnverifiedRegistration error', error);
+              setError(`${ctx.error.status}: ${ctx.error.message}`);
+            }
+          } else {
+            // Other registration errors
+            setError(`${ctx.error.status}: ${ctx.error.message}`);
+          }
+
           // Reset captcha on registration error
           if (captchaConfigured) {
             resetCaptcha();

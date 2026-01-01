@@ -454,7 +454,10 @@
       "resendEmail": "Resend verification email",
       "resendEmailIn": "Resend in {seconds}s",
       "resendEmailSuccess": "Verification email sent successfully",
-      "resendEmailError": "Failed to send verification email"
+      "resendEmailError": "Failed to send verification email",
+      "userExistsUnverifiedResent": "Account exists but not verified. We've sent a new verification email to your inbox.",
+      "userExistsVerified": "Account already exists and is verified. Please sign in instead.",
+      "userExistsError": "Unable to process your registration. Please try again or contact support."
     },
     "forgotPassword": {
       "title": "Forgot Password",

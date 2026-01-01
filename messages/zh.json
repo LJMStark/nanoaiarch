@@ -454,7 +454,10 @@
       "resendEmail": "重新发送验证邮件",
       "resendEmailIn": "{seconds}秒后可重新发送",
       "resendEmailSuccess": "验证邮件已发送",
-      "resendEmailError": "发送验证邮件失败"
+      "resendEmailError": "发送验证邮件失败",
+      "userExistsUnverifiedResent": "账号已存在但未验证，我们已重新向您的邮箱发送了验证邮件。",
+      "userExistsVerified": "账号已存在且已验证，请直接登录。",
+      "userExistsError": "无法处理您的注册请求，请重试或联系客服。"
     },
     "forgotPassword": {
       "title": "忘记密码",
