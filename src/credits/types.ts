@@ -26,6 +26,16 @@ export interface CreditPackagePrice {
 }
 
 /**
+ * Credit package tier for subscription-style pricing
+ */
+export type CreditPackageTier = 'basic' | 'standard' | 'pro';
+
+/**
+ * Credit package billing interval
+ */
+export type CreditPackageInterval = 'month' | 'quarter' | 'year';
+
+/**
  * Credit package
  */
 export interface CreditPackage {
@@ -37,4 +47,7 @@ export interface CreditPackage {
   description?: string;                // Description of the package
   expireDays?: number;                 // Number of days to expire the credits, undefined means no expire
   disabled?: boolean;                  // Whether the package is disabled in the UI
+  tier?: CreditPackageTier;            // Package tier for subscription-style pricing
+  interval?: CreditPackageInterval;    // Billing interval for subscription-style pricing
+  savings?: number;                    // Savings percentage compared to monthly (e.g., 15 for 15% off)
 }

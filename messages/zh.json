@@ -293,6 +293,54 @@
       "description": "大型组织的批量优惠价格"
     }
   },
+  "Pricing": {
+    "tabs": {
+      "plans": "套餐计划",
+      "topup": "灵活充值",
+      "new": "新人专享"
+    },
+    "Topup": {
+      "description": "按需购买积分，灵活使用无压力",
+      "topup": "充值",
+      "credits": "积分",
+      "bonusCredits": "赠送积分",
+      "buyNow": "立即购买",
+      "newUser": "新人专享",
+      "limitedOffer": "限时特价",
+      "oneTimeOnly": "每个账号仅限购买一次"
+    }
+  },
+  "CreditPricing": {
+    "monthly": "月度",
+    "quarterly": "季度",
+    "yearly": "年度",
+    "bestValue": "最划算",
+    "freeInfo": "注册即送 {credits} 积分",
+    "Card": {
+      "tiers": {
+        "basic": "基础版",
+        "standard": "标准版",
+        "pro": "专业版"
+      },
+      "intervals": {
+        "month": "月",
+        "quarter": "季",
+        "year": "年"
+      },
+      "recommended": "推荐选择",
+      "monthlyEquivalent": "约 {price}/月",
+      "save": "节省",
+      "defaultDescription": "适合轻度使用",
+      "subscribe": "立即订阅",
+      "features": {
+        "credits": "{amount} 积分",
+        "images": "约生成 {count} 张图片",
+        "expiry": "有效期 {days} 天",
+        "allModels": "支持所有 AI 模型",
+        "priority": "优先处理队列"
+      }
+    }
+  },
   "NotFoundPage": {
     "title": "404",
     "message": "抱歉，您正在寻找的页面不存在",

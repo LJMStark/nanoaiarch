@@ -179,56 +179,148 @@ export const websiteConfig: WebsiteConfig = {
       expireDays: 30,
     },
     packages: {
-      basic: {
-        id: 'basic',
+      // === 基础版 (Basic Tier) ===
+      basic_month: {
+        id: 'basic_month',
+        tier: 'basic',
+        interval: 'month',
         popular: false,
-        amount: 10, // 约 10 张图片
+        amount: 30, // 约 30 张图片
         expireDays: 30,
         price: {
-          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_BASIC!,
-          amount: 990, // ¥9.9
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC_MONTH!,
+          amount: 2900, // ¥29
           currency: 'CNY',
           allowPromotionCode: true,
-          zpayAmount: getZpayPrice('ZPAY_PRICE_CREDITS_BASIC'),
+          zpayAmount: getZpayPrice('ZPAY_PRICE_BASIC_MONTH') ?? 29,
         },
       },
-      standard: {
-        id: 'standard',
-        popular: true,
-        amount: 60, // 约 60 张图片
+      basic_quarter: {
+        id: 'basic_quarter',
+        tier: 'basic',
+        interval: 'quarter',
+        popular: false,
+        amount: 100, // 约 100 张图片
+        expireDays: 90,
+        savings: 9, // ~9% off vs monthly
+        price: {
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC_QUARTER!,
+          amount: 7900, // ¥79
+          currency: 'CNY',
+          allowPromotionCode: true,
+          zpayAmount: getZpayPrice('ZPAY_PRICE_BASIC_QUARTER') ?? 79,
+        },
+      },
+      basic_year: {
+        id: 'basic_year',
+        tier: 'basic',
+        interval: 'year',
+        popular: false,
+        amount: 400, // 约 400 张图片
+        expireDays: 365,
+        savings: 23, // ~23% off vs monthly
+        price: {
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC_YEAR!,
+          amount: 26900, // ¥269
+          currency: 'CNY',
+          allowPromotionCode: true,
+          zpayAmount: getZpayPrice('ZPAY_PRICE_BASIC_YEAR') ?? 269,
+        },
+      },
+      // === 标准版 (Standard Tier) - 推荐 ===
+      standard_month: {
+        id: 'standard_month',
+        tier: 'standard',
+        interval: 'month',
+        popular: false,
+        amount: 100, // 约 100 张图片
         expireDays: 30,
         price: {
-          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_STANDARD!,
-          amount: 4900, // ¥49
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_STANDARD_MONTH!,
+          amount: 7900, // ¥79
           currency: 'CNY',
           allowPromotionCode: true,
-          zpayAmount: getZpayPrice('ZPAY_PRICE_CREDITS_STANDARD'),
+          zpayAmount: getZpayPrice('ZPAY_PRICE_STANDARD_MONTH') ?? 79,
         },
       },
-      premium: {
-        id: 'premium',
-        popular: false,
-        amount: 150, // 约 150 张图片
-        expireDays: 30,
-        price: {
-          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_PREMIUM!,
-          amount: 9900, // ¥99
-          currency: 'CNY',
-          allowPromotionCode: true,
-          zpayAmount: getZpayPrice('ZPAY_PRICE_CREDITS_PREMIUM'),
-        },
-      },
-      enterprise: {
-        id: 'enterprise',
-        popular: false,
+      standard_quarter: {
+        id: 'standard_quarter',
+        tier: 'standard',
+        interval: 'quarter',
+        popular: true, // 推荐套餐
         amount: 350, // 约 350 张图片
+        expireDays: 90,
+        savings: 8, // ~8% off vs monthly
+        price: {
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_STANDARD_QUARTER!,
+          amount: 21900, // ¥219
+          currency: 'CNY',
+          allowPromotionCode: true,
+          zpayAmount: getZpayPrice('ZPAY_PRICE_STANDARD_QUARTER') ?? 219,
+        },
+      },
+      standard_year: {
+        id: 'standard_year',
+        tier: 'standard',
+        interval: 'year',
+        popular: false,
+        amount: 1500, // 约 1500 张图片
+        expireDays: 365,
+        savings: 33, // ~33% off vs monthly
+        price: {
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_STANDARD_YEAR!,
+          amount: 79900, // ¥799
+          currency: 'CNY',
+          allowPromotionCode: true,
+          zpayAmount: getZpayPrice('ZPAY_PRICE_STANDARD_YEAR') ?? 799,
+        },
+      },
+      // === 专业版 (Pro Tier) ===
+      pro_month: {
+        id: 'pro_month',
+        tier: 'pro',
+        interval: 'month',
+        popular: false,
+        amount: 300, // 约 300 张图片
         expireDays: 30,
         price: {
-          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_ENTERPRISE!,
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTH!,
           amount: 19900, // ¥199
           currency: 'CNY',
           allowPromotionCode: true,
-          zpayAmount: getZpayPrice('ZPAY_PRICE_CREDITS_ENTERPRISE'),
+          zpayAmount: getZpayPrice('ZPAY_PRICE_PRO_MONTH') ?? 199,
+        },
+      },
+      pro_quarter: {
+        id: 'pro_quarter',
+        tier: 'pro',
+        interval: 'quarter',
+        popular: false,
+        amount: 1000, // 约 1000 张图片
+        expireDays: 90,
+        savings: 8, // ~8% off vs monthly
+        price: {
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_QUARTER!,
+          amount: 54900, // ¥549
+          currency: 'CNY',
+          allowPromotionCode: true,
+          zpayAmount: getZpayPrice('ZPAY_PRICE_PRO_QUARTER') ?? 549,
+        },
+      },
+      pro_year: {
+        id: 'pro_year',
+        tier: 'pro',
+        interval: 'year',
+        popular: false,
+        amount: 5000, // 约 5000 张图片
+        expireDays: 365,
+        savings: 33, // ~33% off vs monthly
+        price: {
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEAR!,
+          amount: 199900, // ¥1999
+          currency: 'CNY',
+          allowPromotionCode: true,
+          zpayAmount: getZpayPrice('ZPAY_PRICE_PRO_YEAR') ?? 1999,
         },
       },
     },

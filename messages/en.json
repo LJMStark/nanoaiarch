@@ -293,6 +293,54 @@
       "description": "Volume pricing for large organizations"
     }
   },
+  "Pricing": {
+    "tabs": {
+      "plans": "Subscription Plans",
+      "topup": "Flexible Top-up",
+      "new": "New User"
+    },
+    "Topup": {
+      "description": "Buy credits as needed, use them flexibly",
+      "topup": "Top-up",
+      "credits": "Credits",
+      "bonusCredits": "Bonus Credits",
+      "buyNow": "Buy Now",
+      "newUser": "New User Special",
+      "limitedOffer": "Limited Offer",
+      "oneTimeOnly": "One-time purchase per account"
+    }
+  },
+  "CreditPricing": {
+    "monthly": "Monthly",
+    "quarterly": "Quarterly",
+    "yearly": "Yearly",
+    "bestValue": "Best Value",
+    "freeInfo": "Get {credits} credits upon registration",
+    "Card": {
+      "tiers": {
+        "basic": "Basic",
+        "standard": "Standard",
+        "pro": "Professional"
+      },
+      "intervals": {
+        "month": "Month",
+        "quarter": "Quarter",
+        "year": "Year"
+      },
+      "recommended": "Recommended",
+      "monthlyEquivalent": "~{price}/month",
+      "save": "Save",
+      "defaultDescription": "For light usage",
+      "subscribe": "Subscribe Now",
+      "features": {
+        "credits": "{amount} Credits",
+        "images": "~{count} images",
+        "expiry": "Valid for {days} days",
+        "allModels": "All AI models supported",
+        "priority": "Priority processing queue"
+      }
+    }
+  },
   "NotFoundPage": {
     "title": "404",
     "message": "Sorry, the page you are looking for does not exist.",
