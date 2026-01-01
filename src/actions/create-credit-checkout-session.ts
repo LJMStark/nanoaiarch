@@ -44,6 +44,18 @@ export const createCreditCheckoutSession = userActionClient
         };
       }
 
+      // Check if package is disabled
+      if (creditPackage.disabled) {
+        logger.actions.warn('Attempted to purchase disabled package', {
+          userId: currentUser.id,
+          packageId,
+        });
+        return {
+          success: false,
+          error: 'This package is no longer available',
+        };
+      }
+
       // Add metadata to identify this as a credit purchase
       const customMetadata: Record<string, string> = {
         ...metadata,

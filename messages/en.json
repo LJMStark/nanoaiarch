@@ -307,7 +307,9 @@
       "buyNow": "Buy Now",
       "newUser": "New User Special",
       "limitedOffer": "Limited Offer",
-      "oneTimeOnly": "One-time purchase per account"
+      "oneTimeOnly": "One-time purchase per account",
+      "noPackagesAvailable": "No flexible top-up packages available",
+      "useSubscriptionPlans": "Please check \"Subscription Plans\" tab for available options"
     }
   },
   "CreditPricing": {

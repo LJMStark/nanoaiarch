@@ -307,7 +307,9 @@
       "buyNow": "立即购买",
       "newUser": "新人专享",
       "limitedOffer": "限时特价",
-      "oneTimeOnly": "每个账号仅限购买一次"
+      "oneTimeOnly": "每个账号仅限购买一次",
+      "noPackagesAvailable": "暂无灵活充值套餐",
+      "useSubscriptionPlans": "请查看"套餐计划"选择适合您的方案"
     }
   },
   "CreditPricing": {
