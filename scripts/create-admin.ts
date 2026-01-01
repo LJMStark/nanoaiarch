@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import { hashPassword } from 'better-auth/crypto';
 import dotenv from 'dotenv';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../src/db/index.js';
@@ -62,7 +62,7 @@ async function createAdmin() {
     .where(eq(account.userId, userId))
     .limit(1);
 
-  const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10);
+  const hashedPassword = await hashPassword(ADMIN_PASSWORD);
 
   if (existingAccount.length > 0) {
     // 更新现有账号的密码
