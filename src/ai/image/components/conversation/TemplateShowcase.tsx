@@ -8,6 +8,14 @@ import {
   TEMPLATE_CATEGORY_LIST,
 } from '@/ai/image/lib/template-categories';
 import { ARCH_TEMPLATES, FEATURED_TEMPLATES } from '@/ai/image/lib/templates';
+import { LoginForm } from '@/components/auth/login-form';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useCurrentUser } from '@/hooks/use-current-user';
 import { cn } from '@/lib/utils';
 import {
   AnimatePresence,
@@ -57,6 +65,9 @@ export function TemplateShowcase({
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const currentUser = useCurrentUser();
 
   // 无限滚动状态
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
@@ -146,6 +157,11 @@ export function TemplateShowcase({
     prompt: string,
     ratio: AspectRatioId
   ) => {
+    // 未登录时显示登录弹窗
+    if (!currentUser) {
+      setShowLoginModal(true);
+      return;
+    }
     setIsModalOpen(false);
     await applyTemplateWithProject({ template, prompt, ratio });
   };
@@ -271,6 +287,16 @@ export function TemplateShowcase({
           onOpenChange={setIsModalOpen}
           onApply={handleApplyTemplate}
         />
+
+        {/* 登录弹窗 */}
+        <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+          <DialogContent className="sm:max-w-[400px] p-0">
+            <DialogHeader className="hidden">
+              <DialogTitle />
+            </DialogHeader>
+            <LoginForm callbackUrl="/ai/image" className="border-none" />
+          </DialogContent>
+        </Dialog>
       </>
     );
   }
@@ -330,6 +356,16 @@ export function TemplateShowcase({
         onOpenChange={setIsModalOpen}
         onApply={handleApplyTemplate}
       />
+
+      {/* 登录弹窗 */}
+      <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+        <DialogContent className="sm:max-w-[400px] p-0">
+          <DialogHeader className="hidden">
+            <DialogTitle />
+          </DialogHeader>
+          <LoginForm callbackUrl="/ai/image" className="border-none" />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
