@@ -211,18 +211,27 @@ export function ConversationInput() {
         {referenceImages.length > 0 && !showImageUpload && (
           <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
             <div className="flex gap-1">
-              {referenceImages.slice(0, 3).map((img, idx) => (
-                <div
-                  key={idx}
-                  className="relative h-10 w-10 rounded overflow-hidden"
-                >
-                  <img
-                    src={`data:image/png;base64,${img}`}
-                    alt={`Reference ${idx + 1}`}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              ))}
+              {referenceImages.slice(0, 3).map((img, idx) => {
+                // Type safety check
+                const imageSrc =
+                  typeof img === 'string' ? `data:image/png;base64,${img}` : '';
+                if (!imageSrc) {
+                  console.error('Invalid image data at index', idx, img);
+                  return null;
+                }
+                return (
+                  <div
+                    key={idx}
+                    className="relative h-10 w-10 rounded overflow-hidden"
+                  >
+                    <img
+                      src={imageSrc}
+                      alt={`Reference ${idx + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                );
+              })}
               {referenceImages.length > 3 && (
                 <div className="h-10 w-10 rounded bg-background/50 flex items-center justify-center text-xs text-muted-foreground">
                   +{referenceImages.length - 3}

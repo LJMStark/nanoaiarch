@@ -239,7 +239,7 @@ function ProjectListItem({
         tooltip={project.title}
         className="group/item"
       >
-        {project.coverImage ? (
+        {project.coverImage && typeof project.coverImage === 'string' ? (
           <div className="h-4 w-4 rounded overflow-hidden flex-shrink-0 bg-muted">
             <img
               src={`data:image/png;base64,${project.coverImage}`}
