@@ -17,21 +17,11 @@ import {
 } from '@/components/ui/dialog';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { cn } from '@/lib/utils';
-import {
-  AnimatePresence,
-  motion,
-  useInView,
-} from 'framer-motion';
+import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { ArrowRight, Layers, Loader2, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // 每页加载的模板数量
 const PAGE_SIZE = 12;
@@ -123,7 +113,9 @@ export function TemplateShowcase({
           setIsLoadingMore(true);
           // 模拟加载延迟，实际可以直接加载
           setTimeout(() => {
-            setDisplayCount((prev) => Math.min(prev + PAGE_SIZE, filteredTemplates.length));
+            setDisplayCount((prev) =>
+              Math.min(prev + PAGE_SIZE, filteredTemplates.length)
+            );
             setIsLoadingMore(false);
           }, 300);
         }
@@ -131,7 +123,7 @@ export function TemplateShowcase({
       {
         root: scrollContainerRef.current,
         threshold: 0.1,
-        rootMargin: '100px'
+        rootMargin: '100px',
       }
     );
 
@@ -205,7 +197,8 @@ export function TemplateShowcase({
                       Template Gallery
                     </h1>
                     <p className="text-xs text-muted-foreground">
-                      {filteredTemplates.length} templates · {displayedTemplates.length} loaded
+                      {filteredTemplates.length} templates ·{' '}
+                      {displayedTemplates.length} loaded
                     </p>
                   </div>
                 </div>

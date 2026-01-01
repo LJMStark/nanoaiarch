@@ -7,8 +7,8 @@
  * Example: ADMIN_EMAILS="admin@example.com,dev@example.com"
  */
 
-import { auth } from './auth';
 import { headers } from 'next/headers';
+import { auth } from './auth';
 
 // Parse admin emails from environment variable
 function getAdminEmails(): string[] {

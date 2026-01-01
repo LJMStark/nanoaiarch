@@ -216,9 +216,35 @@ export async function generateImageWithDuomi(
       };
     }
 
+    // 验证返回的图片是有效的非空字符串
+    const image = images[0];
+    if (typeof image !== 'string' || !image.trim()) {
+      logger.ai.error('[Duomi] Invalid or empty image in text-to-image', {
+        type: typeof image,
+        hasValue: Boolean(image),
+      });
+      return {
+        success: false,
+        error: 'Invalid image format returned from API',
+        text: result.data.data.description,
+      };
+    }
+
+    // 验证是否为有效的 base64 或 URL
+    const isUrl = image.startsWith('http://') || image.startsWith('https://');
+    const isBase64 = /^[A-Za-z0-9+/]*={0,2}$/.test(image.slice(0, 100)); // 检查前100字符
+    if (!isUrl && !isBase64) {
+      logger.ai.error('[Duomi] Image is neither valid URL nor base64');
+      return {
+        success: false,
+        error: 'Invalid image format: not URL or base64',
+        text: result.data.data.description,
+      };
+    }
+
     return {
       success: true,
-      image: images[0], // 返回第一张图片
+      image, // 返回第一张图片
       text: result.data.data.description,
     };
   } catch (error) {
@@ -326,9 +352,35 @@ export async function editImageWithDuomi(
       };
     }
 
+    // 验证返回的图片是有效的非空字符串
+    const image = images[0];
+    if (typeof image !== 'string' || !image.trim()) {
+      logger.ai.error('[Duomi] Invalid or empty image in image edit', {
+        type: typeof image,
+        hasValue: Boolean(image),
+      });
+      return {
+        success: false,
+        error: 'Invalid image format returned from API',
+        text: result.data.data.description,
+      };
+    }
+
+    // 验证是否为有效的 base64 或 URL
+    const isUrl = image.startsWith('http://') || image.startsWith('https://');
+    const isBase64 = /^[A-Za-z0-9+/]*={0,2}$/.test(image.slice(0, 100)); // 检查前100字符
+    if (!isUrl && !isBase64) {
+      logger.ai.error('[Duomi] Edited image is neither valid URL nor base64');
+      return {
+        success: false,
+        error: 'Invalid image format: not URL or base64',
+        text: result.data.data.description,
+      };
+    }
+
     return {
       success: true,
-      image: images[0], // 返回第一张图片
+      image, // 返回第一张图片
       text: result.data.data.description,
     };
   } catch (error) {

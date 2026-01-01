@@ -393,7 +393,7 @@ export async function updateAssistantMessage(
 }
 
 /**
- * Delete a message
+ * Delete a message and update project messageCount
  */
 export async function deleteMessage(messageId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -403,6 +403,26 @@ export async function deleteMessage(messageId: string) {
 
   try {
     const db = await getDb();
+
+    // First, get the message to find its project
+    const message = await db
+      .select({ projectId: projectMessage.projectId })
+      .from(projectMessage)
+      .where(
+        and(
+          eq(projectMessage.id, messageId),
+          eq(projectMessage.userId, session.user.id)
+        )
+      )
+      .limit(1);
+
+    if (!message.length) {
+      return { success: false, error: 'Message not found' };
+    }
+
+    const projectId = message[0].projectId;
+
+    // Delete the message
     await db
       .delete(projectMessage)
       .where(
@@ -411,6 +431,15 @@ export async function deleteMessage(messageId: string) {
           eq(projectMessage.userId, session.user.id)
         )
       );
+
+    // Update project message count
+    await db
+      .update(imageProject)
+      .set({
+        messageCount: sql`GREATEST(0, ${imageProject.messageCount} - 1)`,
+        updatedAt: new Date(),
+      })
+      .where(eq(imageProject.id, projectId));
 
     return { success: true };
   } catch (error) {

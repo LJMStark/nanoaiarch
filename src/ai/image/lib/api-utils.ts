@@ -111,6 +111,28 @@ export function validateBase64Image(
     return { valid: true }; // No image is valid
   }
 
+  // Ensure base64 is a string
+  if (typeof base64 !== 'string') {
+    return {
+      valid: false,
+      error: 'Invalid image data: expected base64 string',
+    };
+  }
+
+  // Skip validation for URLs (they don't need size validation here)
+  if (base64.startsWith('http://') || base64.startsWith('https://')) {
+    // Validate URL format
+    try {
+      new URL(base64);
+      return { valid: true };
+    } catch {
+      return {
+        valid: false,
+        error: 'Invalid URL format',
+      };
+    }
+  }
+
   // Calculate approximate size from base64
   // Base64 encoded size is roughly 4/3 of original, so original = base64.length * 3/4
   const paddingCount = (base64.match(/=/g) || []).length;

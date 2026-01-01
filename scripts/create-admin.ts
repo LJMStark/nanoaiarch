@@ -2,7 +2,7 @@ import { hashPassword } from 'better-auth/crypto';
 import dotenv from 'dotenv';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../src/db/index.js';
-import { user, account } from '../src/db/schema.js';
+import { account, user } from '../src/db/schema.js';
 
 dotenv.config();
 
@@ -22,7 +22,11 @@ async function createAdmin() {
   const now = new Date();
 
   // 检查用户是否存在
-  const existing = await db.select().from(user).where(eq(user.email, ADMIN_EMAIL)).limit(1);
+  const existing = await db
+    .select()
+    .from(user)
+    .where(eq(user.email, ADMIN_EMAIL))
+    .limit(1);
 
   let userId: string;
 
@@ -31,7 +35,8 @@ async function createAdmin() {
     userId = existing[0].id;
     console.log('📝 用户已存在，正在更新...');
 
-    await db.update(user)
+    await db
+      .update(user)
       .set({
         emailVerified: true,
         role: 'admin',
@@ -58,7 +63,9 @@ async function createAdmin() {
   }
 
   // 检查/更新密码账号
-  const existingAccount = await db.select().from(account)
+  const existingAccount = await db
+    .select()
+    .from(account)
     .where(eq(account.userId, userId))
     .limit(1);
 
@@ -66,7 +73,8 @@ async function createAdmin() {
 
   if (existingAccount.length > 0) {
     // 更新现有账号的密码
-    await db.update(account)
+    await db
+      .update(account)
       .set({
         password: hashedPassword,
         updatedAt: now,

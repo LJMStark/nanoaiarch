@@ -1,6 +1,13 @@
 'use client';
 
-import type { ProjectMessageItem } from '@/actions/project-message';
+import { updateProjectActivity } from '@/actions/image-project';
+import {
+  addAssistantMessage,
+  deleteMessage,
+  type GenerationParams,
+  type ProjectMessageItem,
+} from '@/actions/project-message';
+import { generateImage } from '@/ai/image/lib/api-utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,17 +18,19 @@ import {
 } from '@/components/ui/tooltip';
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
+import { useConversationStore } from '@/stores/conversation-store';
 import {
   AlertCircle,
   Download,
   Edit3,
+  Loader2,
   RefreshCw,
   Share2,
   Sparkles,
   User,
 } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface MessageItemProps {
   message: ProjectMessageItem;
@@ -62,6 +71,26 @@ function UserMessage({ message }: { message: ProjectMessageItem }) {
   );
 }
 
+// 解析错误消息，返回用户友好的提示
+function parseErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) return 'An unexpected error occurred';
+
+  const msg = error.message.toLowerCase();
+  if (msg.includes('unauthorized') || msg.includes('sign in')) {
+    return 'Please sign in again to continue';
+  }
+  if (msg.includes('insufficient credits') || msg.includes('credits')) {
+    return 'Insufficient credits. Please purchase more.';
+  }
+  if (msg.includes('timeout') || msg.includes('timed out')) {
+    return 'Request timed out. Please try again.';
+  }
+  if (msg.includes('network') || msg.includes('fetch')) {
+    return 'Network error. Please check your connection.';
+  }
+  return error.message;
+}
+
 function AssistantMessage({
   message,
   isLast,
@@ -70,7 +99,149 @@ function AssistantMessage({
   isLast: boolean;
 }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const isFailed = message.status === 'failed';
+
+  // 用于防止组件卸载后更新状态
+  const isMountedRef = useRef(true);
+
+  const {
+    messages,
+    addMessage,
+    removeMessage,
+    setGenerating,
+    isGenerating,
+  } = useConversationStore();
+
+  // 组件卸载时清理
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // 获取失败消息对应的用户消息（上一条）
+  const getPreviousUserMessage = () => {
+    const messageIndex = messages.findIndex((m) => m.id === message.id);
+    if (messageIndex <= 0) return null;
+    const prevMessage = messages[messageIndex - 1];
+    return prevMessage?.role === 'user' ? prevMessage : null;
+  };
+
+  // 创建助手消息的辅助函数
+  const createAssistantMessage = async (
+    success: boolean,
+    result: { image?: string; error?: string; creditsUsed?: number },
+    generationTime: number,
+    params: { prompt: string; aspectRatio: string; model: string; imageQuality: string }
+  ) => {
+    const assistantResult = await addAssistantMessage(message.projectId, {
+      content: success ? '' : (result.error || 'Generation failed'),
+      outputImage: success ? result.image : undefined,
+      generationParams: params,
+      creditsUsed: success ? (result.creditsUsed || 1) : undefined,
+      generationTime: success ? generationTime : undefined,
+      status: success ? 'completed' : 'failed',
+      errorMessage: success ? undefined : result.error,
+    });
+
+    if (assistantResult.success && assistantResult.data) {
+      addMessage(assistantResult.data);
+
+      if (success && result.image) {
+        await updateProjectActivity(message.projectId, {
+          coverImage: result.image,
+          creditsUsed: result.creditsUsed || 1,
+          incrementGeneration: true,
+        });
+      }
+    }
+  };
+
+  // 重试生成
+  const handleRetry = async () => {
+    if (isRetrying || isGenerating) return;
+
+    const userMessage = getPreviousUserMessage();
+    if (!userMessage) {
+      logger.ai.error('Cannot retry: no previous user message found');
+      return;
+    }
+
+    // 解析原始生成参数
+    let params: GenerationParams | null = null;
+    if (message.generationParams) {
+      try {
+        params = JSON.parse(message.generationParams) as GenerationParams;
+      } catch {
+        // 使用默认参数
+      }
+    }
+
+    const prompt = params?.prompt || userMessage.content;
+    const aspectRatio = params?.aspectRatio || '1:1';
+    const model = params?.model || 'forma';
+    const imageQuality = (params?.imageQuality as '1K' | '2K' | '4K') || '2K';
+    const genParams = { prompt, aspectRatio, model, imageQuality };
+
+    logger.ai.info(`Starting retry [messageId=${message.id}, projectId=${message.projectId}]`);
+
+    setIsRetrying(true);
+    setGenerating(true);
+
+    // 删除失败的消息 - 添加错误处理
+    const deleteResult = await deleteMessage(message.id);
+    if (!deleteResult.success) {
+      logger.ai.error('Failed to delete failed message:', deleteResult.error);
+      if (isMountedRef.current) {
+        setIsRetrying(false);
+        setGenerating(false);
+      }
+      return;
+    }
+    removeMessage(message.id);
+
+    const startTime = Date.now();
+
+    try {
+      // 重新生成图片
+      const result = await generateImage({
+        prompt,
+        referenceImage: userMessage.inputImage || undefined,
+        aspectRatio,
+        model,
+        imageSize: imageQuality,
+      });
+
+      // 检查组件是否仍然挂载
+      if (!isMountedRef.current) return;
+
+      const generationTime = Date.now() - startTime;
+
+      if (result.success && result.image) {
+        logger.ai.info(`Retry succeeded [messageId=${message.id}, generationTime=${generationTime}ms]`);
+        await createAssistantMessage(true, result, generationTime, genParams);
+      } else {
+        logger.ai.warn(`Retry failed [messageId=${message.id}, error=${result.error}]`);
+        await createAssistantMessage(false, result, 0, genParams);
+      }
+    } catch (error) {
+      // 检查组件是否仍然挂载
+      if (!isMountedRef.current) return;
+
+      const errorMessage = parseErrorMessage(error);
+      logger.ai.error('Retry generation error:', error);
+
+      await createAssistantMessage(false, { error: errorMessage }, 0, genParams);
+    } finally {
+      // 只在组件仍挂载时更新状态
+      if (isMountedRef.current) {
+        setIsRetrying(false);
+        setGenerating(false);
+      }
+    }
+  };
 
   const handleDownload = () => {
     if (!message.outputImage) return;
@@ -117,11 +288,25 @@ function AssistantMessage({
       </Avatar>
       <div className="flex-1 space-y-3 min-w-0">
         {isFailed ? (
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+            <span className="text-sm text-destructive flex-1">
               {message.errorMessage || 'Generation failed'}
             </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRetry}
+              disabled={isRetrying || isGenerating}
+              className="flex-shrink-0"
+            >
+              {isRetrying ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-1" />
+              )}
+              Retry
+            </Button>
           </div>
         ) : message.outputImage ? (
           <div
