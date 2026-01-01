@@ -22,8 +22,8 @@ export function ConversationArea() {
     }
   }, [messages.length, isGenerating]);
 
-  // 没有项目时显示全屏瀑布流画廊
-  if (!currentProjectId) {
+  // 没有消息时显示全屏瀑布流画廊（无论是否有项目）
+  if (!hasMessages && !isLoadingMessages) {
     return (
       <div className="flex-1 overflow-hidden">
         <TemplateShowcase showFullView />
@@ -49,11 +49,12 @@ export function ConversationArea() {
     );
   }
 
+  // 有消息时显示消息列表
   return (
     <ScrollArea ref={scrollRef} className="flex-1">
       <div className="p-4">
         <div className="max-w-3xl mx-auto">
-          {hasMessages ? <MessageList /> : <TemplateShowcase />}
+          <MessageList />
         </div>
       </div>
     </ScrollArea>

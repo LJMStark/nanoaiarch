@@ -24,6 +24,7 @@ import {
 } from 'framer-motion';
 import { ArrowRight, Layers, Loader2, Sparkles } from 'lucide-react';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import {
   useCallback,
   useEffect,
@@ -68,6 +69,7 @@ export function TemplateShowcase({
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const currentUser = useCurrentUser();
+  const pathname = usePathname();
 
   // 无限滚动状态
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
@@ -294,7 +296,7 @@ export function TemplateShowcase({
             <DialogHeader className="hidden">
               <DialogTitle />
             </DialogHeader>
-            <LoginForm callbackUrl="/ai/image" className="border-none" />
+            <LoginForm callbackUrl={pathname} className="border-none" />
           </DialogContent>
         </Dialog>
       </>
