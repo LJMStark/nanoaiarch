@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { websiteConfig } from '@/config/website';
 import { getDb } from '@/db';
 import { creditTransaction, userCredit } from '@/db/schema';
+import { isAdminUser } from '@/lib/admin';
 import { logger } from '@/lib/logger';
 import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
 import { addDays, isAfter } from 'date-fns';
@@ -190,6 +191,7 @@ export async function addCredits({
 
 /**
  * Check if user has enough credits
+ * Admin users always have enough credits
  * @param userId - User ID
  * @param requiredCredits - Required credits
  */
@@ -200,12 +202,19 @@ export async function hasEnoughCredits({
   userId: string;
   requiredCredits: number;
 }) {
+  // Admin users bypass credit checks
+  if (await isAdminUser(userId)) {
+    logger.credits.debug('hasEnoughCredits: admin user bypassed', { userId });
+    return true;
+  }
+
   const balance = await getUserCredits(userId);
   return balance >= requiredCredits;
 }
 
 /**
  * Consume credits (FIFO, by expiration)
+ * Admin users skip credit consumption entirely
  * @param params - Credit consumption parameters
  */
 export async function consumeCredits({
@@ -231,6 +240,17 @@ export async function consumeCredits({
     });
     throw new Error('Invalid amount');
   }
+
+  // Admin users skip credit consumption entirely
+  if (await isAdminUser(userId)) {
+    logger.credits.debug('consumeCredits: admin user bypassed', {
+      userId,
+      amount,
+      description,
+    });
+    return;
+  }
+
   // Check balance
   if (!(await hasEnoughCredits({ userId, requiredCredits: amount }))) {
     logger.credits.error('consumeCredits insufficient credits', null, {
