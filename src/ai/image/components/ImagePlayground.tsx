@@ -53,6 +53,14 @@ export function ImagePlayground({
 
   const [isZoomed, setIsZoomed] = useState(false);
 
+  // 处理图片 URL：如果是 URL 直接使用，如果是 base64 则添加前缀
+  const getImageSrc = (imageData: string) => {
+    if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
+      return imageData;
+    }
+    return `data:image/png;base64,${imageData}`;
+  };
+
   // 处理提示词提交
   const handlePromptSubmit = async (prompt: string) => {
     if (mode === 'edit') {
@@ -180,7 +188,7 @@ export function ImagePlayground({
               >
                 <div className="aspect-square relative">
                   <Image
-                    src={`data:image/png;base64,${image.image}`}
+                    src={getImageSrc(image.image)}
                     alt={activePrompt || 'Generated image'}
                     fill
                     className="object-contain"
@@ -279,7 +287,7 @@ export function ImagePlayground({
           >
             <div className="relative max-h-[90vh] max-w-[90vw]">
               <Image
-                src={`data:image/png;base64,${image.image}`}
+                src={getImageSrc(image.image)}
                 alt={activePrompt || 'Generated image'}
                 width={1024}
                 height={1024}

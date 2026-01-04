@@ -92,7 +92,16 @@ export const imageHelpers = {
     provider: string
   ): Promise<void> => {
     const fileName = generateImageFileName(provider);
-    const blob = base64ToBlob(imageData);
+
+    // 如果是 URL 格式，先转换为 base64
+    let blob: Blob;
+    if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
+      const base64Data = await urlToBase64(imageData);
+      blob = base64ToBlob(base64Data);
+    } else {
+      blob = base64ToBlob(imageData);
+    }
+
     const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
 
     try {

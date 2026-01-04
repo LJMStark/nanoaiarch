@@ -37,6 +37,14 @@ interface MessageItemProps {
   isLast: boolean;
 }
 
+// 处理图片 URL：如果是 URL 直接使用，如果是 base64 则添加前缀
+const getImageSrc = (imageData: string) => {
+  if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
+    return imageData;
+  }
+  return `data:image/png;base64,${imageData}`;
+};
+
 export function MessageItem({ message, isLast }: MessageItemProps) {
   if (message.role === 'user') {
     return <UserMessage message={message} />;
@@ -59,7 +67,7 @@ function UserMessage({ message }: { message: ProjectMessageItem }) {
         {message.inputImage && (
           <div className="relative w-48 aspect-square rounded-lg overflow-hidden border">
             <Image
-              src={`data:image/png;base64,${message.inputImage}`}
+              src={getImageSrc(message.inputImage)}
               alt="Reference image"
               fill
               className="object-cover"
@@ -243,23 +251,41 @@ function AssistantMessage({
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!message.outputImage) return;
 
     const link = document.createElement('a');
-    link.href = `data:image/png;base64,${message.outputImage}`;
-    link.download = `generation-${message.id}.png`;
-    link.click();
+    // 如果是 URL，需要先下载再创建 blob URL
+    if (message.outputImage.startsWith('http')) {
+      try {
+        const response = await fetch(message.outputImage);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        link.href = blobUrl;
+        link.download = `generation-${message.id}.png`;
+        link.click();
+        URL.revokeObjectURL(blobUrl);
+      } catch (error) {
+        logger.ai.error('Download failed:', error);
+      }
+    } else {
+      link.href = `data:image/png;base64,${message.outputImage}`;
+      link.download = `generation-${message.id}.png`;
+      link.click();
+    }
   };
 
   const handleShare = async () => {
     if (!message.outputImage) return;
 
     try {
-      // Convert base64 to blob
-      const response = await fetch(
-        `data:image/png;base64,${message.outputImage}`
-      );
+      // 获取图片 blob
+      let response: Response;
+      if (message.outputImage.startsWith('http')) {
+        response = await fetch(message.outputImage);
+      } else {
+        response = await fetch(`data:image/png;base64,${message.outputImage}`);
+      }
       const blob = await response.blob();
       const file = new File([blob], 'generation.png', { type: 'image/png' });
 
@@ -316,7 +342,7 @@ function AssistantMessage({
           >
             <div className="relative rounded-xl overflow-hidden border bg-muted">
               <Image
-                src={`data:image/png;base64,${message.outputImage}`}
+                src={getImageSrc(message.outputImage)}
                 alt="Generated image"
                 width={512}
                 height={512}
