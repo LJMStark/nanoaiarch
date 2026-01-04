@@ -28,7 +28,7 @@ export type DuomiTaskState = 'pending' | 'running' | 'succeeded' | 'error';
 
 // 轮询配置
 const POLL_INTERVAL_MS = 2000; // 2 秒轮询间隔
-const MAX_POLL_ATTEMPTS = 60; // 最大轮询次数 (2分钟)
+const MAX_POLL_ATTEMPTS = 50; // 最大轮询次数 (100秒，留20秒缓冲)
 
 /**
  * 获取 Duomi API Key
@@ -216,16 +216,33 @@ export async function generateImageWithDuomi(
       };
     }
 
-    // 验证返回的图片是有效的非空字符串
-    const image = images[0];
-    if (typeof image !== 'string' || !image.trim()) {
+    // 处理返回的图片格式（可能是字符串或对象）
+    const rawImage = images[0];
+    let image: string;
+
+    if (typeof rawImage === 'string') {
+      image = rawImage;
+    } else if (typeof rawImage === 'object' && rawImage !== null) {
+      // 尝试从对象中提取图片数据
+      image = rawImage.url || rawImage.value || rawImage.data || '';
+    } else {
       logger.ai.error('[Duomi] Invalid or empty image in text-to-image', {
-        type: typeof image,
-        hasValue: Boolean(image),
+        type: typeof rawImage,
+        hasValue: Boolean(rawImage),
       });
       return {
         success: false,
         error: 'Invalid image format returned from API',
+        text: result.data.data.description,
+      };
+    }
+
+    // 验证提取的图片字符串
+    if (!image || !image.trim()) {
+      logger.ai.error('[Duomi] Empty image string after extraction');
+      return {
+        success: false,
+        error: 'Empty image data returned from API',
         text: result.data.data.description,
       };
     }

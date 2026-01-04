@@ -1,9 +1,23 @@
+import { auth } from '@/lib/auth';
 import { type UIMessage, convertToModelMessages, streamText } from 'ai';
+import { NextResponse } from 'next/server';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  // Verify user authentication
+  const session = await auth.api.getSession({
+    headers: req.headers,
+  });
+
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: 'Please sign in to use chat' },
+      { status: 401 }
+    );
+  }
+
   const {
     messages,
     model,
