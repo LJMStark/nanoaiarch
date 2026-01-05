@@ -89,6 +89,7 @@ export async function getImageProjects(options?: {
   offset?: number;
   status?: 'active' | 'archived';
   pinnedOnly?: boolean;
+  includeEmpty?: boolean; // 是否包含空项目（默认false）
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
@@ -111,6 +112,11 @@ export async function getImageProjects(options?: {
 
     if (options?.pinnedOnly) {
       conditions.push(eq(imageProject.isPinned, true));
+    }
+
+    // 默认过滤掉没有消息的空项目
+    if (!options?.includeEmpty) {
+      conditions.push(sql`${imageProject.messageCount} > 0`);
     }
 
     const items = await db

@@ -1,6 +1,7 @@
 'use server';
 
 import { validateBase64Image } from '@/ai/image/lib/api-utils';
+import { generateProjectTitle } from '@/ai/image/lib/title-generator';
 import { getDb } from '@/db';
 import { imageProject, projectMessage } from '@/db/schema';
 import { auth } from '@/lib/auth';
@@ -157,6 +158,32 @@ export async function addUserMessage(
         updatedAt: now,
       })
       .where(eq(imageProject.id, projectId));
+
+    // Auto-generate project title if this is the first user message
+    if (nextOrderIndex === 0) {
+      // Run async without blocking (fire and forget)
+      generateProjectTitle(data.content)
+        .then(async (title) => {
+          try {
+            const db = await getDb();
+            await db
+              .update(imageProject)
+              .set({ title, updatedAt: new Date() })
+              .where(eq(imageProject.id, projectId));
+            logger.ai.info(
+              `[Auto Title] Updated project ${projectId} with title: "${title}"`
+            );
+          } catch (error) {
+            logger.ai.error(
+              '[Auto Title] Failed to update project title:',
+              error
+            );
+          }
+        })
+        .catch((error) => {
+          logger.ai.error('[Auto Title] Failed to generate title:', error);
+        });
+    }
 
     const message: ProjectMessageItem = {
       id,

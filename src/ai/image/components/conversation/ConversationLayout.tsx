@@ -52,28 +52,19 @@ export function ConversationLayout() {
     loadProjects();
   }, [setProjects, setLoadingProjects]);
 
-  // Auto-create first project if user has no projects
+  // Auto-select first project if user has projects but none selected
   useEffect(() => {
-    const autoCreateFirstProject = async () => {
+    const autoSelectProject = async () => {
       // Wait for projects to finish loading
       if (isLoadingProjects) return;
 
-      // If no projects exist, create one automatically
-      if (projects.length === 0 && !currentProjectId) {
-        const { createImageProject } = await import('@/actions/image-project');
-        const result = await createImageProject();
-        if (result.success && result.data) {
-          useProjectStore.getState().addProject(result.data);
-          useProjectStore.getState().selectProject(result.data.id);
-        }
-      }
       // If projects exist but none selected, select the first one
-      else if (projects.length > 0 && !currentProjectId) {
+      if (projects.length > 0 && !currentProjectId) {
         useProjectStore.getState().selectProject(projects[0].id);
       }
     };
 
-    autoCreateFirstProject();
+    autoSelectProject();
   }, [isLoadingProjects, projects.length, currentProjectId]);
 
   // Handle template from URL - show modal instead of direct apply

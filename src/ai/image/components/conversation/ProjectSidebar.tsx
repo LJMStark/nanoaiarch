@@ -37,6 +37,7 @@ import {
   Archive,
   ImageIcon,
   MoreHorizontal,
+  Pencil,
   Pin,
   Plus,
   Sparkles,
@@ -44,10 +45,14 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { ProjectRenameDialog } from './ProjectRenameDialog';
 
 export function ProjectSidebar() {
   const t = useTranslations('ArchPage');
   const [isCreating, setIsCreating] = useState(false);
+  const [renameProject, setRenameProject] = useState<ImageProjectItem | null>(
+    null
+  );
 
   const {
     projects,
@@ -111,95 +116,117 @@ export function ProjectSidebar() {
     }
   };
 
-  return (
-    <Sidebar collapsible="icon" className="border-r">
-      <SidebarHeader className="border-b">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={handleNewProject}
-              disabled={isCreating}
-              tooltip="New Project"
-              className="w-full"
-            >
-              <Plus className="h-4 w-4" />
-              <span>New Project</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
+  const handleRename = (project: ImageProjectItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRenameProject(project);
+  };
 
-      <SidebarContent>
-        {isLoadingProjects ? (
-          <div className="p-4 space-y-3">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-          </div>
-        ) : (
-          <>
-            {pinnedProjects.length > 0 && (
+  const handleRenameSuccess = (projectId: string, newTitle: string) => {
+    updateProject(projectId, { title: newTitle });
+  };
+
+  return (
+    <>
+      <Sidebar collapsible="icon" className="border-r">
+        <SidebarHeader className="border-b">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={handleNewProject}
+                disabled={isCreating}
+                tooltip="New Project"
+                className="w-full"
+              >
+                <Plus className="h-4 w-4" />
+                <span>New Project</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+
+        <SidebarContent>
+          {isLoadingProjects ? (
+            <div className="p-4 space-y-3">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+            </div>
+          ) : (
+            <>
+              {pinnedProjects.length > 0 && (
+                <SidebarGroup>
+                  <SidebarGroupLabel>
+                    <Pin className="h-3 w-3 mr-1" />
+                    Pinned
+                  </SidebarGroupLabel>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {pinnedProjects.map((project) => (
+                        <ProjectListItem
+                          key={project.id}
+                          project={project}
+                          isActive={currentProjectId === project.id}
+                          onSelect={() => selectProject(project.id)}
+                          onTogglePin={(e) => handleTogglePin(project, e)}
+                          onRename={(e) => handleRename(project, e)}
+                          onArchive={(e) => handleArchive(project, e)}
+                          onDelete={(e) => handleDelete(project, e)}
+                        />
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              )}
+
               <SidebarGroup>
-                <SidebarGroupLabel>
-                  <Pin className="h-3 w-3 mr-1" />
-                  Pinned
-                </SidebarGroupLabel>
+                <SidebarGroupLabel>Recent</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {pinnedProjects.map((project) => (
-                      <ProjectListItem
-                        key={project.id}
-                        project={project}
-                        isActive={currentProjectId === project.id}
-                        onSelect={() => selectProject(project.id)}
-                        onTogglePin={(e) => handleTogglePin(project, e)}
-                        onArchive={(e) => handleArchive(project, e)}
-                        onDelete={(e) => handleDelete(project, e)}
-                      />
-                    ))}
+                    {recentProjects.length === 0 ? (
+                      <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+                        <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>No projects yet</p>
+                        <p className="text-xs mt-1">
+                          Create one to get started
+                        </p>
+                      </div>
+                    ) : (
+                      recentProjects.map((project) => (
+                        <ProjectListItem
+                          key={project.id}
+                          project={project}
+                          isActive={currentProjectId === project.id}
+                          onSelect={() => selectProject(project.id)}
+                          onTogglePin={(e) => handleTogglePin(project, e)}
+                          onRename={(e) => handleRename(project, e)}
+                          onArchive={(e) => handleArchive(project, e)}
+                          onDelete={(e) => handleDelete(project, e)}
+                        />
+                      ))
+                    )}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
-            )}
+            </>
+          )}
+        </SidebarContent>
 
-            <SidebarGroup>
-              <SidebarGroupLabel>Recent</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {recentProjects.length === 0 ? (
-                    <div className="px-3 py-8 text-center text-sm text-muted-foreground">
-                      <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>No projects yet</p>
-                      <p className="text-xs mt-1">Create one to get started</p>
-                    </div>
-                  ) : (
-                    recentProjects.map((project) => (
-                      <ProjectListItem
-                        key={project.id}
-                        project={project}
-                        isActive={currentProjectId === project.id}
-                        onSelect={() => selectProject(project.id)}
-                        onTogglePin={(e) => handleTogglePin(project, e)}
-                        onArchive={(e) => handleArchive(project, e)}
-                        onDelete={(e) => handleDelete(project, e)}
-                      />
-                    ))
-                  )}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
-      </SidebarContent>
+        <SidebarFooter className="border-t">
+          <div className="p-3 text-xs text-muted-foreground text-center">
+            {projects.length} projects
+          </div>
+        </SidebarFooter>
 
-      <SidebarFooter className="border-t">
-        <div className="p-3 text-xs text-muted-foreground text-center">
-          {projects.length} projects
-        </div>
-      </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
 
-      <SidebarRail />
-    </Sidebar>
+      <ProjectRenameDialog
+        project={renameProject}
+        open={!!renameProject}
+        onOpenChange={(open) => !open && setRenameProject(null)}
+        onSuccess={handleRenameSuccess}
+      />
+    </>
   );
 }
 
@@ -208,6 +235,7 @@ interface ProjectListItemProps {
   isActive: boolean;
   onSelect: () => void;
   onTogglePin: (e: React.MouseEvent) => void;
+  onRename: (e: React.MouseEvent) => void;
   onArchive: (e: React.MouseEvent) => void;
   onDelete: (e: React.MouseEvent) => void;
 }
@@ -217,6 +245,7 @@ function ProjectListItem({
   isActive,
   onSelect,
   onTogglePin,
+  onRename,
   onArchive,
   onDelete,
 }: ProjectListItemProps) {
@@ -272,6 +301,10 @@ function ProjectListItem({
           <DropdownMenuItem onClick={onTogglePin}>
             <Pin className="h-4 w-4 mr-2" />
             {project.isPinned ? 'Unpin' : 'Pin'}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onRename}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Rename
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onArchive}>
             <Archive className="h-4 w-4 mr-2" />

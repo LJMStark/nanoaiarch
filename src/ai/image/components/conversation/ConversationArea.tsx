@@ -22,7 +22,16 @@ export function ConversationArea() {
     }
   }, [messages.length, isGenerating]);
 
-  // 没有消息时显示全屏瀑布流画廊（无论是否有项目）
+  // 没有选中项目时显示全屏瀑布流画廊
+  if (!currentProjectId && !isLoadingMessages) {
+    return (
+      <div className="flex-1 overflow-hidden">
+        <TemplateShowcase showFullView />
+      </div>
+    );
+  }
+
+  // 有项目但没有消息时也显示瀑布流（用户可以选择模板开始）
   if (!hasMessages && !isLoadingMessages) {
     return (
       <div className="flex-1 overflow-hidden">
