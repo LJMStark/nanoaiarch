@@ -29,12 +29,24 @@ export function ConversationInput() {
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
 
+  const getImageValidationError = (error?: string) => {
+    if (!error) return t('errors.imageTooLarge');
+    const normalized = error.toLowerCase();
+    if (normalized.includes('invalid url')) return t('errors.invalidUrl');
+    if (normalized.includes('invalid image data'))
+      return t('errors.invalidImageData');
+    if (normalized.includes('maximum') || normalized.includes('exceeds')) {
+      return t('errors.imageTooLarge');
+    }
+    return t('errors.imageTooLarge');
+  };
+
   const handleImagesChange = (images: string[]) => {
     // 验证所有图片
     for (const image of images) {
       const validation = validateBase64Image(image);
       if (!validation.valid) {
-        setImageError(validation.error || 'Image too large');
+        setImageError(getImageValidationError(validation.error));
         return;
       }
     }
@@ -147,7 +159,7 @@ export function ConversationInput() {
       } else {
         // Add failed message
         const assistantResult = await addAssistantMessage(currentProjectId, {
-          content: result.error || 'Generation failed',
+          content: result.error || t('errors.generationFailed'),
           status: 'failed',
           errorMessage: result.error,
         });
@@ -160,9 +172,10 @@ export function ConversationInput() {
       logger.ai.error('Generation error:', error);
       // Add error message
       const assistantResult = await addAssistantMessage(currentProjectId, {
-        content: 'An unexpected error occurred',
+        content: t('errors.unexpected'),
         status: 'failed',
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorMessage:
+          error instanceof Error ? error.message : t('errors.unknown'),
       });
 
       if (assistantResult.success && assistantResult.data) {

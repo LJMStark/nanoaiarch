@@ -21,6 +21,7 @@ import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { ArrowRight, Layers, Loader2, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // 每页加载的模板数量
@@ -50,6 +51,7 @@ interface TemplateShowcaseProps {
 export function TemplateShowcase({
   showFullView = false,
 }: TemplateShowcaseProps) {
+  const t = useTranslations('ArchPage');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedTemplate, setSelectedTemplate] = useState<ArchTemplate | null>(
     null
@@ -162,10 +164,10 @@ export function TemplateShowcase({
 
   // 快速提示词
   const quickPrompts = [
-    'Modern villa with infinity pool',
-    'Sustainable bamboo pavilion',
-    'Brutalist concrete museum',
-    'Japanese courtyard house',
+    t('gallery.quickPrompts.modernVilla'),
+    t('gallery.quickPrompts.sustainableBamboo'),
+    t('gallery.quickPrompts.brutalistMuseum'),
+    t('gallery.quickPrompts.japaneseCourtyard'),
   ];
 
   // 全屏瀑布流视图 - 带独立滚动区域
@@ -194,11 +196,13 @@ export function TemplateShowcase({
                   </motion.div>
                   <div>
                     <h1 className="text-lg font-semibold tracking-tight">
-                      Template Gallery
+                      {t('gallery.title')}
                     </h1>
                     <p className="text-xs text-muted-foreground">
-                      {filteredTemplates.length} templates ·{' '}
-                      {displayedTemplates.length} loaded
+                      {t('gallery.subtitle', {
+                        total: filteredTemplates.length,
+                        loaded: displayedTemplates.length,
+                      })}
                     </p>
                   </div>
                 </div>
@@ -262,12 +266,14 @@ export function TemplateShowcase({
                 {isLoadingMore && (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Loading more...</span>
+                    <span className="text-sm">{t('gallery.loadingMore')}</span>
                   </div>
                 )}
                 {!hasMore && displayedTemplates.length > 0 && (
                   <p className="text-sm text-muted-foreground">
-                    All {filteredTemplates.length} templates loaded
+                    {t('gallery.allLoaded', {
+                      count: filteredTemplates.length,
+                    })}
                   </p>
                 )}
               </div>
@@ -308,11 +314,9 @@ export function TemplateShowcase({
         >
           <Sparkles className="h-6 w-6 text-primary" />
         </motion.div>
-        <h2 className="text-xl font-semibold mb-2">
-          What would you like to create?
-        </h2>
+        <h2 className="text-xl font-semibold mb-2">{t('gallery.ctaTitle')}</h2>
         <p className="text-sm text-muted-foreground">
-          Choose a template or type your description below
+          {t('gallery.ctaSubtitle')}
         </p>
       </div>
 
@@ -377,11 +381,12 @@ function CategoryFilter({
   onCategoryChange,
   isLoaded,
 }: CategoryFilterProps) {
+  const t = useTranslations();
   const categories = [
-    { id: 'all', label: 'All', color: '#71717a' },
+    { id: 'all', label: t('ArchPage.categories.all'), color: '#71717a' },
     ...TEMPLATE_CATEGORY_LIST.map((cat) => ({
       id: cat.id,
-      label: cat.id.replace(/-/g, ' '),
+      label: t(cat.labelKey as any),
       color: cat.color,
     })),
   ];
@@ -434,6 +439,7 @@ interface MasonryCardProps {
 }
 
 function MasonryCard({ template, index, onClick }: MasonryCardProps) {
+  const t = useTranslations();
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-20px' });
   const [isHovered, setIsHovered] = useState(false);
@@ -474,7 +480,7 @@ function MasonryCard({ template, index, onClick }: MasonryCardProps) {
           {isInView && (
             <Image
               src={template.previewImage}
-              alt={template.id}
+              alt={t(template.titleKey as any)}
               fill
               className={cn(
                 'object-cover transition-all duration-500',
@@ -509,7 +515,7 @@ function MasonryCard({ template, index, onClick }: MasonryCardProps) {
               className="px-2 py-0.5 rounded text-[10px] font-medium text-white backdrop-blur-sm"
               style={{ backgroundColor: `${category.color}CC` }}
             >
-              {category.id.replace(/-/g, ' ')}
+              {t(category.labelKey as any)}
             </div>
           </div>
         )}
@@ -526,7 +532,7 @@ function MasonryCard({ template, index, onClick }: MasonryCardProps) {
         {/* 底部信息 */}
         <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 z-10">
           <h3 className="text-white font-medium text-xs mb-1 capitalize leading-tight line-clamp-2">
-            {template.id.replace(/-/g, ' ')}
+            {t(template.titleKey as any)}
           </h3>
 
           {/* 悬停时显示的操作区 */}
@@ -537,7 +543,7 @@ function MasonryCard({ template, index, onClick }: MasonryCardProps) {
             className="flex items-center gap-1 text-white/90 text-[10px]"
           >
             <ArrowRight className="h-3 w-3" />
-            <span>Use template</span>
+            <span>{t('ArchPage.gallery.useTemplate')}</span>
           </motion.div>
         </div>
       </div>
@@ -553,6 +559,7 @@ interface CompactCardProps {
 }
 
 function CompactCard({ template, index, onClick }: CompactCardProps) {
+  const t = useTranslations();
   const ref = useRef<HTMLButtonElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-20px' });
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -587,7 +594,7 @@ function CompactCard({ template, index, onClick }: CompactCardProps) {
         {isInView && (
           <Image
             src={template.previewImage}
-            alt={template.id}
+            alt={t(template.titleKey as any)}
             fill
             className={cn(
               'object-cover transition-transform duration-500 group-hover:scale-105',
@@ -613,7 +620,7 @@ function CompactCard({ template, index, onClick }: CompactCardProps) {
 
         <div className="absolute bottom-0 left-0 right-0 p-2.5">
           <p className="text-white text-xs font-medium truncate capitalize">
-            {template.id.replace(/-/g, ' ')}
+            {t(template.titleKey as any)}
           </p>
         </div>
       </div>

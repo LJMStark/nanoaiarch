@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 interface ProjectRenameDialogProps {
@@ -28,6 +29,8 @@ export function ProjectRenameDialog({
   onOpenChange,
   onSuccess,
 }: ProjectRenameDialogProps) {
+  const t = useTranslations('ArchPage');
+  const ct = useTranslations('Common');
   const [title, setTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -52,12 +55,12 @@ export function ProjectRenameDialog({
     // Validation
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
-      setError('Project name cannot be empty');
+      setError(t('projects.nameRequired'));
       return;
     }
 
     if (trimmedTitle.length > 60) {
-      setError('Project name must be 60 characters or less');
+      setError(t('projects.nameTooLong', { max: 60 }));
       return;
     }
 
@@ -79,10 +82,10 @@ export function ProjectRenameDialog({
         onSuccess(project.id, trimmedTitle);
         onOpenChange(false);
       } else {
-        setError(result.error || 'Failed to rename project');
+        setError(result.error || t('projects.renameFailed'));
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError(t('projects.renameUnexpected'));
     } finally {
       setIsSubmitting(false);
     }
@@ -94,28 +97,31 @@ export function ProjectRenameDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Rename Project</DialogTitle>
+          <DialogTitle>{t('projects.renameTitle')}</DialogTitle>
           <DialogDescription>
-            Enter a new name for your project
+            {t('projects.renameDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="project-name">Project Name</Label>
+              <Label htmlFor="project-name">{t('projects.nameLabel')}</Label>
               <Input
                 id="project-name"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter project name"
+                placeholder={t('projects.namePlaceholder')}
                 maxLength={60}
                 disabled={isSubmitting}
                 autoFocus
               />
               {error && <p className="text-sm text-destructive">{error}</p>}
               <p className="text-xs text-muted-foreground">
-                {title.length}/60 characters
+                {t('projects.characterCount', {
+                  count: title.length,
+                  max: 60,
+                })}
               </p>
             </div>
           </div>
@@ -127,10 +133,12 @@ export function ProjectRenameDialog({
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {ct('cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Renaming...' : 'Rename'}
+              {isSubmitting
+                ? t('projects.renaming')
+                : t('projects.renameAction')}
             </Button>
           </DialogFooter>
         </form>

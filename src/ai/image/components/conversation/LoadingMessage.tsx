@@ -3,22 +3,23 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { motion } from 'framer-motion';
 import { Loader2, Sparkles } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
-const LOADING_MESSAGES = [
-  'Analyzing your prompt...',
-  'Generating image...',
-  'Adding details...',
-  'Almost there...',
-];
-
 export function LoadingMessage() {
+  const t = useTranslations('ArchPage');
   const [messageIndex, setMessageIndex] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const loadingMessages = [
+    t('loading.analyzing'),
+    t('loading.generating'),
+    t('loading.detailing'),
+    t('loading.almost'),
+  ];
 
   useEffect(() => {
     const messageInterval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+      setMessageIndex((prev) => (prev + 1) % loadingMessages.length);
     }, 3000);
 
     const timeInterval = setInterval(() => {
@@ -78,7 +79,7 @@ export function LoadingMessage() {
                   exit={{ opacity: 0, y: -10 }}
                   className="text-sm text-muted-foreground"
                 >
-                  {LOADING_MESSAGES[messageIndex]}
+                  {loadingMessages[messageIndex]}
                 </motion.p>
               </div>
             </div>
@@ -86,7 +87,7 @@ export function LoadingMessage() {
 
           {/* Timer */}
           <div className="mt-1 text-xs text-muted-foreground">
-            {elapsedTime}s elapsed
+            {t('loading.elapsed', { seconds: elapsedTime })}
           </div>
         </div>
       </div>

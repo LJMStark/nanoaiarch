@@ -38,7 +38,7 @@ export function ConversationHeader() {
   const currentProject = projects.find((p) => p.id === currentProjectId);
 
   const handleStartEdit = () => {
-    setEditTitle(currentProject?.title ?? 'Untitled');
+    setEditTitle(currentProject?.title ?? t('projects.untitled'));
     setIsEditing(true);
   };
 
@@ -134,7 +134,7 @@ export function ConversationHeader() {
           )
         ) : (
           <span className="text-sm text-muted-foreground">
-            Select or create a project
+            {t('projects.selectPrompt')}
           </span>
         )}
       </div>
@@ -142,9 +142,17 @@ export function ConversationHeader() {
       {/* Right: Stats + Navigation Tools */}
       {currentProject && (
         <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{currentProject.generationCount} generations</span>
+          <span>
+            {t('projects.generations', {
+              count: currentProject.generationCount,
+            })}
+          </span>
           <span>·</span>
-          <span>{currentProject.totalCreditsUsed} credits</span>
+          <span>
+            {t('projects.credits', {
+              count: currentProject.totalCreditsUsed,
+            })}
+          </span>
         </div>
       )}
 

@@ -103,7 +103,7 @@ export function TemplateDetailModal({
                   {template.inputImage && !inputImageError ? (
                     <Image
                       src={template.inputImage}
-                      alt="Input"
+                      alt={t('ArchPage.modal.inputLabel')}
                       fill
                       className="object-cover"
                       onError={() => setInputImageError(true)}
@@ -112,13 +112,13 @@ export function TemplateDetailModal({
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <ImageIcon className="h-8 w-8 text-muted-foreground/30 mb-1" />
                       <span className="text-xs text-muted-foreground/50">
-                        Your Image
+                        {t('ArchPage.modal.yourImage')}
                       </span>
                     </div>
                   )}
                 </div>
                 <p className="text-center text-xs text-muted-foreground mt-2">
-                  INPUT
+                  {t('ArchPage.modal.inputLabel').toUpperCase()}
                 </p>
               </div>
 
@@ -147,7 +147,7 @@ export function TemplateDetailModal({
                   )}
                 </div>
                 <p className="text-center text-xs font-medium text-primary mt-2">
-                  OUTPUT
+                  {t('ArchPage.modal.outputLabel').toUpperCase()}
                 </p>
               </div>
             </div>

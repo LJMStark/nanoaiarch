@@ -30,6 +30,7 @@ import {
   User,
 } from 'lucide-react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
 interface MessageItemProps {
@@ -53,6 +54,7 @@ export function MessageItem({ message, isLast }: MessageItemProps) {
 }
 
 function UserMessage({ message }: { message: ProjectMessageItem }) {
+  const t = useTranslations('ArchPage');
   return (
     <div className="flex gap-3">
       <Avatar className="h-8 w-8 flex-shrink-0">
@@ -68,7 +70,7 @@ function UserMessage({ message }: { message: ProjectMessageItem }) {
           <div className="relative w-48 aspect-square rounded-lg overflow-hidden border">
             <Image
               src={getImageSrc(message.inputImage)}
-              alt="Reference image"
+              alt={t('canvas.referenceImageAlt')}
               fill
               className="object-cover"
             />
@@ -80,21 +82,23 @@ function UserMessage({ message }: { message: ProjectMessageItem }) {
 }
 
 // 解析错误消息，返回用户友好的提示
-function parseErrorMessage(error: unknown): string {
-  if (!(error instanceof Error)) return 'An unexpected error occurred';
+type Translator = ReturnType<typeof useTranslations>;
+
+function parseErrorMessage(error: unknown, t: Translator): string {
+  if (!(error instanceof Error)) return t('errors.unexpected');
 
   const msg = error.message.toLowerCase();
   if (msg.includes('unauthorized') || msg.includes('sign in')) {
-    return 'Please sign in again to continue';
+    return t('errors.signInAgain');
   }
   if (msg.includes('insufficient credits') || msg.includes('credits')) {
-    return 'Insufficient credits. Please purchase more.';
+    return t('errors.insufficientCredits');
   }
   if (msg.includes('timeout') || msg.includes('timed out')) {
-    return 'Request timed out. Please try again.';
+    return t('errors.timeout');
   }
   if (msg.includes('network') || msg.includes('fetch')) {
-    return 'Network error. Please check your connection.';
+    return t('errors.network');
   }
   return error.message;
 }
@@ -109,6 +113,7 @@ function AssistantMessage({
   const [isHovered, setIsHovered] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const isFailed = message.status === 'failed';
+  const t = useTranslations('ArchPage');
 
   // 用于防止组件卸载后更新状态
   const isMountedRef = useRef(true);
@@ -145,7 +150,7 @@ function AssistantMessage({
     }
   ) => {
     const assistantResult = await addAssistantMessage(message.projectId, {
-      content: success ? '' : result.error || 'Generation failed',
+      content: success ? '' : result.error || t('errors.generationFailed'),
       outputImage: success ? result.image : undefined,
       generationParams: params,
       creditsUsed: success ? result.creditsUsed || 1 : undefined,
@@ -244,7 +249,7 @@ function AssistantMessage({
       // 检查组件是否仍然挂载
       if (!isMountedRef.current) return;
 
-      const errorMessage = parseErrorMessage(error);
+      const errorMessage = parseErrorMessage(error, t);
       logger.ai.error('Retry generation error:', error);
 
       await createAssistantMessage(
@@ -303,7 +308,7 @@ function AssistantMessage({
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'AI Generated Image',
+          title: t('canvas.shareTitle'),
         });
       } else {
         // Fallback: copy to clipboard
@@ -328,7 +333,7 @@ function AssistantMessage({
           <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
             <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
             <span className="text-sm text-destructive flex-1">
-              {message.errorMessage || 'Generation failed'}
+              {message.errorMessage || t('errors.generationFailed')}
             </span>
             <Button
               variant="outline"
@@ -342,7 +347,7 @@ function AssistantMessage({
               ) : (
                 <RefreshCw className="h-4 w-4 mr-1" />
               )}
-              Retry
+              {t('canvas.retry')}
             </Button>
           </div>
         ) : message.outputImage ? (
@@ -354,7 +359,7 @@ function AssistantMessage({
             <div className="relative rounded-xl overflow-hidden border bg-muted">
               <Image
                 src={getImageSrc(message.outputImage)}
-                alt="Generated image"
+                alt={t('canvas.generatedImageAlt')}
                 width={512}
                 height={512}
                 className="w-full h-auto"
@@ -379,7 +384,7 @@ function AssistantMessage({
                         <Download className="h-5 w-5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Download</TooltipContent>
+                    <TooltipContent>{t('canvas.download')}</TooltipContent>
                   </Tooltip>
 
                   <Tooltip>
@@ -393,7 +398,7 @@ function AssistantMessage({
                         <Share2 className="h-5 w-5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Share</TooltipContent>
+                    <TooltipContent>{t('canvas.share')}</TooltipContent>
                   </Tooltip>
 
                   {isLast && (
@@ -407,7 +412,7 @@ function AssistantMessage({
                           <Edit3 className="h-5 w-5" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Edit</TooltipContent>
+                      <TooltipContent>{t('canvas.edit')}</TooltipContent>
                     </Tooltip>
                   )}
                 </TooltipProvider>
@@ -417,8 +422,13 @@ function AssistantMessage({
             {/* Generation info */}
             {message.generationTime && (
               <div className="mt-1 text-xs text-muted-foreground">
-                Generated in {(message.generationTime / 1000).toFixed(1)}s
-                {message.creditsUsed && ` · ${message.creditsUsed} credits`}
+                {t('canvas.generatedIn', {
+                  seconds: (message.generationTime / 1000).toFixed(1),
+                })}
+                {message.creditsUsed &&
+                  ` · ${t('projects.credits', {
+                    count: message.creditsUsed,
+                  })}`}
               </div>
             )}
           </div>

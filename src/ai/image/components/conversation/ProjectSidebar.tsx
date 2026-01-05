@@ -134,11 +134,11 @@ export function ProjectSidebar() {
               <SidebarMenuButton
                 onClick={handleNewProject}
                 disabled={isCreating}
-                tooltip="New Project"
+                tooltip={t('projects.new')}
                 className="w-full"
               >
                 <Plus className="h-4 w-4" />
-                <span>New Project</span>
+                <span>{t('projects.new')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -157,7 +157,7 @@ export function ProjectSidebar() {
                 <SidebarGroup>
                   <SidebarGroupLabel>
                     <Pin className="h-3 w-3 mr-1" />
-                    Pinned
+                    {t('projects.pinned')}
                   </SidebarGroupLabel>
                   <SidebarGroupContent>
                     <SidebarMenu>
@@ -179,15 +179,15 @@ export function ProjectSidebar() {
               )}
 
               <SidebarGroup>
-                <SidebarGroupLabel>Recent</SidebarGroupLabel>
+                <SidebarGroupLabel>{t('projects.recent')}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {recentProjects.length === 0 ? (
                       <div className="px-3 py-8 text-center text-sm text-muted-foreground">
                         <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p>No projects yet</p>
+                        <p>{t('projects.emptyTitle')}</p>
                         <p className="text-xs mt-1">
-                          Create one to get started
+                          {t('projects.emptyDescription')}
                         </p>
                       </div>
                     ) : (
@@ -213,7 +213,7 @@ export function ProjectSidebar() {
 
         <SidebarFooter className="border-t">
           <div className="p-3 text-xs text-muted-foreground text-center">
-            {projects.length} projects
+            {t('projects.count', { count: projects.length })}
           </div>
         </SidebarFooter>
 
@@ -249,14 +249,15 @@ function ProjectListItem({
   onArchive,
   onDelete,
 }: ProjectListItemProps) {
+  const t = useTranslations('ArchPage');
   const formatDate = (date: Date) => {
     const now = new Date();
     const diff = now.getTime() - new Date(date).getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Yesterday';
-    if (days < 7) return `${days} days ago`;
+    if (days === 0) return t('projects.today');
+    if (days === 1) return t('projects.yesterday');
+    if (days < 7) return t('projects.daysAgo', { count: days });
     return new Date(date).toLocaleDateString();
   };
 
@@ -300,20 +301,20 @@ function ProjectListItem({
         <DropdownMenuContent side="right" align="start">
           <DropdownMenuItem onClick={onTogglePin}>
             <Pin className="h-4 w-4 mr-2" />
-            {project.isPinned ? 'Unpin' : 'Pin'}
+            {project.isPinned ? t('projects.unpin') : t('projects.pin')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onRename}>
             <Pencil className="h-4 w-4 mr-2" />
-            Rename
+            {t('projects.rename')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onArchive}>
             <Archive className="h-4 w-4 mr-2" />
-            Archive
+            {t('projects.archive')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onDelete} className="text-destructive">
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            {t('projects.delete')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

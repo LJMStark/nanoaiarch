@@ -1428,6 +1428,37 @@
       "settings": "Settings",
       "noHistory": "No recent generations"
     },
+    "projects": {
+      "new": "New Project",
+      "pinned": "Pinned",
+      "recent": "Recent",
+      "emptyTitle": "No projects yet",
+      "emptyDescription": "Create one to get started",
+      "count": "{count} projects",
+      "untitled": "Untitled",
+      "selectPrompt": "Select or create a project",
+      "generations": "{count} generations",
+      "credits": "{count} credits",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "daysAgo": "{count} days ago",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "rename": "Rename",
+      "archive": "Archive",
+      "delete": "Delete",
+      "renameTitle": "Rename Project",
+      "renameDescription": "Enter a new name for your project",
+      "nameLabel": "Project Name",
+      "namePlaceholder": "Enter project name",
+      "nameRequired": "Project name cannot be empty",
+      "nameTooLong": "Project name must be {max} characters or less",
+      "renameFailed": "Failed to rename project",
+      "renameUnexpected": "An unexpected error occurred",
+      "renaming": "Renaming...",
+      "renameAction": "Rename",
+      "characterCount": "{count}/{max} characters"
+    },
     "controls": {
       "style": "Style",
       "clearStyle": "No style filter",
@@ -1650,19 +1681,60 @@
     "modal": {
       "preview": "Preview",
       "referenceImage": "Reference Image",
+      "inputLabel": "Input",
+      "outputLabel": "Output",
+      "yourImage": "Your Image",
       "editPrompt": "Edit Prompt",
       "apply": "Apply Template",
       "inputRequired": "This template requires an input image"
     },
     "gallery": {
+      "title": "Template Gallery",
+      "subtitle": "{total} templates · {loaded} loaded",
+      "loadingMore": "Loading more...",
+      "allLoaded": "All {count} templates loaded",
+      "ctaTitle": "What would you like to create?",
+      "ctaSubtitle": "Choose a template or type your description below",
+      "useTemplate": "Use template",
+      "quickPrompts": {
+        "modernVilla": "Modern villa with infinity pool",
+        "sustainableBamboo": "Sustainable bamboo pavilion",
+        "brutalistMuseum": "Brutalist concrete museum",
+        "japaneseCourtyard": "Japanese courtyard house"
+      },
       "empty": "No templates found",
       "emptyDescription": "Try changing the category filter"
+    },
+    "loading": {
+      "analyzing": "Analyzing your prompt...",
+      "generating": "Generating image...",
+      "detailing": "Adding details...",
+      "almost": "Almost there...",
+      "elapsed": "{seconds}s elapsed"
+    },
+    "errors": {
+      "unexpected": "An unexpected error occurred",
+      "unknown": "Unknown error",
+      "imageTooLarge": "Image too large",
+      "invalidImageData": "Invalid image data",
+      "invalidUrl": "Invalid URL format",
+      "generationFailed": "Generation failed",
+      "signInAgain": "Please sign in again to continue",
+      "insufficientCredits": "Insufficient credits. Please purchase more.",
+      "timeout": "Request timed out. Please try again.",
+      "network": "Network error. Please check your connection."
     },
     "canvas": {
       "generating": "Generating...",
       "error": "Generation Failed",
       "download": "Download",
-      "share": "Share"
+      "share": "Share",
+      "shareTitle": "AI Generated Image",
+      "retry": "Retry",
+      "edit": "Edit",
+      "generatedIn": "Generated in {seconds}s",
+      "referenceImageAlt": "Reference image",
+      "generatedImageAlt": "Generated image"
     }
   },
   "AIImagePage": {
