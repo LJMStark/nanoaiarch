@@ -2,10 +2,10 @@
 
 import { updateProjectActivity } from '@/actions/image-project';
 import {
-  addAssistantMessage,
-  deleteMessage,
   type GenerationParams,
   type ProjectMessageItem,
+  addAssistantMessage,
+  deleteMessage,
 } from '@/actions/project-message';
 import { generateImage } from '@/ai/image/lib/api-utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -113,13 +113,8 @@ function AssistantMessage({
   // 用于防止组件卸载后更新状态
   const isMountedRef = useRef(true);
 
-  const {
-    messages,
-    addMessage,
-    removeMessage,
-    setGenerating,
-    isGenerating,
-  } = useConversationStore();
+  const { messages, addMessage, removeMessage, setGenerating, isGenerating } =
+    useConversationStore();
 
   // 组件卸载时清理
   useEffect(() => {
@@ -142,13 +137,18 @@ function AssistantMessage({
     success: boolean,
     result: { image?: string; error?: string; creditsUsed?: number },
     generationTime: number,
-    params: { prompt: string; aspectRatio: string; model: string; imageQuality: string }
+    params: {
+      prompt: string;
+      aspectRatio: string;
+      model: string;
+      imageQuality: string;
+    }
   ) => {
     const assistantResult = await addAssistantMessage(message.projectId, {
-      content: success ? '' : (result.error || 'Generation failed'),
+      content: success ? '' : result.error || 'Generation failed',
       outputImage: success ? result.image : undefined,
       generationParams: params,
-      creditsUsed: success ? (result.creditsUsed || 1) : undefined,
+      creditsUsed: success ? result.creditsUsed || 1 : undefined,
       generationTime: success ? generationTime : undefined,
       status: success ? 'completed' : 'failed',
       errorMessage: success ? undefined : result.error,
@@ -193,7 +193,9 @@ function AssistantMessage({
     const imageQuality = (params?.imageQuality as '1K' | '2K' | '4K') || '2K';
     const genParams = { prompt, aspectRatio, model, imageQuality };
 
-    logger.ai.info(`Starting retry [messageId=${message.id}, projectId=${message.projectId}]`);
+    logger.ai.info(
+      `Starting retry [messageId=${message.id}, projectId=${message.projectId}]`
+    );
 
     setIsRetrying(true);
     setGenerating(true);
@@ -228,10 +230,14 @@ function AssistantMessage({
       const generationTime = Date.now() - startTime;
 
       if (result.success && result.image) {
-        logger.ai.info(`Retry succeeded [messageId=${message.id}, generationTime=${generationTime}ms]`);
+        logger.ai.info(
+          `Retry succeeded [messageId=${message.id}, generationTime=${generationTime}ms]`
+        );
         await createAssistantMessage(true, result, generationTime, genParams);
       } else {
-        logger.ai.warn(`Retry failed [messageId=${message.id}, error=${result.error}]`);
+        logger.ai.warn(
+          `Retry failed [messageId=${message.id}, error=${result.error}]`
+        );
         await createAssistantMessage(false, result, 0, genParams);
       }
     } catch (error) {
@@ -241,7 +247,12 @@ function AssistantMessage({
       const errorMessage = parseErrorMessage(error);
       logger.ai.error('Retry generation error:', error);
 
-      await createAssistantMessage(false, { error: errorMessage }, 0, genParams);
+      await createAssistantMessage(
+        false,
+        { error: errorMessage },
+        0,
+        genParams
+      );
     } finally {
       // 只在组件仍挂载时更新状态
       if (isMountedRef.current) {

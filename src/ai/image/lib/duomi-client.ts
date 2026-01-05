@@ -1,4 +1,10 @@
 import { logger } from '@/lib/logger';
+import {
+  extractImageData,
+  fetchWithTimeout,
+  validateEditImageParams,
+  validateGenerateImageParams,
+} from './image-utils';
 
 // Duomi API 配置
 const DUOMI_API_BASE = 'https://duomiapi.com/api/gemini';
@@ -105,12 +111,15 @@ interface DuomiTaskResponse {
 async function submitTextToImageTask(
   params: GenerateImageParams
 ): Promise<string> {
+  // ✅ 添加 Zod 参数验证
+  const validatedParams = validateGenerateImageParams(params);
+
   const {
     prompt,
     model = 'gemini-3-pro-image-preview',
     aspectRatio = 'auto',
     imageSize,
-  } = params;
+  } = validatedParams;
   const apiKey = getDuomiApiKey();
 
   const requestBody: Record<string, unknown> = {
@@ -126,14 +135,19 @@ async function submitTextToImageTask(
 
   logger.ai.info(`[Duomi] Submitting text-to-image task [model=${model}]`);
 
-  const response = await fetch(`${DUOMI_API_BASE}/nano-banana`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: apiKey,
+  // ✅ 使用超时包装器
+  const response = await fetchWithTimeout(
+    `${DUOMI_API_BASE}/nano-banana`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: apiKey,
+      },
+      body: JSON.stringify(requestBody),
     },
-    body: JSON.stringify(requestBody),
-  });
+    30000 // 30秒超时
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -156,12 +170,17 @@ async function submitTextToImageTask(
 async function queryTaskStatus(taskId: string): Promise<DuomiTaskResponse> {
   const apiKey = getDuomiApiKey();
 
-  const response = await fetch(`${DUOMI_API_BASE}/nano-banana/${taskId}`, {
-    method: 'GET',
-    headers: {
-      Authorization: apiKey,
+  // ✅ 使用超时包装器
+  const response = await fetchWithTimeout(
+    `${DUOMI_API_BASE}/nano-banana/${taskId}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: apiKey,
+      },
     },
-  });
+    30000 // 30秒超时
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -226,52 +245,12 @@ export async function generateImageWithDuomi(
       };
     }
 
-    // 处理返回的图片格式（可能是字符串或对象）
-    const rawImage = images[0];
-    let image: string;
-
-    if (typeof rawImage === 'string') {
-      image = rawImage;
-    } else if (typeof rawImage === 'object' && rawImage !== null) {
-      // 尝试从对象中提取图片数据
-      image = rawImage.url || rawImage.value || rawImage.data || '';
-    } else {
-      logger.ai.error('[Duomi] Invalid or empty image in text-to-image', {
-        type: typeof rawImage,
-        hasValue: Boolean(rawImage),
-      });
-      return {
-        success: false,
-        error: 'Invalid image format returned from API',
-        text: result.data.data.description,
-      };
-    }
-
-    // 验证提取的图片字符串
-    if (!image || !image.trim()) {
-      logger.ai.error('[Duomi] Empty image string after extraction');
-      return {
-        success: false,
-        error: 'Empty image data returned from API',
-        text: result.data.data.description,
-      };
-    }
-
-    // 验证是否为有效的 base64 或 URL
-    const isUrl = image.startsWith('http://') || image.startsWith('https://');
-    const isBase64 = /^[A-Za-z0-9+/]*={0,2}$/.test(image.slice(0, 100)); // 检查前100字符
-    if (!isUrl && !isBase64) {
-      logger.ai.error('[Duomi] Image is neither valid URL nor base64');
-      return {
-        success: false,
-        error: 'Invalid image format: not URL or base64',
-        text: result.data.data.description,
-      };
-    }
+    // ✅ 使用统一的图片提取函数
+    const image = extractImageData(images[0]);
 
     return {
       success: true,
-      image, // 返回第一张图片
+      image,
       text: result.data.data.description,
     };
   } catch (error) {
@@ -299,22 +278,17 @@ export interface EditImageParams {
  * 提交图片编辑任务
  */
 async function submitEditImageTask(params: EditImageParams): Promise<string> {
+  // ✅ 添加 Zod 参数验证（包括 URL 白名单检查）
+  const validatedParams = validateEditImageParams(params);
+
   const {
     prompt,
     imageUrls,
     model = 'gemini-3-pro-image-preview',
     aspectRatio = 'auto',
     imageSize,
-  } = params;
+  } = validatedParams;
   const apiKey = getDuomiApiKey();
-
-  if (imageUrls.length === 0) {
-    throw new Error('At least one reference image is required');
-  }
-
-  if (imageUrls.length > 5) {
-    throw new Error('Maximum 5 reference images allowed');
-  }
 
   const requestBody: Record<string, unknown> = {
     model,
@@ -332,14 +306,19 @@ async function submitEditImageTask(params: EditImageParams): Promise<string> {
     `[Duomi] Submitting image edit task [model=${model}, imageCount=${imageUrls.length}]`
   );
 
-  const response = await fetch(`${DUOMI_API_BASE}/nano-banana-edit`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: apiKey,
+  // ✅ 使用超时包装器
+  const response = await fetchWithTimeout(
+    `${DUOMI_API_BASE}/nano-banana-edit`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: apiKey,
+      },
+      body: JSON.stringify(requestBody),
     },
-    body: JSON.stringify(requestBody),
-  });
+    30000 // 30秒超时
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -379,35 +358,12 @@ export async function editImageWithDuomi(
       };
     }
 
-    // 验证返回的图片是有效的非空字符串
-    const image = images[0];
-    if (typeof image !== 'string' || !image.trim()) {
-      logger.ai.error('[Duomi] Invalid or empty image in image edit', {
-        type: typeof image,
-        hasValue: Boolean(image),
-      });
-      return {
-        success: false,
-        error: 'Invalid image format returned from API',
-        text: result.data.data.description,
-      };
-    }
-
-    // 验证是否为有效的 base64 或 URL
-    const isUrl = image.startsWith('http://') || image.startsWith('https://');
-    const isBase64 = /^[A-Za-z0-9+/]*={0,2}$/.test(image.slice(0, 100)); // 检查前100字符
-    if (!isUrl && !isBase64) {
-      logger.ai.error('[Duomi] Edited image is neither valid URL nor base64');
-      return {
-        success: false,
-        error: 'Invalid image format: not URL or base64',
-        text: result.data.data.description,
-      };
-    }
+    // ✅ 使用统一的图片提取函数
+    const image = extractImageData(images[0]);
 
     return {
       success: true,
-      image, // 返回第一张图片
+      image,
       text: result.data.data.description,
     };
   } catch (error) {
