@@ -69,6 +69,16 @@ interface DuomiSubmitResponse {
   ip: string;
 }
 
+// 图片可能是字符串或对象格式
+type DuomiImage =
+  | string
+  | {
+      url?: string;
+      value?: string;
+      data?: string;
+      [key: string]: unknown;
+    };
+
 interface DuomiTaskResponse {
   code: number;
   msg: string;
@@ -76,7 +86,7 @@ interface DuomiTaskResponse {
     task_id: string;
     state: DuomiTaskState;
     data: {
-      images: string[]; // base64 图像数组
+      images: DuomiImage[]; // 支持字符串或对象格式
       description: string;
     };
     create_time: string;
