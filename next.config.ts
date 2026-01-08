@@ -59,6 +59,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'service.firecrawl.dev',
       },
+      {
+        protocol: 'https',
+        hostname: '*.dmiapi.com',
+      },
     ],
   },
 };
