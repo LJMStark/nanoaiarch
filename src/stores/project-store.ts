@@ -8,6 +8,10 @@ import type { GeminiModelId } from '@/ai/image/lib/provider-config';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+/**
+ * Project Store - Zustand state for image projects
+ */
+
 interface ProjectState {
   // Project list
   projects: ImageProjectItem[];

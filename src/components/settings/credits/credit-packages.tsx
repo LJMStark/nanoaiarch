@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import { useCreditPackages } from '@/config/credits-config';
 import { websiteConfig } from '@/config/website';
-import { useCurrentUser } from '@/hooks/use-current-user';
+import { useCurrentUser } from '@/hooks/use-auth';
 import { useCurrentPlan } from '@/hooks/use-payment';
 import { formatPrice } from '@/lib/formatter';
 import { cn } from '@/lib/utils';

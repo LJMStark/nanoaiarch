@@ -2,6 +2,22 @@ import { authClient } from '@/lib/auth-client';
 import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
 
+// ============================================================================
+// Current User Hook
+// ============================================================================
+
+/**
+ * Returns the current authenticated user or null
+ */
+export const useCurrentUser = () => {
+  const { data: session } = authClient.useSession();
+  return session?.user ?? null;
+};
+
+// ============================================================================
+// User Accounts Hooks
+// ============================================================================
+
 // Query keys
 export const userAccountsKeys = {
   all: ['userAccounts'] as const,

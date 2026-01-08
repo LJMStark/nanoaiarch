@@ -15,13 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useCurrentUser } from '@/hooks/use-current-user';
+import { useCurrentUser } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { ArrowRight, Layers, Loader2, Sparkles } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // 每页加载的模板数量

@@ -5,8 +5,8 @@ import { creditTransaction, userCredit } from '@/db/schema';
 import { isAdminUser } from '@/lib/admin';
 import { logger } from '@/lib/logger';
 import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
-import { addDays, isAfter } from 'date-fns';
-import { and, asc, eq, gt, isNull, not, or, sql } from 'drizzle-orm';
+import { addDays } from 'date-fns';
+import { and, asc, eq, gt, inArray, isNull, not, or, sql } from 'drizzle-orm';
 import { CREDIT_TRANSACTION_TYPE } from './types';
 
 /**
@@ -322,84 +322,6 @@ export async function consumeCredits({
 }
 
 /**
- * Process expired credits
- * @param userId - User ID
- * @deprecated This function is no longer used, see distribute.ts instead
- */
-export async function processExpiredCredits(userId: string) {
-  const now = new Date();
-  // Get all credit transactions that can expire (have expirationDate and not yet processed)
-  const db = await getDb();
-  const transactions = await db
-    .select()
-    .from(creditTransaction)
-    .where(
-      and(
-        eq(creditTransaction.userId, userId),
-        // Exclude usage and expire records (these are consumption/expiration logs)
-        not(eq(creditTransaction.type, CREDIT_TRANSACTION_TYPE.USAGE)),
-        not(eq(creditTransaction.type, CREDIT_TRANSACTION_TYPE.EXPIRE)),
-        // Only include transactions with expirationDate set
-        not(isNull(creditTransaction.expirationDate)),
-        // Only include transactions not yet processed for expiration
-        isNull(creditTransaction.expirationDateProcessedAt),
-        // Only include transactions with remaining amount > 0
-        gt(creditTransaction.remainingAmount, 0)
-      )
-    );
-  let expiredTotal = 0;
-  // Process expired credit transactions
-  for (const transaction of transactions) {
-    if (
-      transaction.expirationDate &&
-      isAfter(now, transaction.expirationDate) &&
-      !transaction.expirationDateProcessedAt
-    ) {
-      const remain = transaction.remainingAmount || 0;
-      if (remain > 0) {
-        expiredTotal += remain;
-        await db
-          .update(creditTransaction)
-          .set({
-            remainingAmount: 0,
-            expirationDateProcessedAt: now,
-            updatedAt: now,
-          })
-          .where(eq(creditTransaction.id, transaction.id));
-      }
-    }
-  }
-  if (expiredTotal > 0) {
-    // Deduct expired credits from balance
-    const current = await db
-      .select()
-      .from(userCredit)
-      .where(eq(userCredit.userId, userId))
-      .limit(1);
-    const newBalance = Math.max(
-      0,
-      (current[0]?.currentCredits || 0) - expiredTotal
-    );
-    await db
-      .update(userCredit)
-      .set({ currentCredits: newBalance, updatedAt: now })
-      .where(eq(userCredit.userId, userId));
-    // Write expire record
-    await saveCreditTransaction({
-      userId,
-      type: CREDIT_TRANSACTION_TYPE.EXPIRE,
-      amount: -expiredTotal,
-      description: `Expire credits: ${expiredTotal}`,
-    });
-
-    logger.credits.info('processExpiredCredits completed', {
-      userId,
-      expiredTotal,
-    });
-  }
-}
-
-/**
  * Check if specific type of credits can be added for a user based on transaction history
  * @param userId - User ID
  * @param creditType - Type of credit transaction to check
@@ -426,6 +348,50 @@ export async function canAddCreditsByType(userId: string, creditType: string) {
     .limit(1);
 
   return existingTransaction.length === 0;
+}
+
+/**
+ * Batch check if specific type of credits can be added for multiple users
+ * Returns a Set of user IDs that are eligible to receive credits
+ * @param userIds - Array of user IDs to check
+ * @param creditType - Type of credit transaction to check
+ * @param tx - Optional database transaction
+ */
+export async function batchCanAddCreditsByType(
+  userIds: string[],
+  creditType: string,
+  // biome-ignore lint/suspicious/noExplicitAny: Drizzle transaction type
+  tx?: any
+): Promise<Set<string>> {
+  if (userIds.length === 0) {
+    return new Set();
+  }
+
+  const db = tx || (await getDb());
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // Single query to find all users who already received this type of credits this month
+  const existingTransactions = await db
+    .select({ userId: creditTransaction.userId })
+    .from(creditTransaction)
+    .where(
+      and(
+        inArray(creditTransaction.userId, userIds),
+        eq(creditTransaction.type, creditType),
+        sql`EXTRACT(MONTH FROM ${creditTransaction.createdAt}) = ${currentMonth + 1}`,
+        sql`EXTRACT(YEAR FROM ${creditTransaction.createdAt}) = ${currentYear}`
+      )
+    );
+
+  // Create set of users who already have credits
+  const usersWithCredits = new Set(
+    existingTransactions.map((t: { userId: string }) => t.userId)
+  );
+
+  // Return users who don't have credits yet (eligible users)
+  return new Set(userIds.filter((userId) => !usersWithCredits.has(userId)));
 }
 
 /**

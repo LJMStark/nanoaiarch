@@ -3,7 +3,7 @@
 import { LoginWrapper } from '@/components/auth/login-wrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useCurrentUser } from '@/hooks/use-current-user';
+import { useCurrentUser } from '@/hooks/use-auth';
 import { useCurrentPlan } from '@/hooks/use-payment';
 import { LocaleLink, useLocalePathname } from '@/i18n/navigation';
 import {

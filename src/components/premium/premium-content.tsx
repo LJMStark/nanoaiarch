@@ -1,6 +1,6 @@
 'use client';
 
-import { useCurrentUser } from '@/hooks/use-current-user';
+import { useCurrentUser } from '@/hooks/use-auth';
 import { useCurrentPlan } from '@/hooks/use-payment';
 import type { ReactNode } from 'react';
 

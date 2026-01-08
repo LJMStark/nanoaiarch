@@ -6,7 +6,7 @@ import { findPlanByPriceId, getAllPricePlans } from '@/lib/price-plan';
 import { PlanIntervals } from '@/payment/types';
 import { addDays } from 'date-fns';
 import { and, eq, gt, inArray, isNull, lt, not, or, sql } from 'drizzle-orm';
-import { canAddCreditsByType } from './credits';
+import { batchCanAddCreditsByType } from './credits';
 import { CREDIT_TRANSACTION_TYPE } from './types';
 
 /**
@@ -227,100 +227,19 @@ export async function batchAddMonthlyFreeCredits(userIds: string[]) {
     return;
   }
 
-  const db = await getDb();
-  const now = new Date();
   const credits = freePlan.credits?.amount || 0;
   const expireDays = freePlan.credits?.expireDays || 0;
 
-  // Use transaction for data consistency
-  let processedCount = 0;
-  await db.transaction(async (tx) => {
-    // Get all user credit records in one query
-    const userCredits = await tx
-      .select({
-        userId: userCredit.userId,
-        currentCredits: userCredit.currentCredits,
-      })
-      .from(userCredit)
-      .where(inArray(userCredit.userId, userIds));
-
-    // Create a map for quick lookup
-    const userCreditMap = new Map(
-      userCredits.map((record) => [record.userId, record])
-    );
-
-    // Check which users can receive credits based on transaction history
-    const eligibleUserIds: string[] = [];
-    for (const userId of userIds) {
-      const canAdd = await canAddCreditsByType(
-        userId,
-        CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH
-      );
-      if (canAdd) {
-        eligibleUserIds.push(userId);
-      }
-    }
-
-    if (eligibleUserIds.length === 0) {
-      logger.credits.debug('batchAddMonthlyFreeCredits: no eligible users');
-      return;
-    }
-
-    processedCount = eligibleUserIds.length;
-    const expirationDate = expireDays ? addDays(now, expireDays) : undefined;
-
-    // Batch insert credit transactions
-    const transactions = eligibleUserIds.map((userId) => ({
-      id: randomUUID(),
-      userId,
-      type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
-      amount: credits,
-      remainingAmount: credits,
-      description: `Free monthly credits: ${credits} for ${now.getFullYear()}-${now.getMonth() + 1}`,
-      expirationDate,
-      createdAt: now,
-      updatedAt: now,
-    }));
-
-    await tx.insert(creditTransaction).values(transactions);
-
-    // Prepare user credit updates
-    const existingUserIds = eligibleUserIds.filter((userId) =>
-      userCreditMap.has(userId)
-    );
-    const newUserIds = eligibleUserIds.filter(
-      (userId) => !userCreditMap.has(userId)
-    );
-
-    // Insert new user credit records
-    if (newUserIds.length > 0) {
-      const newRecords = newUserIds.map((userId) => ({
-        id: randomUUID(),
-        userId,
-        currentCredits: credits,
-        createdAt: now,
-        updatedAt: now,
-      }));
-      await tx.insert(userCredit).values(newRecords);
-    }
-
-    // Update existing user credit records
-    if (existingUserIds.length > 0) {
-      // Update each user individually to add credits to their existing balance
-      for (const userId of existingUserIds) {
-        const currentRecord = userCreditMap.get(userId);
-        const newBalance = (currentRecord?.currentCredits || 0) + credits;
-        await tx
-          .update(userCredit)
-          .set({
-            currentCredits: newBalance,
-            updatedAt: now,
-          })
-          .where(eq(userCredit.userId, userId));
-      }
-    }
+  const processedCount = await batchAddCreditsCore({
+    userIds,
+    credits,
+    expireDays,
+    creditType: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
+    descriptionTemplate: (c, d) => `Free monthly credits: ${c} for ${d}`,
+    logPrefix: 'batchAddMonthlyFreeCredits',
   });
 
+  const now = new Date();
   logger.credits.info('batchAddMonthlyFreeCredits completed', {
     credits,
     processedCount,
@@ -342,17 +261,14 @@ export async function batchAddLifetimeMonthlyCredits(
     return;
   }
 
-  const db = await getDb();
-  const now = new Date();
-
   // Group users by their priceId to handle different lifetime plans
   const usersByPriceId = new Map<string, string[]>();
-  users.forEach((user) => {
+  for (const user of users) {
     if (!usersByPriceId.has(user.priceId)) {
       usersByPriceId.set(user.priceId, []);
     }
     usersByPriceId.get(user.priceId)!.push(user.userId);
-  });
+  }
 
   let totalProcessedCount = 0;
 
@@ -362,7 +278,6 @@ export async function batchAddLifetimeMonthlyCredits(
     if (
       !pricePlan ||
       !pricePlan.isLifetime ||
-      // pricePlan.disabled ||
       !pricePlan.credits?.enable ||
       !pricePlan.credits?.amount
     ) {
@@ -375,99 +290,18 @@ export async function batchAddLifetimeMonthlyCredits(
     const credits = pricePlan.credits.amount;
     const expireDays = pricePlan.credits.expireDays;
 
-    // Use transaction for data consistency
-    let processedCount = 0;
-    await db.transaction(async (tx) => {
-      // Get all user credit records in one query
-      const userCredits = await tx
-        .select({
-          userId: userCredit.userId,
-          currentCredits: userCredit.currentCredits,
-        })
-        .from(userCredit)
-        .where(inArray(userCredit.userId, userIdsForPrice));
-
-      // Create a map for quick lookup
-      const userCreditMap = new Map(
-        userCredits.map((record) => [record.userId, record])
-      );
-
-      // Check which users can receive credits based on transaction history
-      const eligibleUserIds: string[] = [];
-      for (const userId of userIdsForPrice) {
-        const canAdd = await canAddCreditsByType(
-          userId,
-          CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY
-        );
-        if (canAdd) {
-          eligibleUserIds.push(userId);
-        }
-      }
-
-      if (eligibleUserIds.length === 0) {
-        logger.credits.debug(
-          'batchAddLifetimeMonthlyCredits: no eligible users',
-          { priceId }
-        );
-        return;
-      }
-
-      processedCount = eligibleUserIds.length;
-      const expirationDate = expireDays ? addDays(now, expireDays) : undefined;
-
-      // Batch insert credit transactions
-      const transactions = eligibleUserIds.map((userId: string) => ({
-        id: randomUUID(),
-        userId,
-        type: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
-        amount: credits,
-        remainingAmount: credits,
-        description: `Lifetime monthly credits: ${credits} for ${now.getFullYear()}-${now.getMonth() + 1}`,
-        expirationDate,
-        createdAt: now,
-        updatedAt: now,
-      }));
-
-      await tx.insert(creditTransaction).values(transactions);
-
-      // Prepare user credit updates
-      const existingUserIds = eligibleUserIds.filter((userId: string) =>
-        userCreditMap.has(userId)
-      );
-      const newUserIds = eligibleUserIds.filter(
-        (userId: string) => !userCreditMap.has(userId)
-      );
-
-      // Insert new user credit records
-      if (newUserIds.length > 0) {
-        const newRecords = newUserIds.map((userId: string) => ({
-          id: randomUUID(),
-          userId,
-          currentCredits: credits,
-          createdAt: now,
-          updatedAt: now,
-        }));
-        await tx.insert(userCredit).values(newRecords);
-      }
-
-      // Update existing user credit records
-      if (existingUserIds.length > 0) {
-        // Update each user individually to add credits to their existing balance
-        for (const userId of existingUserIds) {
-          const currentRecord = userCreditMap.get(userId);
-          const newBalance = (currentRecord?.currentCredits || 0) + credits;
-          await tx
-            .update(userCredit)
-            .set({
-              currentCredits: newBalance,
-              updatedAt: now,
-            })
-            .where(eq(userCredit.userId, userId));
-        }
-      }
+    const processedCount = await batchAddCreditsCore({
+      userIds: userIdsForPrice,
+      credits,
+      expireDays,
+      creditType: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
+      descriptionTemplate: (c, d) => `Lifetime monthly credits: ${c} for ${d}`,
+      logPrefix: 'batchAddLifetimeMonthlyCredits',
     });
 
     totalProcessedCount += processedCount;
+
+    const now = new Date();
     logger.credits.debug('batchAddLifetimeMonthlyCredits batch completed', {
       credits,
       processedCount,
@@ -495,17 +329,14 @@ export async function batchAddYearlyUsersMonthlyCredits(
     return;
   }
 
-  const db = await getDb();
-  const now = new Date();
-
   // Group users by priceId to batch process users with the same plan
   const usersByPriceId = new Map<string, string[]>();
-  users.forEach(({ userId, priceId }) => {
+  for (const { userId, priceId } of users) {
     if (!usersByPriceId.has(priceId)) {
       usersByPriceId.set(priceId, []);
     }
     usersByPriceId.get(priceId)!.push(userId);
-  });
+  }
 
   let totalProcessedCount = 0;
 
@@ -523,99 +354,19 @@ export async function batchAddYearlyUsersMonthlyCredits(
     const credits = pricePlan.credits.amount;
     const expireDays = pricePlan.credits.expireDays;
 
-    // Use transaction for data consistency
-    let processedCount = 0;
-    await db.transaction(async (tx) => {
-      // Get all user credit records in one query
-      const userCredits = await tx
-        .select({
-          userId: userCredit.userId,
-          currentCredits: userCredit.currentCredits,
-        })
-        .from(userCredit)
-        .where(inArray(userCredit.userId, userIds));
-
-      // Create a map for quick lookup
-      const userCreditMap = new Map(
-        userCredits.map((record) => [record.userId, record])
-      );
-
-      // Check which users can receive credits based on transaction history
-      const eligibleUserIds: string[] = [];
-      for (const userId of userIds) {
-        const canAdd = await canAddCreditsByType(
-          userId,
-          CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL
-        );
-        if (canAdd) {
-          eligibleUserIds.push(userId);
-        }
-      }
-
-      if (eligibleUserIds.length === 0) {
-        logger.credits.debug(
-          'batchAddYearlyUsersMonthlyCredits: no eligible users',
-          { priceId }
-        );
-        return;
-      }
-
-      processedCount = eligibleUserIds.length;
-      const expirationDate = expireDays ? addDays(now, expireDays) : undefined;
-
-      // Batch insert credit transactions
-      const transactions = eligibleUserIds.map((userId) => ({
-        id: randomUUID(),
-        userId,
-        type: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
-        amount: credits,
-        remainingAmount: credits,
-        description: `Yearly subscription monthly credits: ${credits} for ${now.getFullYear()}-${now.getMonth() + 1}`,
-        expirationDate,
-        createdAt: now,
-        updatedAt: now,
-      }));
-
-      await tx.insert(creditTransaction).values(transactions);
-
-      // Prepare user credit updates
-      const existingUserIds = eligibleUserIds.filter((userId) =>
-        userCreditMap.has(userId)
-      );
-      const newUserIds = eligibleUserIds.filter(
-        (userId) => !userCreditMap.has(userId)
-      );
-
-      // Insert new user credit records
-      if (newUserIds.length > 0) {
-        const newRecords = newUserIds.map((userId) => ({
-          id: randomUUID(),
-          userId,
-          currentCredits: credits,
-          createdAt: now,
-          updatedAt: now,
-        }));
-        await tx.insert(userCredit).values(newRecords);
-      }
-
-      // Update existing user credit records
-      if (existingUserIds.length > 0) {
-        // Update each user individually to add credits to their existing balance
-        for (const userId of existingUserIds) {
-          const currentRecord = userCreditMap.get(userId);
-          const newBalance = (currentRecord?.currentCredits || 0) + credits;
-          await tx
-            .update(userCredit)
-            .set({
-              currentCredits: newBalance,
-              updatedAt: now,
-            })
-            .where(eq(userCredit.userId, userId));
-        }
-      }
+    const processedCount = await batchAddCreditsCore({
+      userIds,
+      credits,
+      expireDays,
+      creditType: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
+      descriptionTemplate: (c, d) =>
+        `Yearly subscription monthly credits: ${c} for ${d}`,
+      logPrefix: 'batchAddYearlyUsersMonthlyCredits',
     });
 
     totalProcessedCount += processedCount;
+
+    const now = new Date();
     logger.credits.debug('batchAddYearlyUsersMonthlyCredits batch completed', {
       credits,
       processedCount,
@@ -816,4 +567,121 @@ export async function batchProcessExpiredCreditsForUsers(userIds: string[]) {
     processedCount: totalProcessedCount,
     expiredCredits: totalExpiredCredits,
   };
+}
+
+// ============================================================================
+// Core batch add credits function - shared logic for all batch credit operations
+// ============================================================================
+
+interface BatchAddCreditsParams {
+  userIds: string[];
+  credits: number;
+  expireDays?: number;
+  creditType: string;
+  descriptionTemplate: (credits: number, dateStr: string) => string;
+  logPrefix: string;
+}
+
+/**
+ * Core function for batch adding credits to users
+ * Extracts common logic from the three batch add functions
+ */
+async function batchAddCreditsCore({
+  userIds,
+  credits,
+  expireDays,
+  creditType,
+  descriptionTemplate,
+  logPrefix,
+}: BatchAddCreditsParams): Promise<number> {
+  if (userIds.length === 0 || credits <= 0) {
+    return 0;
+  }
+
+  const db = await getDb();
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}`;
+
+  let processedCount = 0;
+
+  await db.transaction(async (tx) => {
+    // Get all user credit records in one query
+    const userCredits = await tx
+      .select({
+        userId: userCredit.userId,
+        currentCredits: userCredit.currentCredits,
+      })
+      .from(userCredit)
+      .where(inArray(userCredit.userId, userIds));
+
+    // Create a map for quick lookup
+    const userCreditMap = new Map(
+      userCredits.map((record) => [record.userId, record])
+    );
+
+    // Check which users can receive credits (single query)
+    const eligibleUserSet = await batchCanAddCreditsByType(
+      userIds,
+      creditType,
+      tx
+    );
+    const eligibleUserIds = Array.from(eligibleUserSet);
+
+    if (eligibleUserIds.length === 0) {
+      logger.credits.debug(`${logPrefix}: no eligible users`);
+      return;
+    }
+
+    processedCount = eligibleUserIds.length;
+    const expirationDate = expireDays ? addDays(now, expireDays) : undefined;
+
+    // Batch insert credit transactions
+    const transactions = eligibleUserIds.map((userId) => ({
+      id: randomUUID(),
+      userId,
+      type: creditType,
+      amount: credits,
+      remainingAmount: credits,
+      description: descriptionTemplate(credits, dateStr),
+      expirationDate,
+      createdAt: now,
+      updatedAt: now,
+    }));
+
+    await tx.insert(creditTransaction).values(transactions);
+
+    // Prepare user credit updates
+    const existingUserIds = eligibleUserIds.filter((userId) =>
+      userCreditMap.has(userId)
+    );
+    const newUserIds = eligibleUserIds.filter(
+      (userId) => !userCreditMap.has(userId)
+    );
+
+    // Insert new user credit records
+    if (newUserIds.length > 0) {
+      const newRecords = newUserIds.map((userId) => ({
+        id: randomUUID(),
+        userId,
+        currentCredits: credits,
+        createdAt: now,
+        updatedAt: now,
+      }));
+      await tx.insert(userCredit).values(newRecords);
+    }
+
+    // Update existing user credit records (batch update using raw SQL)
+    if (existingUserIds.length > 0) {
+      // Use single UPDATE with IN clause for better performance
+      await tx
+        .update(userCredit)
+        .set({
+          currentCredits: sql`${userCredit.currentCredits} + ${credits}`,
+          updatedAt: now,
+        })
+        .where(inArray(userCredit.userId, existingUserIds));
+    }
+  });
+
+  return processedCount;
 }

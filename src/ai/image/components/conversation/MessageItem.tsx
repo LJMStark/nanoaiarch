@@ -29,8 +29,8 @@ import {
   Sparkles,
   User,
 } from 'lucide-react';
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 interface MessageItemProps {
