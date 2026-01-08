@@ -82,6 +82,53 @@ export async function getProjectMessages(projectId: string) {
 }
 
 /**
+ * Get single message status - optimized for polling
+ * Only returns minimal data needed for status check
+ */
+export async function getMessageStatus(
+  projectId: string,
+  messageId: string
+) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    const db = await getDb();
+
+    const message = await db
+      .select({
+        id: projectMessage.id,
+        status: projectMessage.status,
+        outputImage: projectMessage.outputImage,
+        errorMessage: projectMessage.errorMessage,
+        creditsUsed: projectMessage.creditsUsed,
+        generationTime: projectMessage.generationTime,
+        updatedAt: projectMessage.updatedAt,
+      })
+      .from(projectMessage)
+      .where(
+        and(
+          eq(projectMessage.id, messageId),
+          eq(projectMessage.projectId, projectId),
+          eq(projectMessage.userId, session.user.id)
+        )
+      )
+      .limit(1);
+
+    if (!message.length) {
+      return { success: false, error: 'Message not found' };
+    }
+
+    return { success: true, data: message[0] };
+  } catch (error) {
+    logger.actions.error('Failed to get message status', error);
+    return { success: false, error: 'Failed to get message status' };
+  }
+}
+
+/**
  * Add a user message to a project
  */
 export async function addUserMessage(

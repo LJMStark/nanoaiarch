@@ -82,7 +82,11 @@ function UserMessage({ message }: { message: ProjectMessageItem }) {
 }
 
 // 解析错误消息，返回用户友好的提示
-function parseErrorMessage(error: unknown, t: any): string {
+interface TranslationFunction {
+  (key: string, values?: Record<string, unknown>): string;
+}
+
+function parseErrorMessage(error: unknown, t: TranslationFunction): string {
   if (!(error instanceof Error)) return t('errors.unexpected');
 
   const msg = error.message.toLowerCase();

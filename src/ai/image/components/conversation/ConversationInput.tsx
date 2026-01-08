@@ -1,7 +1,11 @@
 'use client';
 
 import { updateProjectActivity } from '@/actions/image-project';
-import { addAssistantMessage, addUserMessage } from '@/actions/project-message';
+import {
+  addAssistantMessage,
+  addUserMessage,
+  updateAssistantMessage,
+} from '@/actions/project-message';
 import { AspectRatioSelect } from '@/ai/image/components/AspectRatioSelect';
 import { ImageQualitySelect } from '@/ai/image/components/ImageQualitySelect';
 import { MultiImageUploader } from '@/ai/image/components/MultiImageUploader';
@@ -150,7 +154,6 @@ export function ConversationInput() {
 
       if (result.success && result.image) {
         // 更新 generating 消息为 completed
-        const { updateAssistantMessage } = await import('@/actions/project-message');
         const updateResult = await updateAssistantMessage(generatingMessage.id, {
           content: '',
           outputImage: result.image,
@@ -171,7 +174,6 @@ export function ConversationInput() {
         }
       } else {
         // 更新 generating 消息为 failed
-        const { updateAssistantMessage } = await import('@/actions/project-message');
         const updateResult = await updateAssistantMessage(generatingMessage.id, {
           content: result.error || t('errors.generationFailed'),
           status: 'failed',
@@ -185,7 +187,6 @@ export function ConversationInput() {
     } catch (error) {
       logger.ai.error('Generation error:', error);
       // 更新 generating 消息为 failed
-      const { updateAssistantMessage } = await import('@/actions/project-message');
       const updateResult = await updateAssistantMessage(generatingMessage.id, {
         content: t('errors.unexpected'),
         status: 'failed',
