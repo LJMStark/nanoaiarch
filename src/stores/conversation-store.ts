@@ -157,8 +157,8 @@ export const useConversationStore = create<ConversationState>()(
     return null;
   },
 
-      reset: () => set(initialState),
-    }),
+  reset: () => set(initialState),
+}),
     {
       name: 'conversation-storage',
       storage: customStorage,

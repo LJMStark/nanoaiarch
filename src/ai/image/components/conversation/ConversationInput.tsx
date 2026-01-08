@@ -166,11 +166,20 @@ export function ConversationInput() {
           updateMessage(generatingMessage.id, updateResult.data);
 
           // Update project activity
-          await updateProjectActivity(currentProjectId, {
+          const activityResult = await updateProjectActivity(currentProjectId, {
             coverImage: result.image,
             creditsUsed: result.creditsUsed || 1,
             incrementGeneration: true,
           });
+
+          // 监控失败情况
+          if (!activityResult.success) {
+            logger.ai.error('updateProjectActivity failed', {
+              projectId: currentProjectId,
+              messageId: generatingMessage.id,
+              error: activityResult.error,
+            });
+          }
         }
       } else {
         // 更新 generating 消息为 failed
