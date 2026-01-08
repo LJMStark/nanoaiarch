@@ -1,5 +1,6 @@
 import type { ProjectMessageItem } from '@/actions/project-message';
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export type MessageStatus = 'pending' | 'generating' | 'completed' | 'failed';
 
@@ -51,10 +52,12 @@ const initialState = {
   currentProjectId: null as string | null,
 };
 
-export const useConversationStore = create<ConversationState>((set, get) => ({
-  ...initialState,
+export const useConversationStore = create<ConversationState>()(
+  persist(
+    (set, get) => ({
+      ...initialState,
 
-  setMessages: (messages) => set({ messages }),
+      setMessages: (messages) => set({ messages }),
 
   addMessage: (message) =>
     set((state) => ({
@@ -115,5 +118,16 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     return null;
   },
 
-  reset: () => set(initialState),
-}));
+      reset: () => set(initialState),
+    }),
+    {
+      name: 'conversation-storage',
+      // 只持久化关键状态，messages 从数据库加载
+      partialize: (state) => ({
+        isGenerating: state.isGenerating,
+        generatingMessageId: state.generatingMessageId,
+        currentProjectId: state.currentProjectId,
+      }),
+    }
+  )
+);

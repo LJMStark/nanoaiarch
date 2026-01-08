@@ -114,8 +114,26 @@ export function ConversationInput() {
 
     addMessage(userResult.data);
 
-    // Start generation
-    setGenerating(true);
+    // Start generation - 先创建 generating 状态的消息
+    const generatingResult = await addAssistantMessage(currentProjectId, {
+      content: '',
+      status: 'generating',
+      generationParams: {
+        prompt,
+        aspectRatio,
+        model: selectedModel,
+        imageQuality,
+      },
+    });
+
+    if (!generatingResult.success || !generatingResult.data) {
+      logger.ai.error('Failed to create generating message');
+      return;
+    }
+
+    const generatingMessage = generatingResult.data;
+    addMessage(generatingMessage);
+    setGenerating(true, generatingMessage.id);
     const startTime = Date.now();
 
     try {
@@ -131,23 +149,18 @@ export function ConversationInput() {
       const generationTime = Date.now() - startTime;
 
       if (result.success && result.image) {
-        // Add assistant message with result
-        const assistantResult = await addAssistantMessage(currentProjectId, {
+        // 更新 generating 消息为 completed
+        const { updateAssistantMessage } = await import('@/actions/project-message');
+        const updateResult = await updateAssistantMessage(generatingMessage.id, {
           content: '',
           outputImage: result.image,
-          generationParams: {
-            prompt,
-            aspectRatio,
-            model: selectedModel,
-            imageQuality,
-          },
           creditsUsed: result.creditsUsed || 1,
           generationTime,
           status: 'completed',
         });
 
-        if (assistantResult.success && assistantResult.data) {
-          addMessage(assistantResult.data);
+        if (updateResult.success && updateResult.data) {
+          updateMessage(generatingMessage.id, updateResult.data);
 
           // Update project activity
           await updateProjectActivity(currentProjectId, {
@@ -157,29 +170,31 @@ export function ConversationInput() {
           });
         }
       } else {
-        // Add failed message
-        const assistantResult = await addAssistantMessage(currentProjectId, {
+        // 更新 generating 消息为 failed
+        const { updateAssistantMessage } = await import('@/actions/project-message');
+        const updateResult = await updateAssistantMessage(generatingMessage.id, {
           content: result.error || t('errors.generationFailed'),
           status: 'failed',
           errorMessage: result.error,
         });
 
-        if (assistantResult.success && assistantResult.data) {
-          addMessage(assistantResult.data);
+        if (updateResult.success && updateResult.data) {
+          updateMessage(generatingMessage.id, updateResult.data);
         }
       }
     } catch (error) {
       logger.ai.error('Generation error:', error);
-      // Add error message
-      const assistantResult = await addAssistantMessage(currentProjectId, {
+      // 更新 generating 消息为 failed
+      const { updateAssistantMessage } = await import('@/actions/project-message');
+      const updateResult = await updateAssistantMessage(generatingMessage.id, {
         content: t('errors.unexpected'),
         status: 'failed',
         errorMessage:
           error instanceof Error ? error.message : t('errors.unknown'),
       });
 
-      if (assistantResult.success && assistantResult.data) {
-        addMessage(assistantResult.data);
+      if (updateResult.success && updateResult.data) {
+        updateMessage(generatingMessage.id, updateResult.data);
       }
     } finally {
       setGenerating(false);

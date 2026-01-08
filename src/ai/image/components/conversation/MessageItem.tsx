@@ -111,6 +111,7 @@ function AssistantMessage({
   const [isHovered, setIsHovered] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const isFailed = message.status === 'failed';
+  const isGeneratingNow = message.status === 'generating';
   const t = useTranslations('ArchPage');
 
   // 用于防止组件卸载后更新状态
@@ -327,7 +328,14 @@ function AssistantMessage({
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 space-y-3 min-w-0">
-        {isFailed ? (
+        {isGeneratingNow ? (
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+            <Loader2 className="h-5 w-5 animate-spin text-primary flex-shrink-0" />
+            <span className="text-sm text-muted-foreground flex-1">
+              {t('canvas.generating')}
+            </span>
+          </div>
+        ) : isFailed ? (
           <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
             <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
             <span className="text-sm text-destructive flex-1">

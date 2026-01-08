@@ -3,6 +3,7 @@
 import { getImageProjects } from '@/actions/image-project';
 import { getProjectMessages } from '@/actions/project-message';
 import { TemplateDetailModal } from '@/ai/image/components/TemplateDetailModal';
+import { useGenerationRecovery } from '@/ai/image/hooks/use-generation-recovery';
 import { useTemplateApply } from '@/ai/image/hooks/use-template-apply';
 import type { ArchTemplate, AspectRatioId } from '@/ai/image/lib/arch-types';
 import { ARCH_TEMPLATES } from '@/ai/image/lib/templates';
@@ -36,8 +37,11 @@ export function ConversationLayout() {
     setLoadingProjects,
   } = useProjectStore();
 
-  const { setMessages, setLoadingMessages, setCurrentProject } =
+  const { setMessages, setLoadingMessages, setCurrentProject, setGenerating } =
     useConversationStore();
+
+  // Enable generation recovery polling
+  useGenerationRecovery(currentProjectId);
 
   // Load projects on mount
   useEffect(() => {
@@ -106,12 +110,20 @@ export function ConversationLayout() {
       const result = await getProjectMessages(currentProjectId);
       if (result.success) {
         setMessages(result.data);
+
+        // 检查是否有正在生成的消息，恢复生成状态
+        const generatingMessage = result.data.find(
+          (msg) => msg.role === 'assistant' && msg.status === 'generating'
+        );
+        if (generatingMessage) {
+          setGenerating(true, generatingMessage.id);
+        }
       }
       setLoadingMessages(false);
     };
 
     loadMessages();
-  }, [currentProjectId, setMessages, setLoadingMessages, setCurrentProject]);
+  }, [currentProjectId, setMessages, setLoadingMessages, setCurrentProject, setGenerating]);
 
   return (
     <>
