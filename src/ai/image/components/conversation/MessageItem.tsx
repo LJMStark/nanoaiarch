@@ -82,9 +82,7 @@ function UserMessage({ message }: { message: ProjectMessageItem }) {
 }
 
 // 解析错误消息，返回用户友好的提示
-type Translator = ReturnType<typeof useTranslations>;
-
-function parseErrorMessage(error: unknown, t: Translator): string {
+function parseErrorMessage(error: unknown, t: any): string {
   if (!(error instanceof Error)) return t('errors.unexpected');
 
   const msg = error.message.toLowerCase();
