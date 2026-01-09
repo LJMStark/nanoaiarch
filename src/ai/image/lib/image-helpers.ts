@@ -50,7 +50,7 @@ export async function shareImage(
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       await navigator.share({
         files: [file],
-        title: title || 'Forma AI Generated Image',
+        title: title || 'Arch AI Generated Image',
       });
     } else {
       // 如果不支持分享，则下载

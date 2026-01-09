@@ -80,8 +80,8 @@ export const websiteConfig: WebsiteConfig = {
   },
   mail: {
     provider: 'resend',
-    fromEmail: 'Nano AI <noreply@nanoaiarch.com>',
-    supportEmail: 'Nano AI <support@nanoaiarch.com>',
+    fromEmail: 'Arch AI <noreply@nanoaiarch.com>',
+    supportEmail: 'Arch AI <support@nanoaiarch.com>',
   },
   newsletter: {
     enable: true,

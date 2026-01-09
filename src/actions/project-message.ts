@@ -267,7 +267,7 @@ export async function addAssistantMessage(
     generationParams?: GenerationParams;
     creditsUsed?: number;
     generationTime?: number;
-    status?: 'completed' | 'failed';
+    status?: 'generating' | 'completed' | 'failed';
     errorMessage?: string;
   }
 ) {

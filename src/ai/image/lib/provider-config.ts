@@ -1,4 +1,4 @@
-// Forma AI 配置 - 支持 Duomi API 模型
+// Arch AI 配置 - 支持 Duomi API 模型
 export type ProviderKey = 'duomi';
 
 // Duomi 模型 ID - 使用最新的 nano-banana-pro
@@ -28,7 +28,7 @@ export const PROVIDERS: Record<
   }
 > = {
   duomi: {
-    displayName: 'Nano AI',
+    displayName: 'Arch AI',
     iconPath: '/provider-icons/gemini.svg',
     color: 'from-violet-500 to-purple-600',
     models: ['forma'],

@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${result.data.name} | Nano AI`,
+    title: `${result.data.name} | Arch AI`,
     description:
       result.data.bio ||
       `View ${result.data.name}'s AI-generated architectural visualizations`,

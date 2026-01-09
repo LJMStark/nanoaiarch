@@ -34,7 +34,7 @@ export type DuomiTaskState = 'pending' | 'running' | 'succeeded' | 'error';
 
 // 轮询配置
 const POLL_INTERVAL_MS = 2000; // 2 秒轮询间隔
-const MAX_POLL_ATTEMPTS = 50; // 最大轮询次数 (100秒，留20秒缓冲)
+const MAX_POLL_ATTEMPTS = 150; // 最大轮询次数 (300秒/5分钟，适应慢速第三方服务)
 
 /**
  * 获取 Duomi API Key

@@ -68,7 +68,7 @@ export default async function LocaleLayout({
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
         />
-        <meta name="apple-mobile-web-app-title" content="Nano AI" />
+        <meta name="apple-mobile-web-app-title" content="Arch AI" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <AffonsoScript />
         <PromotekitScript />

@@ -91,6 +91,10 @@ const customStorage = {
   },
 };
 
+// Create a properly typed storage that zustand persist expects
+import { createJSONStorage } from 'zustand/middleware';
+const persistStorage = createJSONStorage(() => customStorage);
+
 export const useConversationStore = create<ConversationState>()(
   persist(
     (set, get) => ({
@@ -161,7 +165,7 @@ export const useConversationStore = create<ConversationState>()(
 }),
     {
       name: 'conversation-storage',
-      storage: customStorage,
+      storage: persistStorage,
       version: 1,
       // 只持久化关键状态，messages 从数据库加载
       partialize: (state) => ({

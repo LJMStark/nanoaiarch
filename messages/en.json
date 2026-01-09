@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "name": "Forma AI",
-    "title": "Forma AI - AI Architectural Visualization Platform",
+    "name": "Arch AI",
+    "title": "Arch AI - AI Architectural Visualization Platform",
     "description": "Transform architectural sketches, white models, and floor plans into photorealistic visualizations. Powered by advanced AI with professional styles and templates."
   },
   "Gallery": {
@@ -15,7 +15,7 @@
     },
     "empty": {
       "title": "No generations yet",
-      "description": "Start creating stunning architectural visualizations with Forma AI",
+      "description": "Start creating stunning architectural visualizations with Arch AI",
       "noFavorites": "You haven't saved any favorites yet",
       "noResults": "No results found for your search",
       "cta": "Create First Generation"
@@ -44,7 +44,7 @@
   },
   "Help": {
     "title": "Help Center",
-    "description": "Find answers to common questions and learn how to use Forma AI",
+    "description": "Find answers to common questions and learn how to use Arch AI",
     "backToHelp": "Back to Help Center",
     "stillNeedHelp": "Still need help?",
     "contactSupport": "Contact Support",
@@ -96,10 +96,10 @@
   },
   "Onboarding": {
     "modal": {
-      "title": "Welcome to Forma AI"
+      "title": "Welcome to Arch AI"
     },
     "welcome": {
-      "title": "Welcome to Forma AI",
+      "title": "Welcome to Arch AI",
       "description": "Transform your architectural ideas into stunning visualizations with AI",
       "features": {
         "ai": {
@@ -355,10 +355,10 @@
   },
   "AboutPage": {
     "title": "About",
-    "description": "Forma AI is an AI-powered architectural visualization platform helping architects, interior designers, and urban planners transform their design concepts into stunning visuals.",
-    "authorName": "Forma AI",
+    "description": "Arch AI is an AI-powered architectural visualization platform helping architects, interior designers, and urban planners transform their design concepts into stunning visuals.",
+    "authorName": "Arch AI",
     "authorBio": "AI Architectural Visualization",
-    "introduction": "👋 Welcome to Forma AI! We're building the future of architectural visualization with AI. Transform sketches into renders, generate facade designs, create analysis diagrams - all powered by cutting-edge AI technology. Questions? We're here to help.",
+    "introduction": "👋 Welcome to Arch AI! We're building the future of architectural visualization with AI. Transform sketches into renders, generate facade designs, create analysis diagrams - all powered by cutting-edge AI technology. Questions? We're here to help.",
     "talkWithMe": "Contact Us",
     "followMe": "Follow us on X"
   },
@@ -510,7 +510,7 @@
     "previousPage": "Previous",
     "nextPage": "Next",
     "chooseLanguage": "Select language",
-    "title": "Forma AI Docs",
+    "title": "Arch AI Docs",
     "homepage": "Homepage"
   },
   "PremiumContent": {
@@ -541,10 +541,10 @@
         "title": "Docs"
       },
       "ai": {
-        "title": "Forma AI",
+        "title": "Arch AI",
         "items": {
           "image": {
-            "title": "Forma AI Studio",
+            "title": "Arch AI Studio",
             "description": "Transform sketches into stunning architectural renders"
           }
         }
@@ -695,7 +695,7 @@
       "title": "Dashboard"
     },
     "archAi": {
-      "title": "Forma AI"
+      "title": "Arch AI"
     },
     "stats": {
       "totalGenerations": "Total Generations",
@@ -723,7 +723,7 @@
       "viewAll": "View All",
       "empty": {
         "title": "No generations yet",
-        "description": "Start creating stunning architectural visualizations with Forma AI",
+        "description": "Start creating stunning architectural visualizations with Arch AI",
         "cta": "Create First Generation"
       },
       "deleteDialog": {
@@ -1075,12 +1075,12 @@
     }
   },
   "HomePage": {
-    "title": "Forma AI",
+    "title": "Arch AI",
     "description": "AI-Powered Architectural Visualization for Architects, Interior Designers & Urban Planners",
     "hero": {
       "title": "Turn Sketches into Stunning Renders",
       "description": "Transform architectural sketches, white models, and floor plans into photorealistic visualizations. Powered by advanced AI with 9 professional styles and 26+ templates.",
-      "introduction": "Try Forma AI Now",
+      "introduction": "Try Arch AI Now",
       "primary": "Start Creating",
       "secondary": "View Pricing"
     },
@@ -1149,7 +1149,7 @@
       "items": {
         "item-1": {
           "question": "What types of architectural visualizations can I create?",
-          "answer": "Forma AI supports style transfers, white model to render conversions, floor plan coloring, facade design, section diagrams, analysis diagrams (Sasaki style, sunlight, circulation), interior perspectives, and more."
+          "answer": "Arch AI supports style transfers, white model to render conversions, floor plan coloring, facade design, section diagrams, analysis diagrams (Sasaki style, sunlight, circulation), interior perspectives, and more."
         },
         "item-2": {
           "question": "What image formats are supported?",
@@ -1157,11 +1157,11 @@
         },
         "item-3": {
           "question": "How do credits work?",
-          "answer": "Each generation costs credits based on the model used. Forma AI uses 1 credit, Forma AI Pro uses 3 credits. You can purchase credit packs or subscribe for monthly credits."
+          "answer": "Each generation costs credits based on the model used. Arch AI uses 1 credit, Arch AI Pro uses 3 credits. You can purchase credit packs or subscribe for monthly credits."
         },
         "item-4": {
           "question": "Can I use the generated images commercially?",
-          "answer": "Yes! All images generated with Forma AI can be used for commercial projects, client presentations, and publications."
+          "answer": "Yes! All images generated with Arch AI can be used for commercial projects, client presentations, and publications."
         },
         "item-5": {
           "question": "Need help or have questions?",
@@ -1192,7 +1192,7 @@
       "secondaryButton": "View Pricing"
     },
     "features2": {
-      "title": "Why Choose Forma AI?",
+      "title": "Why Choose Arch AI?",
       "subtitle": "Powerful Features",
       "description": "Everything you need to create professional architectural visualizations",
       "feature-1": "Instant Email Delivery - Get your results in seconds",
@@ -1239,7 +1239,7 @@
           "name": "Sarah Chen",
           "role": "Architect",
           "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-          "quote": "Forma AI has transformed how I present my designs to clients. The quality is incredible."
+          "quote": "Arch AI has transformed how I present my designs to clients. The quality is incredible."
         },
         "item-2": {
           "name": "Michael Park",
@@ -1263,7 +1263,7 @@
           "name": "Lisa Zhang",
           "role": "Design Director",
           "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa",
-          "quote": "Our team productivity has increased significantly since adopting Forma AI."
+          "quote": "Our team productivity has increased significantly since adopting Arch AI."
         },
         "item-6": {
           "name": "James Rodriguez",
@@ -1293,7 +1293,7 @@
           "name": "Marcus Johnson",
           "role": "Project Manager",
           "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus",
-          "quote": "Client presentations have never been more impressive. Forma AI delivers."
+          "quote": "Client presentations have never been more impressive. Arch AI delivers."
         },
         "item-11": {
           "name": "Elena Rodriguez",
@@ -1407,7 +1407,7 @@
   },
   "ArchPage": {
     "hero": {
-      "badge": "Forma AI - Professional Visualization",
+      "badge": "Arch AI - Professional Visualization",
       "title": "Architectural Visualization Reimagined",
       "subtitle": "Transform sketches into renders, generate facade designs, create analysis diagrams with AI-powered architectural visualization.",
       "stats": {
@@ -1738,7 +1738,7 @@
     }
   },
   "AIImagePage": {
-    "title": "Forma AI",
+    "title": "Arch AI",
     "description": "Transform architectural sketches into photorealistic visualizations with AI"
   }
 }

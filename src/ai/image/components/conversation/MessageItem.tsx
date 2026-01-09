@@ -252,7 +252,7 @@ function AssistantMessage({
       // 检查组件是否仍然挂载
       if (!isMountedRef.current) return;
 
-      const errorMessage = parseErrorMessage(error, t);
+      const errorMessage = parseErrorMessage(error, t as TranslationFunction);
       logger.ai.error('Retry generation error:', error);
 
       await createAssistantMessage(

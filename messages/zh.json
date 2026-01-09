@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "name": "Forma AI",
-    "title": "Forma AI - AI 建筑可视化平台",
+    "name": "Arch AI",
+    "title": "Arch AI - AI 建筑可视化平台",
     "description": "将建筑草图、白模和平面图转化为照片级写实可视化效果。基于先进 AI 技术，提供专业风格和模版。"
   },
   "Gallery": {
@@ -15,7 +15,7 @@
     },
     "empty": {
       "title": "暂无生成记录",
-      "description": "使用 Forma AI 开始创建精美的建筑可视化作品",
+      "description": "使用 Arch AI 开始创建精美的建筑可视化作品",
       "noFavorites": "您还没有收藏任何作品",
       "noResults": "未找到匹配的搜索结果",
       "cta": "创建第一个作品"
@@ -44,7 +44,7 @@
   },
   "Help": {
     "title": "帮助中心",
-    "description": "查找常见问题的解答，了解如何使用 Forma AI",
+    "description": "查找常见问题的解答，了解如何使用 Arch AI",
     "backToHelp": "返回帮助中心",
     "stillNeedHelp": "仍需帮助？",
     "contactSupport": "联系客服",
@@ -96,10 +96,10 @@
   },
   "Onboarding": {
     "modal": {
-      "title": "欢迎使用 Forma AI"
+      "title": "欢迎使用 Arch AI"
     },
     "welcome": {
-      "title": "欢迎使用 Forma AI",
+      "title": "欢迎使用 Arch AI",
       "description": "用 AI 将您的建筑创意转化为惊艳的可视化效果",
       "features": {
         "ai": {
@@ -355,10 +355,10 @@
   },
   "AboutPage": {
     "title": "关于我们",
-    "description": "Forma AI 是一个 AI 驱动的建筑可视化平台，帮助建筑师、室内设计师和城市规划师将设计概念转化为惊艳的视觉效果。",
-    "authorName": "Forma AI",
+    "description": "Arch AI 是一个 AI 驱动的建筑可视化平台，帮助建筑师、室内设计师和城市规划师将设计概念转化为惊艳的视觉效果。",
+    "authorName": "Arch AI",
     "authorBio": "AI 建筑可视化",
-    "introduction": "👋 欢迎来到 Forma AI！我们正在用 AI 构建建筑可视化的未来。将草图转化为效果图，生成立面设计，创建分析图表 - 全部由前沿 AI 技术驱动。有任何问题？我们随时为您提供帮助。",
+    "introduction": "👋 欢迎来到 Arch AI！我们正在用 AI 构建建筑可视化的未来。将草图转化为效果图，生成立面设计，创建分析图表 - 全部由前沿 AI 技术驱动。有任何问题？我们随时为您提供帮助。",
     "talkWithMe": "联系我们",
     "followMe": "关注我们"
   },
@@ -510,7 +510,7 @@
     "previousPage": "上一页",
     "nextPage": "下一页",
     "chooseLanguage": "选择语言",
-    "title": "Forma AI 文档",
+    "title": "Arch AI 文档",
     "homepage": "首页"
   },
   "PremiumContent": {
@@ -541,10 +541,10 @@
         "title": "文档"
       },
       "ai": {
-        "title": "Forma AI",
+        "title": "Arch AI",
         "items": {
           "image": {
-            "title": "Forma AI 工作台",
+            "title": "Arch AI 工作台",
             "description": "将草图转化为惊艳的建筑效果图"
           }
         }
@@ -695,7 +695,7 @@
       "title": "仪表盘"
     },
     "archAi": {
-      "title": "Forma AI"
+      "title": "Arch AI"
     },
     "stats": {
       "totalGenerations": "总生成数",
@@ -723,7 +723,7 @@
       "viewAll": "查看全部",
       "empty": {
         "title": "暂无生成记录",
-        "description": "使用 Forma AI 开始创建精美的建筑可视化作品",
+        "description": "使用 Arch AI 开始创建精美的建筑可视化作品",
         "cta": "创建第一个作品"
       },
       "deleteDialog": {
@@ -1075,12 +1075,12 @@
     }
   },
   "HomePage": {
-    "title": "Forma AI",
+    "title": "Arch AI",
     "description": "AI 驱动的建筑可视化工具，专为建筑师、室内设计师和城市规划师打造",
     "hero": {
       "title": "草图秒变效果图",
       "description": "将建筑草图、白模和平面图转化为照片级写实可视化效果。基于先进 AI 技术，提供 9 种专业风格和 26+ 模版。",
-      "introduction": "立即体验 Forma AI",
+      "introduction": "立即体验 Arch AI",
       "primary": "开始创作",
       "secondary": "查看价格"
     },
@@ -1149,7 +1149,7 @@
       "items": {
         "item-1": {
           "question": "可以创建哪些类型的建筑可视化？",
-          "answer": "Forma AI 支持风格迁移、白模转效果图、平面图填色、立面设计、剖面图、分析图（Sasaki 风格、日照分析、流线分析）、室内透视等多种类型。"
+          "answer": "Arch AI 支持风格迁移、白模转效果图、平面图填色、立面设计、剖面图、分析图（Sasaki 风格、日照分析、流线分析）、室内透视等多种类型。"
         },
         "item-2": {
           "question": "支持哪些图片格式？",
@@ -1157,11 +1157,11 @@
         },
         "item-3": {
           "question": "积分如何使用？",
-          "answer": "每次生成会根据使用的模型消耗积分。Forma AI 每次消耗 1 积分，Forma AI Pro 每次消耗 3 积分。您可以购买积分包或订阅获取月度积分。"
+          "answer": "每次生成会根据使用的模型消耗积分。Arch AI 每次消耗 1 积分，Arch AI Pro 每次消耗 3 积分。您可以购买积分包或订阅获取月度积分。"
         },
         "item-4": {
           "question": "生成的图像可以商用吗？",
-          "answer": "可以！使用 Forma AI 生成的所有图像都可用于商业项目、客户演示和出版物。"
+          "answer": "可以！使用 Arch AI 生成的所有图像都可用于商业项目、客户演示和出版物。"
         },
         "item-5": {
           "question": "需要帮助或有问题？",
@@ -1192,7 +1192,7 @@
       "secondaryButton": "查看价格"
     },
     "features2": {
-      "title": "为什么选择 Forma AI？",
+      "title": "为什么选择 Arch AI？",
       "subtitle": "强大功能",
       "description": "创建专业建筑可视化所需的一切",
       "feature-1": "即时邮件送达 - 几秒内获得结果",
@@ -1239,7 +1239,7 @@
           "name": "陈莎拉",
           "role": "建筑师",
           "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-          "quote": "Forma AI 彻底改变了向客户展示设计的方式。质量令人难以置信。"
+          "quote": "Arch AI 彻底改变了向客户展示设计的方式。质量令人难以置信。"
         },
         "item-2": {
           "name": "朴迈克尔",
@@ -1263,7 +1263,7 @@
           "name": "张丽莎",
           "role": "设计总监",
           "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa",
-          "quote": "自从采用 Forma AI，我们团队的工作效率显著提高。"
+          "quote": "自从采用 Arch AI，我们团队的工作效率显著提高。"
         },
         "item-6": {
           "name": "罗德里格斯詹姆斯",
@@ -1293,7 +1293,7 @@
           "name": "约翰逊马库斯",
           "role": "项目经理",
           "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus",
-          "quote": "客户演示从未如此令人印象深刻。Forma AI 值得信赖。"
+          "quote": "客户演示从未如此令人印象深刻。Arch AI 值得信赖。"
         },
         "item-11": {
           "name": "罗德里格斯埃琳娜",
@@ -1407,7 +1407,7 @@
   },
   "ArchPage": {
     "hero": {
-      "badge": "Forma AI - 专业可视化",
+      "badge": "Arch AI - 专业可视化",
       "title": "建筑可视化 重新定义",
       "subtitle": "将草图转化为效果图，生成立面设计，创建分析图表，AI 驱动的建筑可视化工具。",
       "stats": {
@@ -1738,7 +1738,7 @@
     }
   },
   "AIImagePage": {
-    "title": "Forma AI",
+    "title": "Arch AI",
     "description": "用 AI 将建筑草图转化为照片级写实可视化效果"
   }
 }

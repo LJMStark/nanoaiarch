@@ -43,6 +43,7 @@ export function isValidImageUrl(url: string): boolean {
     const allowedDomains = [
       'dmiapi.com',
       'duomiapi.com',
+      'cloudfront.net', // AWS CloudFront CDN (Duomi 备用)
       'replicate.delivery',
       'oaidalleapiprodscus.blob.core.windows.net', // OpenAI DALL-E
       'cdn.openai.com',

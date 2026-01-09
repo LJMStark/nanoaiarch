@@ -162,8 +162,14 @@ export function ConversationInput() {
           status: 'completed',
         });
 
-        if (updateResult.success && updateResult.data) {
-          updateMessage(generatingMessage.id, updateResult.data);
+        if (updateResult.success) {
+          // 使用本地数据更新前端状态（服务端不返回完整数据）
+          updateMessage(generatingMessage.id, {
+            outputImage: result.image,
+            creditsUsed: result.creditsUsed || 1,
+            generationTime,
+            status: 'completed',
+          });
 
           // Update project activity
           const activityResult = await updateProjectActivity(currentProjectId, {
@@ -183,28 +189,41 @@ export function ConversationInput() {
         }
       } else {
         // 更新 generating 消息为 failed
+        const errorContent = result.error || t('errors.generationFailed');
         const updateResult = await updateAssistantMessage(generatingMessage.id, {
-          content: result.error || t('errors.generationFailed'),
+          content: errorContent,
           status: 'failed',
           errorMessage: result.error,
         });
 
-        if (updateResult.success && updateResult.data) {
-          updateMessage(generatingMessage.id, updateResult.data);
+        if (updateResult.success) {
+          // 使用本地数据更新前端状态
+          updateMessage(generatingMessage.id, {
+            content: errorContent,
+            status: 'failed',
+            errorMessage: result.error,
+          });
         }
       }
     } catch (error) {
       logger.ai.error('Generation error:', error);
       // 更新 generating 消息为 failed
+      const errorContent = t('errors.unexpected');
+      const errorMsg =
+        error instanceof Error ? error.message : t('errors.unknown');
       const updateResult = await updateAssistantMessage(generatingMessage.id, {
-        content: t('errors.unexpected'),
+        content: errorContent,
         status: 'failed',
-        errorMessage:
-          error instanceof Error ? error.message : t('errors.unknown'),
+        errorMessage: errorMsg,
       });
 
-      if (updateResult.success && updateResult.data) {
-        updateMessage(generatingMessage.id, updateResult.data);
+      if (updateResult.success) {
+        // 使用本地数据更新前端状态
+        updateMessage(generatingMessage.id, {
+          content: errorContent,
+          status: 'failed',
+          errorMessage: errorMsg,
+        });
       }
     } finally {
       setGenerating(false);
