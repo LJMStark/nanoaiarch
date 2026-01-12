@@ -6,53 +6,50 @@ import { logger } from '@/lib/logger';
 import type { DuomiAspectRatio, DuomiModelId } from './duomi-client';
 
 /**
- * 请求超时时间（120 秒）
- * Duomi API 是异步任务型，需要更长的等待时间
+ * Request timeout duration (120 seconds)
+ * Duomi API is asynchronous task-based, requiring longer wait times
  */
 export const TIMEOUT_MILLIS = 120 * 1000;
 
 /**
- * 带超时的 Promise 包装器
+ * Promise wrapper with timeout support
  */
-export const withTimeout = <T>(
+export function withTimeout<T>(
   promise: Promise<T>,
   timeoutMillis: number = TIMEOUT_MILLIS
-): Promise<T> => {
+): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
       setTimeout(() => reject(new Error('Request timed out')), timeoutMillis)
     ),
   ]);
-};
+}
 
 /**
- * 生成安全的请求 ID
+ * Generate a safe request ID
  */
-export const generateRequestId = (): string => {
+export function generateRequestId(): string {
   return crypto.randomUUID().slice(0, 8);
-};
+}
 
 /**
- * Duomi 模型 Key 类型 - 只有 forma (gemini-3-pro-image-preview)
+ * Duomi model key type - only 'forma' (gemini-3-pro-image-preview)
  */
 export type DuomiModelKey = 'forma';
 
 /**
- * 将前端模型 ID 映射到 Duomi API 的模型 ID
- * 当前只有一个模型: gemini-3-pro-image-preview (nano-banana-pro)
+ * Map frontend model ID to Duomi API model ID
+ * Currently only one model: gemini-3-pro-image-preview (nano-banana-pro)
  */
-export const mapModelIdToDuomiModel = (_modelId: string): DuomiModelId => {
-  // 只有一个模型，直接返回
+export function mapModelIdToDuomiModel(_modelId: string): DuomiModelId {
   return 'gemini-3-pro-image-preview';
-};
+}
 
 /**
- * 将前端画幅比例映射到 Duomi API 格式
+ * Map frontend aspect ratio to Duomi API format
  */
-export const mapAspectRatioToDuomi = (
-  aspectRatio?: string
-): DuomiAspectRatio => {
+export function mapAspectRatioToDuomi(aspectRatio?: string): DuomiAspectRatio {
   const mapping: Record<string, DuomiAspectRatio> = {
     '1:1': '1:1',
     '16:9': '16:9',
@@ -64,21 +61,21 @@ export const mapAspectRatioToDuomi = (
     '21:9': '21:9',
   };
   return mapping[aspectRatio || ''] || 'auto';
-};
+}
 
-// 向后兼容：保留 GeminiModelKey 类型别名
+// Backward compatibility: retain GeminiModelKey type alias
 export type GeminiModelKey = DuomiModelKey;
 
 /**
- * 向后兼容：映射到 Gemini Key（实际返回 Duomi key）
- * 当前只有一个模型: forma
+ * Backward compatibility: map to Gemini key (returns Duomi key)
+ * Currently only one model: forma
  */
-export const mapModelIdToGeminiKey = (_modelId: string): DuomiModelKey => {
+export function mapModelIdToGeminiKey(_modelId: string): DuomiModelKey {
   return 'forma';
-};
+}
 
 /**
- * Prompt 验证
+ * Prompt validation constants and utilities
  */
 const MAX_PROMPT_LENGTH = 4000;
 const BLOCKED_PATTERNS = [
@@ -172,12 +169,12 @@ export function validatePrompt(prompt: string): PromptValidationResult {
 }
 
 /**
- * 客户端调用图片生成 API
+ * Client-side image generation API call
  */
 export interface GenerateImageParams {
   prompt: string;
   referenceImage?: string;
-  referenceImages?: string[]; // 多图参考 (base64 数组，最多 5 张)
+  referenceImages?: string[]; // Multi-image reference (base64 array, max 5 images)
   aspectRatio?: string;
   model?: string;
   imageSize?: ImageQuality;

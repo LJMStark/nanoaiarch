@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     // Collect image URLs from conversation history
     const imageUrls: string[] = [];
     for (const msg of messages) {
-      if (msg.image && msg.image.startsWith('http')) {
+      if (msg.image?.startsWith('http')) {
         imageUrls.push(msg.image);
       }
     }

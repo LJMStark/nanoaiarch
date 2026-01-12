@@ -1,6 +1,6 @@
 ---
-title: "Building Production Apps with Next.js 15"
-description: "Practical patterns and best practices for building production-ready applications with Next.js 15, Server Components, and App Router."
+title: "Best Practices for Architectural Visualization"
+description: "From sketch to photorealistic rendering: Professional tips and workflows for AI-powered architectural visualization shared by architects and designers."
 image: /images/blog/post-3.png
 date: "2024-12-15"
 author: fox
@@ -9,225 +9,217 @@ categories:
 published: true
 ---
 
-Next.js 15 changes how we build React applications. Here are the patterns we use in MKSaaS to create fast, maintainable production apps.
+AI architectural visualization is transforming how designers work. This article compiles best practices from professional architects using Arch AI.
 
-## Server Components by Default
+## Material Preparation
 
-Server Components reduce client-side JavaScript and improve performance. Use them for:
+### Golden Rules for Sketches
 
-- Data fetching from databases
-- Keeping sensitive tokens on the server
-- Reducing bundle size
+Quality sketches are the foundation for great renderings:
 
-```typescript
-// Server Component (default)
-async function ProductList() {
-  const products = await db.products.findMany();
-  return (
-    <ul>
-      {products.map((p) => (
-        <li key={p.id}>{p.name}</li>
-      ))}
-    </ul>
-  );
-}
+**Line Treatment**
+- Use clear, black lines
+- Bold lines for main structures
+- Keep auxiliary lines fine and delicate
+- Avoid excessive correction marks
+
+**Composition Tips**
+- Choose angles that best express design intent
+- Maintain appropriate white space
+- Center important elements or follow the rule of thirds
+- Consider the final rendering aspect ratio
+
+**Annotation Techniques**
+- Simple material labels help AI understand intent
+- Include approximate scale proportions
+- Add text notes for special design features
+
+### Best Practices for White Models
+
+When exporting white models from 3D software:
+
+| Software | Recommended Settings | Notes |
+|----------|---------------------|-------|
+| SketchUp | Set style to "Hidden Line" | Turn off shadows for cleaner outlines |
+| Rhino | Use "Arctic" display mode | Ensure surfaces are complete |
+| Revit | Hide all annotations and labels | Choose appropriate detail level |
+| Blender | Render with Eevee white material | Add simple ambient lighting |
+
+**Viewpoint Selection**
+- Eye-level height around 1.6m (5'3")
+- Maintain appropriate perspective
+- Avoid extreme wide-angle or telephoto effects
+- Ensure main architectural elements are fully visible
+
+## Prompt Techniques
+
+### Structured Descriptions
+
+Organize your prompts in this order:
+
+```
+1. Building type and scale
+2. Architectural style
+3. Main materials
+4. Environment and setting
+5. Lighting and atmosphere
+6. Photography style
 ```
 
-Use Client Components only when needed:
+**Complete Example**
 
-- Interactive UI with event handlers
-- Browser APIs (localStorage, window)
-- React hooks (useState, useEffect)
-
-```typescript
-'use client';
-
-function Counter() {
-  const [count, setCount] = useState(0);
-  return <button onClick={() => setCount(count + 1)}>{count}</button>;
-}
+```
+Two-story modern residence,
+minimalist style with exposed concrete walls and large glass curtain walls,
+situated on a hillside surrounded by conifer forest,
+golden evening sunlight streaming from the side,
+professional architectural photography, wide-angle lens, high clarity
 ```
 
-## Data Fetching
+### Style Vocabulary Library
 
-Fetch data in parallel to avoid waterfalls:
+Build a collection of common style descriptions:
 
-```typescript
-async function Dashboard() {
-  const [user, posts, analytics] = await Promise.all([
-    getUser(),
-    getPosts(),
-    getAnalytics(),
-  ]);
+**Architectural Styles**
+- Modern minimalist / Minimalism / Bauhaus
+- Neo-Chinese / Zen / Wabi-sabi
+- Nordic / Scandinavian
+- Industrial / Loft / Post-modern
+- Mediterranean / Tuscan / Colonial
 
-  return <DashboardView user={user} posts={posts} analytics={analytics} />;
-}
+**Material Descriptions**
+- Exposed concrete / Textured concrete / Precast concrete
+- Walnut / Oak / Cedar / Bamboo
+- Ultra-clear glass / Frosted glass / Low-E glass
+- Corten steel / Anodized aluminum / Copper panels
+
+**Atmosphere Descriptions**
+- Golden hour warmth / Blue hour / Harsh midday sun
+- Overcast soft light / Morning mist / Fresh after rain
+- Warm and cozy / Cool and modern / Serene and zen-like
+
+## Workflow
+
+### Exploration Phase
+
+Generate multiple directions quickly:
+
+1. Use 1K quality to save time
+2. Try different style directions each time
+3. Save promising versions
+4. Collect client feedback
+
+### Development Phase
+
+After establishing direction, dive into details:
+
+1. Switch to 2K quality
+2. Gradually optimize details through conversation
+3. Try different material combinations
+4. Adjust lighting and atmosphere
+
+### Final Output Phase
+
+Polish the final results:
+
+1. Use 4K quality
+2. Ensure every detail meets expectations
+3. Generate multiple viewpoints
+4. Export high-resolution files
+
+## Common Scene Handling
+
+### Interior Spaces
+
+Special techniques for interior renderings:
+
+- Clearly describe space function (living room, bedroom, office)
+- Specify main furniture style
+- Note light source positions (windows, fixtures)
+- Consider soft furnishing styles
+
+```
+Modern minimalist open-plan living room,
+3.5m ceiling height, floor-to-ceiling windows facing garden,
+gray fabric sofa with walnut coffee table,
+afternoon sunlight streaming through windows, warm and cozy atmosphere
 ```
 
-For sequential data (when one request depends on another):
+### Night Scenes
 
-```typescript
-async function Profile({ userId }: { userId: string }) {
-  const user = await getUser(userId);
-  const posts = await getUserPosts(user.id);
-  return <ProfileView user={user} posts={posts} />;
-}
+Key points for night renderings:
+
+- Emphasize building lighting effects
+- Describe light glowing from interiors
+- Consider landscape lighting
+- Pay attention to sky treatment
+
+```
+Modern villa at night,
+warm yellow interior light glowing through glass curtain walls,
+ground-embedded lights outlining landscape features,
+deep blue night sky, distant city lights faintly visible
 ```
 
-## Server Actions
+### Bird's Eye Views
 
-Use Server Actions for form submissions and mutations:
+Considerations for aerial perspectives:
 
-```typescript
-'use server';
+- Specify viewing height and angle
+- Describe surrounding environment
+- Note overall building group relationships
+- Consider landscaping and roads
 
-import { z } from 'zod';
-
-const schema = z.object({
-  email: z.string().email(),
-  message: z.string().min(10).max(1000),
-});
-
-export async function submitForm(formData: FormData) {
-  const result = schema.safeParse({
-    email: formData.get('email'),
-    message: formData.get('message'),
-  });
-
-  if (!result.success) {
-    return { error: 'Invalid input' };
-  }
-
-  // Process validated data
-}
+```
+Residential district aerial view,
+45-degree overhead angle, approximately 100m height,
+12 staggered modern residential towers,
+central landscape park with artificial lake,
+surrounded by city roads and commercial facilities
 ```
 
-## Error Handling
+## Quality Control
 
-Create error boundaries with `error.tsx`:
+### Checklist
 
-```typescript
-'use client';
+After generating renderings, confirm:
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error;
-  reset: () => void;
-}) {
-  return (
-    <div>
-      <h2>Something went wrong!</h2>
-      <button onClick={() => reset()}>Try again</button>
-    </div>
-  );
-}
-```
+- [ ] Building proportions are correct
+- [ ] Materials render as expected
+- [ ] Light and shadow relationships are logical
+- [ ] Environmental elements are harmonious
+- [ ] Overall atmosphere is appropriate
 
-Handle 404s with `not-found.tsx`:
+### Common Issue Fixes
 
-```typescript
-export default function NotFound() {
-  return (
-    <div>
-      <h2>Page Not Found</h2>
-      <Link href="/">Go home</Link>
-    </div>
-  );
-}
-```
+| Problem | Solution |
+|---------|----------|
+| Distorted proportions | Specify building scale in prompts |
+| Incorrect materials | Use more specific material description words |
+| Strange lighting | Specify exact time and direction |
+| Blurry details | Increase quality or generate in steps |
 
-## Performance
+## Efficiency Tips
 
-### Image Optimization
+### Build a Template Library
 
-Always use the Next.js Image component:
+Create prompt templates for common scenarios:
 
-```typescript
-import Image from 'next/image';
+- Residential (villas, apartments, townhouses)
+- Commercial (offices, malls, hotels)
+- Public (schools, hospitals, cultural centers)
+- Landscape (parks, plazas, courtyards)
 
-function Hero() {
-  return (
-    <Image
-      src="/hero.jpg"
-      alt="Hero"
-      width={1200}
-      height={600}
-      priority
-      placeholder="blur"
-    />
-  );
-}
-```
+### Keyboard Shortcuts
 
-### Dynamic Imports
+Master platform features:
 
-Load heavy components only when needed:
+- Copy previous prompts for quick modifications
+- Use favorites to save satisfying results
+- Batch download all images in a project
 
-```typescript
-import dynamic from 'next/dynamic';
+## Summary
 
-const Chart = dynamic(() => import('@/components/chart'), {
-  loading: () => <ChartSkeleton />,
-  ssr: false,
-});
-```
+AI architectural visualization is a tool—creativity still comes from the designer. Master these techniques and let Arch AI become your powerful assistant for efficient design expression.
 
-### Caching
-
-Configure revalidation for data:
-
-```typescript
-export const revalidate = 3600; // 1 hour
-
-async function PricingPage() {
-  const prices = await fetch('https://api.stripe.com/prices', {
-    next: { revalidate: 3600 },
-  });
-  // ...
-}
-```
-
-## Security
-
-### Environment Variables
-
-Server-only variables are never exposed to the client:
-
-```bash
-# Server-only (safe)
-DATABASE_URL="postgresql://..."
-STRIPE_SECRET_KEY="sk_..."
-
-# Client-exposed (prefix with NEXT_PUBLIC_)
-NEXT_PUBLIC_API_URL="https://api.example.com"
-```
-
-### Input Validation
-
-Always validate at the boundary:
-
-```typescript
-import { z } from 'zod';
-
-const schema = z.object({
-  name: z.string().min(1).max(100),
-  email: z.string().email(),
-});
-
-export async function createUser(formData: FormData) {
-  const data = schema.parse(Object.fromEntries(formData));
-  // Safe to use data
-}
-```
-
-## Key Takeaways
-
-1. Use Server Components by default
-2. Fetch data in parallel when possible
-3. Validate all inputs with Zod
-4. Handle errors gracefully
-5. Optimize images and lazy-load heavy components
-
-These patterns are what power MKSaaS. Use them to build better Next.js applications.
+Keep practicing, keep summarizing, and you'll find your rendering quality continuously improving.

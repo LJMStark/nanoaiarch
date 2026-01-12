@@ -1,6 +1,6 @@
 ---
-title: "使用 MKSaaS 构建 AI 功能"
-description: "学习如何集成 AI 图像生成、实现积分系统，以及使用 MKSaaS 构建 AI 驱动的功能。"
+title: "Arch AI 建筑可视化完全指南"
+description: "深入了解 Arch AI 的 AI 渲染技术，掌握从草图到照片级效果图的完整工作流程。"
 image: /images/blog/post-4.png
 date: "2024-12-10"
 author: mksaas
@@ -9,135 +9,146 @@ categories:
 published: true
 ---
 
-MKSaaS 包含完整的图像生成 AI 基础设施。以下是如何使用它。
+Arch AI 采用先进的 AI 图像生成技术，专门针对建筑可视化场景进行优化。本文将深入介绍如何充分发挥 Arch AI 的能力。
 
-## AI 提供商
+## AI 渲染引擎
 
-三种 AI 模型开箱即用：
+Arch AI 使用最新的 Gemini 3 Pro 图像模型，专门针对建筑场景进行了优化训练：
 
-| 提供商 | 模型 | 积分 | 适用场景 |
-|--------|------|------|----------|
-| Forma AI | Gemini 2.0 | 1 | 快速预览 |
-| Forma Pro | Gemini 2.0 | 3 | 高质量 |
-| Nano Banana Pro | Imagen 4 | 5 | 专业级 |
+- **材质理解** - 准确识别和渲染木材、混凝土、玻璃、金属等建筑材质
+- **光影模拟** - 真实的日光、人工照明和环境光效果
+- **空间感知** - 理解建筑比例和空间关系
+- **风格迁移** - 支持多种建筑风格的渲染
 
-## 基本用法
+## 工作流程
 
-从任何组件生成图像：
+### 第一步：准备参考素材
 
-```typescript
-const response = await fetch('/api/generate-images', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    prompt: '现代简约风格的客厅',
-    modelId: 'forma-pro',
-  }),
-});
+高质量的参考素材能显著提升生成效果：
 
-const { image, creditsUsed } = await response.json();
+**草图要求**
+- 线条清晰，主要结构明确
+- 建议使用黑色线条，白色或浅色背景
+- 可以包含简单的标注说明
+
+**白模要求**
+- 确保模型完整，无明显破面
+- 选择合适的视角截图
+- 可以添加简单的环境（地面、天空）
+
+**平面图要求**
+- 标注清晰的功能分区
+- 包含门窗位置信息
+- 尺寸比例正确
+
+### 第二步：编写描述提示词
+
+好的提示词是获得理想效果的关键：
+
+**基础结构**
+```
+[建筑类型] + [风格] + [材质] + [环境] + [氛围]
 ```
 
-## 使用 Hook
-
-为了更好的开发体验：
-
-```typescript
-import { useArchGeneration } from '@/ai/image/hooks/use-arch-generation';
-
-function ImageGenerator() {
-  const { generate, isLoading, result } = useArchGeneration();
-
-  return (
-    <button onClick={() => generate({ prompt: '咖啡店', modelId: 'forma' })}>
-      {isLoading ? '生成中...' : '生成'}
-    </button>
-  );
-}
+**示例**
+```
+三层现代别墅，极简主义风格，
+白色混凝土外墙搭配大面积落地玻璃窗，
+周围环绕日式枯山水庭院，
+黄昏时分的温暖光线，专业建筑摄影风格
 ```
 
-## 积分系统
+**提示词技巧**
 
-### 检查积分
+| 类型 | 好的例子 | 不好的例子 |
+|------|----------|------------|
+| 风格 | 现代简约、新中式、北欧风 | 好看的、漂亮的 |
+| 材质 | 清水混凝土、胡桃木饰面 | 高级材料 |
+| 光线 | 傍晚侧光、阴天柔光 | 亮一点 |
+| 视角 | 人视点透视、鸟瞰 | 好看的角度 |
 
-```typescript
-import { hasEnoughCredits } from '@/credits/credits';
+### 第三步：选择画质
 
-const canGenerate = await hasEnoughCredits({
-  userId: session.user.id,
-  requiredCredits: 5,
-});
+根据使用场景选择合适的画质：
+
+| 画质 | 分辨率 | 生成时间 | 推荐场景 |
+|------|--------|----------|----------|
+| 1K | 1024px | ~10秒 | 快速预览、方案比选 |
+| 2K | 2048px | ~20秒 | 汇报演示、网络分享 |
+| 4K | 4096px | ~40秒 | 正式出图、高清打印 |
+
+### 第四步：迭代优化
+
+生成初稿后，通过对话继续优化：
+
+```
+用户：把外墙改成温暖的木纹饰面
+AI：[生成新效果图]
+
+用户：保持木纹，但换成更深的胡桃木色调
+AI：[生成新效果图]
+
+用户：很好，再添加一些屋顶绿化
+AI：[生成最终效果图]
 ```
 
-### 消耗积分
+## 进阶技巧
 
-```typescript
-import { consumeCredits } from '@/credits/credits';
+### 多图参考
 
-await consumeCredits({
-  userId: session.user.id,
-  amount: 5,
-  description: '图像生成：forma-pro',
-});
+上传多张参考图可以获得更精准的效果：
+
+- **图1** - 建筑体量（白模或草图）
+- **图2** - 材质参考（实景照片）
+- **图3** - 氛围参考（喜欢的效果图风格）
+
+### 画幅比例
+
+选择合适的画幅比例：
+
+- **16:9** - 横向全景，适合外观展示
+- **9:16** - 竖向构图，适合塔楼或门厅
+- **1:1** - 方形构图，适合社交媒体
+- **4:3** - 传统比例，适合打印输出
+
+### 负面提示
+
+描述你不想要的元素：
+
+```
+现代办公楼设计，不要传统中式元素，
+避免过于复杂的装饰，不要夸张的色彩
 ```
 
-### 定价
+## 常见问题
 
-在 `src/ai/image/lib/credit-costs.ts` 中配置定价：
+### Q: 为什么生成的效果与预期不符？
 
-```typescript
-export const CREDIT_COSTS = {
-  forma: 1,
-  'forma-pro': 3,
-  'nano-banana-pro': 5,
-};
-```
+- 检查提示词是否足够具体
+- 确保参考图清晰且内容明确
+- 尝试分步骤描述，先确定大方向再调细节
 
-## 高级选项
+### Q: 如何保持多张图的风格一致？
 
-```typescript
-await generate({
-  prompt: '现代办公楼',
-  modelId: 'nano-banana-pro',
-  aspectRatio: '16:9',
-  negativePrompt: '模糊，低质量',
-});
-```
+- 使用相同的风格描述词
+- 保持相似的光线和氛围设定
+- 在同一个对话中连续生成
 
-可用比例：`1:1`、`16:9`、`9:16`、`4:3`、`3:4`。
+### Q: 积分不够用怎么办？
 
-## 安全
-
-### 输入验证
-
-Prompt 会自动验证：
-
-- 最大长度：4000 字符
-- 阻止 prompt 注入模式
-- 内容过滤
-
-### 限流
-
-API 端点已限流以防止滥用。
+- 先用 1K 画质快速预览
+- 确定满意后再生成高清版本
+- 购买积分包获得更优惠的价格
 
 ## 最佳实践
 
-1. **始终检查积分** - 生成前确认
-2. **优雅处理错误** - AI 服务可能失败
-3. **显示加载状态** - 生成需要时间
-4. **适当缓存结果**
-5. **使用积分系统** 监控成本
+1. **先粗后细** - 先确定整体效果，再调整细节
+2. **保存中间结果** - 满意的效果及时下载保存
+3. **建立素材库** - 收集优秀的参考图和提示词模板
+4. **善用对话** - 复杂修改分多次描述，逐步接近目标
 
-## 添加更多模型
+## 开始创作
 
-添加新的 AI 提供商：
+掌握了这些技巧，你已经准备好用 Arch AI 创作专业级的建筑可视化作品了。
 
-1. 在 `src/ai/image/lib/provider-config.ts` 中添加配置
-2. 在 `src/ai/image/lib/credit-costs.ts` 中设置定价
-3. 在 API 路由中实现生成逻辑
-
-## 文档
-
-完整的 API 文档请访问 `/docs`。
-
-有问题？加入我们的 [Discord](https://discord.gg/mksaas)。
+立即开始，让 AI 助力你的设计表达。

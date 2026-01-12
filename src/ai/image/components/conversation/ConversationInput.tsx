@@ -6,25 +6,30 @@ import {
   addUserMessage,
   updateAssistantMessage,
 } from '@/actions/project-message';
-import { AspectRatioSelect } from '@/ai/image/components/AspectRatioSelect';
-import { ImageQualitySelect } from '@/ai/image/components/ImageQualitySelect';
 import { MultiImageUploader } from '@/ai/image/components/MultiImageUploader';
+import { GenerationSettings } from '@/ai/image/components/conversation/GenerationSettings';
+import { ReferenceImagesPreview } from '@/ai/image/components/conversation/ReferenceImagesPreview';
 import { generateImage, validateBase64Image } from '@/ai/image/lib/api-utils';
 import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUp, ImageIcon, Loader2, Settings2, X } from 'lucide-react';
+import { ArrowUp, ImageIcon, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+// Message update data type for server/client sync
+interface MessageUpdateData {
+  outputImage?: string;
+  creditsUsed?: number;
+  generationTime?: number;
+  status: 'completed' | 'failed';
+  content?: string;
+  errorMessage?: string;
+}
 
 export function ConversationInput() {
   const t = useTranslations('ArchPage');
@@ -33,34 +38,48 @@ export function ConversationInput() {
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
 
-  const getImageValidationError = (error?: string) => {
-    if (!error) return t('errors.imageTooLarge');
-    const normalized = error.toLowerCase();
-    if (normalized.includes('invalid url')) return t('errors.invalidUrl');
-    if (normalized.includes('invalid image data'))
-      return t('errors.invalidImageData');
-    if (normalized.includes('maximum') || normalized.includes('exceeds')) {
-      return t('errors.imageTooLarge');
-    }
-    return t('errors.imageTooLarge');
-  };
+  // Get localized error message for image validation
+  const getImageValidationError = useCallback(
+    (error?: string): string => {
+      if (!error) return t('errors.imageTooLarge');
 
-  const handleImagesChange = (images: string[]) => {
-    // 验证所有图片
-    for (const image of images) {
-      const validation = validateBase64Image(image);
-      if (!validation.valid) {
-        setImageError(getImageValidationError(validation.error));
-        return;
+      const normalized = error.toLowerCase();
+
+      if (normalized.includes('invalid url')) {
+        return t('errors.invalidUrl');
       }
-    }
-    setImageError(null);
-    setReferenceImages(images);
-    // 有图片时自动关闭上传区域，显示预览
-    if (images.length > 0) {
-      setShowImageUpload(false);
-    }
-  };
+      if (normalized.includes('invalid image data')) {
+        return t('errors.invalidImageData');
+      }
+      if (normalized.includes('maximum') || normalized.includes('exceeds')) {
+        return t('errors.imageTooLarge');
+      }
+
+      return t('errors.imageTooLarge');
+    },
+    [t]
+  );
+
+  // Handle image changes: validate and update state
+  const handleImagesChange = useCallback(
+    (images: string[]) => {
+      // Validate all images
+      for (const image of images) {
+        const validation = validateBase64Image(image);
+        if (!validation.valid) {
+          setImageError(getImageValidationError(validation.error));
+          return;
+        }
+      }
+      setImageError(null);
+      setReferenceImages(images);
+      // Auto-close upload area when images are added, show preview
+      if (images.length > 0) {
+        setShowImageUpload(false);
+      }
+    },
+    [getImageValidationError]
+  );
 
   const {
     currentProjectId,
@@ -90,11 +109,22 @@ export function ConversationInput() {
     }
   }, [draftPrompt]);
 
-  const handleSubmit = async () => {
+  // Helper function to update message state (syncs server and client)
+  const updateMessageState = useCallback(
+    async (messageId: string, data: MessageUpdateData): Promise<void> => {
+      const updateResult = await updateAssistantMessage(messageId, data);
+      if (updateResult.success) {
+        updateMessage(messageId, data);
+      }
+    },
+    [updateMessage]
+  );
+
+  const handleSubmit = useCallback(async () => {
     if (!draftPrompt.trim() || isGenerating || !currentProjectId) return;
 
     const prompt = draftPrompt.trim();
-    // 多图支持：优先使用用户上传的图片，否则使用最后一次生成的图片
+    // Multi-image support: prefer user-uploaded images, fallback to last generated image
     const inputImages =
       referenceImages.length > 0
         ? referenceImages
@@ -105,7 +135,7 @@ export function ConversationInput() {
     setReferenceImages([]);
     setShowImageUpload(false);
 
-    // Add user message (只显示第一张图作为预览)
+    // Add user message (show first image as preview)
     const userResult = await addUserMessage(currentProjectId, {
       content: prompt,
       inputImage: inputImages[0] || undefined,
@@ -118,7 +148,7 @@ export function ConversationInput() {
 
     addMessage(userResult.data);
 
-    // Start generation - 先创建 generating 状态的消息
+    // Create message with 'generating' status
     const generatingResult = await addAssistantMessage(currentProjectId, {
       content: '',
       status: 'generating',
@@ -141,7 +171,7 @@ export function ConversationInput() {
     const startTime = Date.now();
 
     try {
-      // Generate image with quality setting (支持多图参考)
+      // Generate image (supports multi-image reference)
       const result = await generateImage({
         prompt,
         referenceImages: inputImages.length > 0 ? inputImages : undefined,
@@ -153,89 +183,76 @@ export function ConversationInput() {
       const generationTime = Date.now() - startTime;
 
       if (result.success && result.image) {
-        // 更新 generating 消息为 completed
-        const updateResult = await updateAssistantMessage(generatingMessage.id, {
-          content: '',
+        // Update to completed status
+        await updateMessageState(generatingMessage.id, {
           outputImage: result.image,
           creditsUsed: result.creditsUsed || 1,
           generationTime,
           status: 'completed',
         });
 
-        if (updateResult.success) {
-          // 使用本地数据更新前端状态（服务端不返回完整数据）
-          updateMessage(generatingMessage.id, {
-            outputImage: result.image,
-            creditsUsed: result.creditsUsed || 1,
-            generationTime,
-            status: 'completed',
-          });
+        // Update project activity
+        const activityResult = await updateProjectActivity(currentProjectId, {
+          coverImage: result.image,
+          creditsUsed: result.creditsUsed || 1,
+          incrementGeneration: true,
+        });
 
-          // Update project activity
-          const activityResult = await updateProjectActivity(currentProjectId, {
-            coverImage: result.image,
-            creditsUsed: result.creditsUsed || 1,
-            incrementGeneration: true,
+        if (!activityResult.success) {
+          logger.ai.error('updateProjectActivity failed', {
+            projectId: currentProjectId,
+            messageId: generatingMessage.id,
+            error: activityResult.error,
           });
-
-          // 监控失败情况
-          if (!activityResult.success) {
-            logger.ai.error('updateProjectActivity failed', {
-              projectId: currentProjectId,
-              messageId: generatingMessage.id,
-              error: activityResult.error,
-            });
-          }
         }
       } else {
-        // 更新 generating 消息为 failed
+        // Update to failed status
         const errorContent = result.error || t('errors.generationFailed');
-        const updateResult = await updateAssistantMessage(generatingMessage.id, {
+        await updateMessageState(generatingMessage.id, {
           content: errorContent,
           status: 'failed',
           errorMessage: result.error,
         });
-
-        if (updateResult.success) {
-          // 使用本地数据更新前端状态
-          updateMessage(generatingMessage.id, {
-            content: errorContent,
-            status: 'failed',
-            errorMessage: result.error,
-          });
-        }
       }
     } catch (error) {
       logger.ai.error('Generation error:', error);
-      // 更新 generating 消息为 failed
+      // Update to failed status
       const errorContent = t('errors.unexpected');
       const errorMsg =
         error instanceof Error ? error.message : t('errors.unknown');
-      const updateResult = await updateAssistantMessage(generatingMessage.id, {
+      await updateMessageState(generatingMessage.id, {
         content: errorContent,
         status: 'failed',
         errorMessage: errorMsg,
       });
-
-      if (updateResult.success) {
-        // 使用本地数据更新前端状态
-        updateMessage(generatingMessage.id, {
-          content: errorContent,
-          status: 'failed',
-          errorMessage: errorMsg,
-        });
-      }
     } finally {
       setGenerating(false);
     }
-  };
+  }, [
+    draftPrompt,
+    isGenerating,
+    currentProjectId,
+    referenceImages,
+    getLastOutputImage,
+    clearDraft,
+    addMessage,
+    aspectRatio,
+    selectedModel,
+    imageQuality,
+    setGenerating,
+    updateMessageState,
+    t,
+  ]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    },
+    [handleSubmit]
+  );
 
   const isDisabled = !currentProjectId || !draftPrompt.trim() || isGenerating;
 
@@ -265,48 +282,11 @@ export function ConversationInput() {
         </AnimatePresence>
 
         {/* Reference images preview */}
-        {referenceImages.length > 0 && !showImageUpload && (
-          <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-            <div className="flex gap-1">
-              {referenceImages.slice(0, 3).map((img, idx) => {
-                // Type safety check
-                const imageSrc =
-                  typeof img === 'string' ? `data:image/png;base64,${img}` : '';
-                if (!imageSrc) {
-                  console.error('Invalid image data at index', idx, img);
-                  return null;
-                }
-                return (
-                  <div
-                    key={idx}
-                    className="relative h-10 w-10 rounded overflow-hidden"
-                  >
-                    <img
-                      src={imageSrc}
-                      alt={`Reference ${idx + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                );
-              })}
-              {referenceImages.length > 3 && (
-                <div className="h-10 w-10 rounded bg-background/50 flex items-center justify-center text-xs text-muted-foreground">
-                  +{referenceImages.length - 3}
-                </div>
-              )}
-            </div>
-            <span className="text-sm text-muted-foreground flex-1">
-              {t('controls.referenceCount', { count: referenceImages.length })}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setReferenceImages([])}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+        {!showImageUpload && (
+          <ReferenceImagesPreview
+            images={referenceImages}
+            onRemove={() => setReferenceImages([])}
+          />
         )}
 
         {/* Main input area */}
@@ -338,39 +318,12 @@ export function ConversationInput() {
             rows={1}
           />
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 flex-shrink-0"
-              >
-                <Settings2 className="h-5 w-5" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-72">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    {t('controls.quality')}
-                  </label>
-                  <ImageQualitySelect
-                    value={imageQuality}
-                    onChange={setImageQuality}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    {t('controls.aspectRatio')}
-                  </label>
-                  <AspectRatioSelect
-                    value={aspectRatio}
-                    onChange={setAspectRatio}
-                  />
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+          <GenerationSettings
+            imageQuality={imageQuality}
+            aspectRatio={aspectRatio}
+            onImageQualityChange={setImageQuality}
+            onAspectRatioChange={setAspectRatio}
+          />
 
           <Button
             onClick={handleSubmit}

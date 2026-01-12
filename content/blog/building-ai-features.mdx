@@ -1,6 +1,6 @@
 ---
-title: "Building AI Features with MKSaaS"
-description: "Learn how to integrate AI image generation, implement credit systems, and build AI-powered features with MKSaaS."
+title: "Complete Guide to Arch AI Visualization"
+description: "Master Arch AI's rendering technology and learn the complete workflow from sketch to photorealistic visualization."
 image: /images/blog/post-4.png
 date: "2024-12-10"
 author: mksaas
@@ -9,135 +9,146 @@ categories:
 published: true
 ---
 
-MKSaaS includes a complete AI infrastructure for image generation. Here's how to use it.
+Arch AI uses advanced AI image generation technology optimized specifically for architectural visualization. This guide will help you maximize its capabilities.
 
-## AI Providers
+## AI Rendering Engine
 
-Three AI models are available out of the box:
+Arch AI uses the latest Gemini 3 Pro image model, optimized for architectural scenes:
 
-| Provider | Model | Credits | Best For |
-|----------|-------|---------|----------|
-| Forma AI | Gemini 2.0 | 1 | Quick previews |
-| Forma Pro | Gemini 2.0 | 3 | High quality |
-| Nano Banana Pro | Imagen 4 | 5 | Professional output |
+- **Material Understanding** - Accurately recognizes and renders wood, concrete, glass, metal, and other building materials
+- **Lighting Simulation** - Realistic daylight, artificial lighting, and ambient light effects
+- **Spatial Awareness** - Understands architectural proportions and spatial relationships
+- **Style Transfer** - Supports multiple architectural style renderings
 
-## Basic Usage
+## Workflow
 
-Generate images from any component:
+### Step 1: Prepare Reference Materials
 
-```typescript
-const response = await fetch('/api/generate-images', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    prompt: 'A modern minimalist living room',
-    modelId: 'forma-pro',
-  }),
-});
+High-quality reference materials significantly improve results:
 
-const { image, creditsUsed } = await response.json();
+**Sketch Requirements**
+- Clear lines with well-defined main structures
+- Use black lines on white or light backgrounds
+- Can include simple annotations
+
+**White Model Requirements**
+- Ensure complete model without broken surfaces
+- Choose appropriate viewing angle for screenshots
+- Can add simple environment (ground, sky)
+
+**Floor Plan Requirements**
+- Clear functional zone annotations
+- Include door and window positions
+- Correct scale proportions
+
+### Step 2: Write Description Prompts
+
+Good prompts are key to achieving ideal results:
+
+**Basic Structure**
+```
+[Building Type] + [Style] + [Materials] + [Environment] + [Atmosphere]
 ```
 
-## Using the Hook
-
-For a better developer experience:
-
-```typescript
-import { useArchGeneration } from '@/ai/image/hooks/use-arch-generation';
-
-function ImageGenerator() {
-  const { generate, isLoading, result } = useArchGeneration();
-
-  return (
-    <button onClick={() => generate({ prompt: 'Coffee shop', modelId: 'forma' })}>
-      {isLoading ? 'Generating...' : 'Generate'}
-    </button>
-  );
-}
+**Example**
+```
+Three-story modern villa, minimalist style,
+white concrete exterior with large floor-to-ceiling glass windows,
+surrounded by Japanese zen garden,
+warm golden light at dusk, professional architectural photography
 ```
 
-## Credit System
+**Prompt Tips**
 
-### Check Credits
+| Type | Good Examples | Bad Examples |
+|------|---------------|--------------|
+| Style | Modern minimalist, Neo-Chinese, Nordic | Nice, pretty |
+| Material | Exposed concrete, walnut veneer | Premium materials |
+| Lighting | Evening sidelight, overcast soft light | Brighter |
+| Angle | Eye-level perspective, aerial view | Good angle |
 
-```typescript
-import { hasEnoughCredits } from '@/credits/credits';
+### Step 3: Select Quality
 
-const canGenerate = await hasEnoughCredits({
-  userId: session.user.id,
-  requiredCredits: 5,
-});
+Choose quality based on use case:
+
+| Quality | Resolution | Generation Time | Recommended For |
+|---------|------------|-----------------|-----------------|
+| 1K | 1024px | ~10s | Quick preview, scheme comparison |
+| 2K | 2048px | ~20s | Presentations, web sharing |
+| 4K | 4096px | ~40s | Formal output, print |
+
+### Step 4: Iterate and Refine
+
+After initial generation, continue optimizing through conversation:
+
+```
+User: Change the exterior to warm wood finish
+AI: [Generates new rendering]
+
+User: Keep the wood but switch to darker walnut tone
+AI: [Generates new rendering]
+
+User: Great, now add some rooftop greenery
+AI: [Generates final rendering]
 ```
 
-### Consume Credits
+## Advanced Techniques
 
-```typescript
-import { consumeCredits } from '@/credits/credits';
+### Multi-Image References
 
-await consumeCredits({
-  userId: session.user.id,
-  amount: 5,
-  description: 'Image generation: forma-pro',
-});
+Upload multiple reference images for more precise results:
+
+- **Image 1** - Building mass (white model or sketch)
+- **Image 2** - Material reference (real photos)
+- **Image 3** - Atmosphere reference (preferred rendering style)
+
+### Aspect Ratios
+
+Choose appropriate aspect ratios:
+
+- **16:9** - Horizontal panorama, ideal for exterior views
+- **9:16** - Vertical composition, ideal for towers or lobbies
+- **1:1** - Square format, ideal for social media
+- **4:3** - Traditional ratio, ideal for print
+
+### Negative Prompts
+
+Describe elements you don't want:
+
+```
+Modern office building design, no traditional Chinese elements,
+avoid overly complex decoration, no exaggerated colors
 ```
 
-### Pricing
+## FAQ
 
-Configure pricing in `src/ai/image/lib/credit-costs.ts`:
+### Q: Why doesn't the result match expectations?
 
-```typescript
-export const CREDIT_COSTS = {
-  forma: 1,
-  'forma-pro': 3,
-  'nano-banana-pro': 5,
-};
-```
+- Check if prompts are specific enough
+- Ensure reference images are clear and well-defined
+- Try step-by-step descriptions, establish direction first then refine details
 
-## Advanced Options
+### Q: How to maintain consistent style across multiple images?
 
-```typescript
-await generate({
-  prompt: 'Modern office building',
-  modelId: 'nano-banana-pro',
-  aspectRatio: '16:9',
-  negativePrompt: 'blurry, low quality',
-});
-```
+- Use the same style description words
+- Maintain similar lighting and atmosphere settings
+- Generate consecutively in the same conversation
 
-Available aspect ratios: `1:1`, `16:9`, `9:16`, `4:3`, `3:4`.
+### Q: What if I run out of credits?
 
-## Security
-
-### Input Validation
-
-Prompts are validated automatically:
-
-- Maximum length: 4000 characters
-- Blocked patterns for prompt injection
-- Content filtering
-
-### Rate Limiting
-
-API endpoints are rate-limited to prevent abuse.
+- Preview with 1K quality first
+- Generate HD version only after satisfaction
+- Purchase credit packages for better value
 
 ## Best Practices
 
-1. **Always check credits** before generation
-2. **Handle errors gracefully** - AI services can fail
-3. **Show loading states** - generation takes time
-4. **Cache results** when appropriate
-5. **Monitor costs** using the credit system
+1. **Start broad, then refine** - Establish overall effect first, then adjust details
+2. **Save intermediate results** - Download satisfactory renderings promptly
+3. **Build a library** - Collect excellent references and prompt templates
+4. **Use conversation** - Break complex modifications into multiple descriptions
 
-## Adding More Models
+## Start Creating
 
-To add a new AI provider:
+With these techniques mastered, you're ready to create professional architectural visualizations with Arch AI.
 
-1. Add configuration in `src/ai/image/lib/provider-config.ts`
-2. Set pricing in `src/ai/image/lib/credit-costs.ts`
-3. Implement the generation logic in the API route
-
-## Documentation
-
-For complete API documentation, visit `/docs`.
-
-Questions? Join our [Discord](https://discord.gg/mksaas).
+Start now and let AI power your design expression.

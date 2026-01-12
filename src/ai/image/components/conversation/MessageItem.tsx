@@ -8,6 +8,12 @@ import {
   deleteMessage,
 } from '@/actions/project-message';
 import { generateImage } from '@/ai/image/lib/api-utils';
+import { parseErrorMessage } from '@/ai/image/lib/error-utils';
+import {
+  downloadImage,
+  getImageSrc,
+  shareImage,
+} from '@/ai/image/lib/image-display-utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,20 +37,12 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface MessageItemProps {
   message: ProjectMessageItem;
   isLast: boolean;
 }
-
-// 处理图片 URL：如果是 URL 直接使用，如果是 base64 则添加前缀
-const getImageSrc = (imageData: string) => {
-  if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
-    return imageData;
-  }
-  return `data:image/png;base64,${imageData}`;
-};
 
 export function MessageItem({ message, isLast }: MessageItemProps) {
   if (message.role === 'user') {
@@ -81,30 +79,6 @@ function UserMessage({ message }: { message: ProjectMessageItem }) {
   );
 }
 
-// 解析错误消息，返回用户友好的提示
-interface TranslationFunction {
-  (key: string, values?: Record<string, unknown>): string;
-}
-
-function parseErrorMessage(error: unknown, t: TranslationFunction): string {
-  if (!(error instanceof Error)) return t('errors.unexpected');
-
-  const msg = error.message.toLowerCase();
-  if (msg.includes('unauthorized') || msg.includes('sign in')) {
-    return t('errors.signInAgain');
-  }
-  if (msg.includes('insufficient credits') || msg.includes('credits')) {
-    return t('errors.insufficientCredits');
-  }
-  if (msg.includes('timeout') || msg.includes('timed out')) {
-    return t('errors.timeout');
-  }
-  if (msg.includes('network') || msg.includes('fetch')) {
-    return t('errors.network');
-  }
-  return error.message;
-}
-
 function AssistantMessage({
   message,
   isLast,
@@ -118,13 +92,13 @@ function AssistantMessage({
   const isGeneratingNow = message.status === 'generating';
   const t = useTranslations('ArchPage');
 
-  // 用于防止组件卸载后更新状态
+  // Prevent state updates after component unmount
   const isMountedRef = useRef(true);
 
   const { messages, addMessage, removeMessage, setGenerating, isGenerating } =
     useConversationStore();
 
-  // 组件卸载时清理
+  // Cleanup on component unmount
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -132,7 +106,7 @@ function AssistantMessage({
     };
   }, []);
 
-  // 获取失败消息对应的用户消息（上一条）
+  // Get the previous user message corresponding to a failed message
   const getPreviousUserMessage = () => {
     const messageIndex = messages.findIndex((m) => m.id === message.id);
     if (messageIndex <= 0) return null;
@@ -140,7 +114,7 @@ function AssistantMessage({
     return prevMessage?.role === 'user' ? prevMessage : null;
   };
 
-  // 创建助手消息的辅助函数
+  // Helper function to create assistant message
   const createAssistantMessage = async (
     success: boolean,
     result: { image?: string; error?: string; creditsUsed?: number },
@@ -175,7 +149,7 @@ function AssistantMessage({
     }
   };
 
-  // 重试生成
+  // Retry generation
   const handleRetry = async () => {
     if (isRetrying || isGenerating) return;
 
@@ -185,13 +159,13 @@ function AssistantMessage({
       return;
     }
 
-    // 解析原始生成参数
+    // Parse original generation parameters
     let params: GenerationParams | null = null;
     if (message.generationParams) {
       try {
         params = JSON.parse(message.generationParams) as GenerationParams;
       } catch {
-        // 使用默认参数
+        // Use default parameters
       }
     }
 
@@ -208,7 +182,7 @@ function AssistantMessage({
     setIsRetrying(true);
     setGenerating(true);
 
-    // 删除失败的消息 - 添加错误处理
+    // Delete failed message with error handling
     const deleteResult = await deleteMessage(message.id);
     if (!deleteResult.success) {
       logger.ai.error('Failed to delete failed message:', deleteResult.error);
@@ -223,7 +197,7 @@ function AssistantMessage({
     const startTime = Date.now();
 
     try {
-      // 重新生成图片
+      // Regenerate image
       const result = await generateImage({
         prompt,
         referenceImage: userMessage.inputImage || undefined,
@@ -232,7 +206,7 @@ function AssistantMessage({
         imageSize: imageQuality,
       });
 
-      // 检查组件是否仍然挂载
+      // Check if component is still mounted
       if (!isMountedRef.current) return;
 
       const generationTime = Date.now() - startTime;
@@ -249,10 +223,12 @@ function AssistantMessage({
         await createAssistantMessage(false, result, 0, genParams);
       }
     } catch (error) {
-      // 检查组件是否仍然挂载
+      // Check if component is still mounted
       if (!isMountedRef.current) return;
 
-      const errorMessage = parseErrorMessage(error, t as TranslationFunction);
+      const errorMessage = parseErrorMessage(error, (key: string) =>
+        t(key as never)
+      );
       logger.ai.error('Retry generation error:', error);
 
       await createAssistantMessage(
@@ -262,7 +238,7 @@ function AssistantMessage({
         genParams
       );
     } finally {
-      // 只在组件仍挂载时更新状态
+      // Only update state if component is still mounted
       if (isMountedRef.current) {
         setIsRetrying(false);
         setGenerating(false);
@@ -270,59 +246,27 @@ function AssistantMessage({
     }
   };
 
-  const handleDownload = async () => {
-    if (!message.outputImage) return;
-
-    const link = document.createElement('a');
-    // 如果是 URL，需要先下载再创建 blob URL
-    if (message.outputImage.startsWith('http')) {
-      try {
-        const response = await fetch(message.outputImage);
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        link.href = blobUrl;
-        link.download = `generation-${message.id}.png`;
-        link.click();
-        URL.revokeObjectURL(blobUrl);
-      } catch (error) {
-        logger.ai.error('Download failed:', error);
-      }
-    } else {
-      link.href = `data:image/png;base64,${message.outputImage}`;
-      link.download = `generation-${message.id}.png`;
-      link.click();
-    }
-  };
-
-  const handleShare = async () => {
+  // Download image
+  const handleDownload = useCallback(async () => {
     if (!message.outputImage) return;
 
     try {
-      // 获取图片 blob
-      let response: Response;
-      if (message.outputImage.startsWith('http')) {
-        response = await fetch(message.outputImage);
-      } else {
-        response = await fetch(`data:image/png;base64,${message.outputImage}`);
-      }
-      const blob = await response.blob();
-      const file = new File([blob], 'generation.png', { type: 'image/png' });
+      await downloadImage(message.outputImage, `generation-${message.id}.png`);
+    } catch (error) {
+      logger.ai.error('Download failed:', error);
+    }
+  }, [message.outputImage, message.id]);
 
-      if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: t('canvas.shareTitle'),
-        });
-      } else {
-        // Fallback: copy to clipboard
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blob }),
-        ]);
-      }
+  // Share image
+  const handleShare = useCallback(async () => {
+    if (!message.outputImage) return;
+
+    try {
+      await shareImage(message.outputImage, t('canvas.shareTitle'));
     } catch (error) {
       logger.ai.error('Share failed:', error);
     }
-  };
+  }, [message.outputImage, t]);
 
   return (
     <div className="flex gap-3">

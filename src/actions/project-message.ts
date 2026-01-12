@@ -85,10 +85,7 @@ export async function getProjectMessages(projectId: string) {
  * Get single message status - optimized for polling
  * Only returns minimal data needed for status check
  */
-export async function getMessageStatus(
-  projectId: string,
-  messageId: string
-) {
+export async function getMessageStatus(projectId: string, messageId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
     return { success: false, error: 'Unauthorized' };

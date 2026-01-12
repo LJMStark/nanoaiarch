@@ -111,7 +111,7 @@ export function ConversationLayout() {
       if (result.success) {
         setMessages(result.data);
 
-        // 检查是否有正在生成的消息，恢复生成状态
+        // Check for generating messages and restore generation state
         const generatingMessage = result.data.find(
           (msg) => msg.role === 'assistant' && msg.status === 'generating'
         );
@@ -123,7 +123,13 @@ export function ConversationLayout() {
     };
 
     loadMessages();
-  }, [currentProjectId, setMessages, setLoadingMessages, setCurrentProject, setGenerating]);
+  }, [
+    currentProjectId,
+    setMessages,
+    setLoadingMessages,
+    setCurrentProject,
+    setGenerating,
+  ]);
 
   return (
     <>

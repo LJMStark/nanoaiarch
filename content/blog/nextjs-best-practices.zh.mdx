@@ -1,6 +1,6 @@
 ---
-title: "使用 Next.js 15 构建生产级应用"
-description: "使用 Next.js 15、Server Components 和 App Router 构建生产级应用的实用模式和最佳实践。"
+title: "建筑可视化的最佳实践"
+description: "从草图到照片级效果图：专业建筑师和设计师分享的 AI 可视化技巧和工作流程。"
 image: /images/blog/post-3.png
 date: "2024-12-15"
 author: fox
@@ -9,225 +9,217 @@ categories:
 published: true
 ---
 
-Next.js 15 改变了我们构建 React 应用的方式。以下是我们在 MKSaaS 中用于创建快速、可维护生产级应用的模式。
+AI 建筑可视化正在改变设计师的工作方式。本文汇集了专业建筑师在使用 Arch AI 时总结的最佳实践。
 
-## 默认使用 Server Components
+## 素材准备
 
-Server Components 减少客户端 JavaScript 并提升性能。用于：
+### 草图的黄金法则
 
-- 从数据库获取数据
-- 在服务器保存敏感令牌
-- 减少打包体积
+好的草图是获得优质效果图的基础：
 
-```typescript
-// Server Component（默认）
-async function ProductList() {
-  const products = await db.products.findMany();
-  return (
-    <ul>
-      {products.map((p) => (
-        <li key={p.id}>{p.name}</li>
-      ))}
-    </ul>
-  );
-}
+**线条处理**
+- 使用清晰的黑色线条
+- 主要结构线条加粗
+- 辅助线条保持细腻
+- 避免过多涂改痕迹
+
+**构图建议**
+- 选择最能表达设计意图的视角
+- 保持适当的留白
+- 重要元素居中或遵循三分法
+- 考虑最终效果图的画幅比例
+
+**标注技巧**
+- 简单的材质标注有助于 AI 理解
+- 可以标注大致的尺寸比例
+- 用文字说明特殊的设计意图
+
+### 白模的最佳实践
+
+从 3D 软件导出白模时：
+
+| 软件 | 推荐设置 | 注意事项 |
+|------|----------|----------|
+| SketchUp | 风格设为"隐藏线" | 关闭阴影获得更干净的轮廓 |
+| Rhino | 使用"Arctic"显示模式 | 确保曲面完整无破面 |
+| Revit | 隐藏所有标注和标签 | 选择合适的详细程度 |
+| Blender | Eevee渲染白色材质 | 添加简单的环境光 |
+
+**视角选择**
+- 人视点高度约 1.6m
+- 保持适当的透视感
+- 避免极端的广角或长焦效果
+- 确保主要建筑元素完整入画
+
+## 提示词技巧
+
+### 结构化描述
+
+按照以下顺序组织你的提示词：
+
+```
+1. 建筑类型和规模
+2. 建筑风格
+3. 主要材质
+4. 环境和场景
+5. 光线和氛围
+6. 摄影风格
 ```
 
-仅在需要时使用 Client Components：
+**完整示例**
 
-- 带事件处理器的交互 UI
-- 浏览器 API（localStorage、window）
-- React hooks（useState、useEffect）
-
-```typescript
-'use client';
-
-function Counter() {
-  const [count, setCount] = useState(0);
-  return <button onClick={() => setCount(count + 1)}>{count}</button>;
-}
+```
+两层现代住宅，
+极简主义风格，清水混凝土外墙搭配大面积玻璃幕墙，
+位于山坡上，周围是针叶林，
+傍晚时分的金色阳光从侧面照入，
+专业建筑摄影，广角镜头，高清晰度
 ```
 
-## 数据获取
+### 风格词汇库
 
-并行获取数据避免瀑布式请求：
+积累常用的风格描述词：
 
-```typescript
-async function Dashboard() {
-  const [user, posts, analytics] = await Promise.all([
-    getUser(),
-    getPosts(),
-    getAnalytics(),
-  ]);
+**建筑风格**
+- 现代简约 / 极简主义 / 包豪斯
+- 新中式 / 禅意 / 侘寂
+- 北欧风 / 斯堪的纳维亚
+- 工业风 / Loft / 后现代
+- 地中海 / 托斯卡纳 / 殖民地风格
 
-  return <DashboardView user={user} posts={posts} analytics={analytics} />;
-}
+**材质描述**
+- 清水混凝土 / 肌理混凝土 / 预制混凝土
+- 胡桃木 / 橡木 / 雪松 / 竹材
+- 超白玻璃 / 磨砂玻璃 / Low-E玻璃
+- 科尔顿钢板 / 阳极氧化铝 / 铜板
+
+**氛围描述**
+- 黄昏暖光 / 蓝调时刻 / 正午烈日
+- 阴天柔光 / 晨雾弥漫 / 雨后清新
+- 温馨舒适 / 冷峻现代 / 宁静禅意
+
+## 工作流程
+
+### 方案探索阶段
+
+快速生成多个方向：
+
+1. 使用 1K 画质节省时间
+2. 每次尝试不同的风格方向
+3. 保存有潜力的版本
+4. 收集客户反馈
+
+### 方案深化阶段
+
+确定方向后深入细节：
+
+1. 切换到 2K 画质
+2. 在对话中逐步优化细节
+3. 尝试不同的材质搭配
+4. 调整光线和氛围
+
+### 正式出图阶段
+
+最终效果的打磨：
+
+1. 使用 4K 画质
+2. 确保每个细节都符合预期
+3. 生成多个视角
+4. 导出高分辨率文件
+
+## 常见场景处理
+
+### 室内空间
+
+室内效果图的特殊技巧：
+
+- 明确描述空间功能（客厅、卧室、办公室）
+- 指定主要的家具风格
+- 注意描述光源位置（窗户、灯具）
+- 考虑软装配饰的风格
+
+```
+现代简约风格的开放式客厅，
+3.5米层高，落地窗朝向花园，
+灰色布艺沙发搭配胡桃木茶几，
+午后阳光从窗户洒入，温馨舒适的氛围
 ```
 
-对于顺序数据（当一个请求依赖另一个时）：
+### 夜景效果
 
-```typescript
-async function Profile({ userId }: { userId: string }) {
-  const user = await getUser(userId);
-  const posts = await getUserPosts(user.id);
-  return <ProfileView user={user} posts={posts} />;
-}
+夜景渲染的要点：
+
+- 强调建筑的灯光效果
+- 描述室内透出的光线
+- 考虑景观照明
+- 注意天空的处理
+
+```
+现代别墅夜景，
+室内暖黄色灯光透过玻璃幕墙，
+庭院有地埋灯勾勒出景观轮廓，
+深蓝色的夜空，远处城市灯火隐约可见
 ```
 
-## Server Actions
+### 鸟瞰效果
 
-使用 Server Actions 处理表单提交和变更：
+鸟瞰图的注意事项：
 
-```typescript
-'use server';
+- 说明视角高度和角度
+- 描述周边环境
+- 注意建筑群的整体关系
+- 考虑景观和道路
 
-import { z } from 'zod';
-
-const schema = z.object({
-  email: z.string().email(),
-  message: z.string().min(10).max(1000),
-});
-
-export async function submitForm(formData: FormData) {
-  const result = schema.safeParse({
-    email: formData.get('email'),
-    message: formData.get('message'),
-  });
-
-  if (!result.success) {
-    return { error: '输入无效' };
-  }
-
-  // 处理验证后的数据
-}
+```
+住宅区鸟瞰效果图，
+45度俯视角度，高度约100米，
+12栋错落布置的现代住宅楼，
+中央有景观公园和人工湖，
+周边是城市道路和商业配套
 ```
 
-## 错误处理
+## 质量把控
 
-使用 `error.tsx` 创建错误边界：
+### 检查清单
 
-```typescript
-'use client';
+生成效果图后确认：
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error;
-  reset: () => void;
-}) {
-  return (
-    <div>
-      <h2>出错了！</h2>
-      <button onClick={() => reset()}>重试</button>
-    </div>
-  );
-}
-```
+- [ ] 建筑比例是否正确
+- [ ] 材质表现是否符合预期
+- [ ] 光影关系是否合理
+- [ ] 环境元素是否协调
+- [ ] 整体氛围是否到位
 
-使用 `not-found.tsx` 处理 404：
+### 常见问题修复
 
-```typescript
-export default function NotFound() {
-  return (
-    <div>
-      <h2>页面未找到</h2>
-      <Link href="/">返回首页</Link>
-    </div>
-  );
-}
-```
+| 问题 | 解决方案 |
+|------|----------|
+| 比例失真 | 在提示词中明确建筑尺度 |
+| 材质不对 | 使用更具体的材质描述词 |
+| 光线怪异 | 指定具体的时间和方向 |
+| 细节模糊 | 提升画质或分步生成 |
 
-## 性能
+## 效率提升
 
-### 图像优化
+### 建立模板库
 
-始终使用 Next.js Image 组件：
+为常用场景创建提示词模板：
 
-```typescript
-import Image from 'next/image';
+- 住宅类（别墅、公寓、联排）
+- 商业类（办公楼、商场、酒店）
+- 公建类（学校、医院、文化中心）
+- 景观类（公园、广场、庭院）
 
-function Hero() {
-  return (
-    <Image
-      src="/hero.jpg"
-      alt="Hero"
-      width={1200}
-      height={600}
-      priority
-      placeholder="blur"
-    />
-  );
-}
-```
+### 快捷键使用
 
-### 动态导入
+熟练使用平台功能：
 
-仅在需要时加载重型组件：
+- 复制上一次的提示词快速修改
+- 使用收藏功能保存满意的效果
+- 批量下载项目中的所有图片
 
-```typescript
-import dynamic from 'next/dynamic';
+## 总结
 
-const Chart = dynamic(() => import('@/components/chart'), {
-  loading: () => <ChartSkeleton />,
-  ssr: false,
-});
-```
+AI 建筑可视化是工具，创意仍然来自设计师。掌握这些技巧，让 Arch AI 成为你高效表达设计的得力助手。
 
-### 缓存
-
-为数据配置重新验证：
-
-```typescript
-export const revalidate = 3600; // 1 小时
-
-async function PricingPage() {
-  const prices = await fetch('https://api.stripe.com/prices', {
-    next: { revalidate: 3600 },
-  });
-  // ...
-}
-```
-
-## 安全
-
-### 环境变量
-
-服务器专用变量永远不会暴露给客户端：
-
-```bash
-# 仅服务器（安全）
-DATABASE_URL="postgresql://..."
-STRIPE_SECRET_KEY="sk_..."
-
-# 客户端暴露（前缀 NEXT_PUBLIC_）
-NEXT_PUBLIC_API_URL="https://api.example.com"
-```
-
-### 输入验证
-
-始终在边界验证：
-
-```typescript
-import { z } from 'zod';
-
-const schema = z.object({
-  name: z.string().min(1).max(100),
-  email: z.string().email(),
-});
-
-export async function createUser(formData: FormData) {
-  const data = schema.parse(Object.fromEntries(formData));
-  // 安全使用 data
-}
-```
-
-## 关键要点
-
-1. 默认使用 Server Components
-2. 尽可能并行获取数据
-3. 使用 Zod 验证所有输入
-4. 优雅处理错误
-5. 优化图像并懒加载重型组件
-
-这些模式正是驱动 MKSaaS 的核心。用它们构建更好的 Next.js 应用。
+持续实践，不断总结，你会发现自己的效果图质量越来越高。

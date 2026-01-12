@@ -2,7 +2,7 @@ import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
 /**
- * 图片 URL/Base64 格式检测和转换
+ * Image URL/Base64 format detection and conversion
  */
 export function getImageSrc(imageData: string): string {
   return imageData.startsWith('http://') || imageData.startsWith('https://')
@@ -11,45 +11,45 @@ export function getImageSrc(imageData: string): string {
 }
 
 /**
- * 验证是否为有效的 base64 字符串
- * 改进的验证逻辑：检查长度、填充和字符集
+ * Validate whether string is valid base64
+ * Improved validation: checks length, padding, and character set
  */
 export function isValidBase64(str: string): boolean {
   if (!str || str.length < 100) return false;
 
-  // Base64 字符串长度必须是 4 的倍数
+  // Base64 string length must be multiple of 4
   if (str.length % 4 !== 0) return false;
 
-  // 验证字符集：只允许 A-Z, a-z, 0-9, +, / 和最多2个 = 填充
+  // Validate character set: only A-Z, a-z, 0-9, +, / and up to 2 padding =
   const base64Pattern = /^[A-Za-z0-9+/]+={0,2}$/;
   return base64Pattern.test(str);
 }
 
 /**
- * 验证是否为安全的图片 URL
- * 使用白名单机制，只允许特定域名
+ * Validate whether URL is a safe image URL
+ * Uses allowlist mechanism, only permitting specific domains
  */
 export function isValidImageUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
 
-    // 只允许 HTTPS 协议
+    // Only allow HTTPS protocol
     if (parsed.protocol !== 'https:') {
       logger.ai.warn('[Image Utils] Rejected non-HTTPS URL', { url });
       return false;
     }
 
-    // URL 白名单：允许的图片域名
+    // URL allowlist: permitted image domains
     const allowedDomains = [
       'dmiapi.com',
       'duomiapi.com',
-      'cloudfront.net', // AWS CloudFront CDN (Duomi 备用)
+      'cloudfront.net', // AWS CloudFront CDN (Duomi backup)
       'replicate.delivery',
       'oaidalleapiprodscus.blob.core.windows.net', // OpenAI DALL-E
       'cdn.openai.com',
     ];
 
-    // 检查域名是否在白名单中（支持子域名）
+    // Check if domain is in allowlist (supports subdomains)
     const isAllowed = allowedDomains.some(
       (domain) =>
         parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`)
@@ -69,16 +69,16 @@ export function isValidImageUrl(url: string): boolean {
 }
 
 /**
- * 从 API 响应中安全提取图片数据
- * 支持字符串和对象格式，并进行验证
+ * Safely extract image data from API response
+ * Supports string and object formats with validation
  */
 export function extractImageData(rawImage: unknown): string {
-  // 处理字符串格式
+  // Handle string format
   if (typeof rawImage === 'string') {
     return validateAndReturnImage(rawImage);
   }
 
-  // 处理对象格式
+  // Handle object format
   if (typeof rawImage === 'object' && rawImage !== null) {
     const obj = rawImage as Record<string, unknown>;
     const imageData =
@@ -100,27 +100,27 @@ export function extractImageData(rawImage: unknown): string {
 }
 
 /**
- * 验证并返回图片数据
- * 内部辅助函数
+ * Validate and return image data
+ * Internal helper function
  */
 function validateAndReturnImage(imageData: string): string {
   if (!imageData || !imageData.trim()) {
     throw new Error('Empty image data');
   }
 
-  // 检查是否为 URL
+  // Check if URL
   const isUrl =
     imageData.startsWith('http://') || imageData.startsWith('https://');
 
   if (isUrl) {
-    // 验证 URL 安全性
+    // Validate URL security
     if (!isValidImageUrl(imageData)) {
       throw new Error('Image URL failed security validation');
     }
     return imageData;
   }
 
-  // 检查是否为有效的 Base64
+  // Check if valid Base64
   if (!isValidBase64(imageData)) {
     throw new Error('Invalid base64 image data');
   }
@@ -129,8 +129,8 @@ function validateAndReturnImage(imageData: string): string {
 }
 
 /**
- * Fetch 超时包装器
- * 为 fetch 请求添加超时控制
+ * Fetch timeout wrapper
+ * Adds timeout control to fetch requests
  */
 export async function fetchWithTimeout(
   url: string,
@@ -157,11 +157,11 @@ export async function fetchWithTimeout(
 }
 
 // ============================================
-// Zod 验证 Schema
+// Zod Validation Schemas
 // ============================================
 
 /**
- * 图片生成参数验证 Schema
+ * Image generation parameters validation schema
  */
 export const generateImageParamsSchema = z.object({
   prompt: z
@@ -188,7 +188,7 @@ export const generateImageParamsSchema = z.object({
 });
 
 /**
- * 图片编辑参数验证 Schema
+ * Image editing parameters validation schema
  */
 export const editImageParamsSchema = z.object({
   prompt: z
@@ -223,7 +223,7 @@ export const editImageParamsSchema = z.object({
 });
 
 /**
- * 类型安全的参数验证辅助函数
+ * Type-safe parameter validation helper functions
  */
 export function validateGenerateImageParams<T>(
   params: T

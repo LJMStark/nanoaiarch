@@ -15,31 +15,31 @@ import {
   type ProviderKey,
 } from '../lib/provider-config';
 
-// Credits 错误类型
+// Credit error types for API responses
 type CreditErrorType = 'unauthorized' | 'insufficient_credits' | 'other';
 
 interface UseImageGenerationReturn {
-  // 生成结果
+  // Generation results
   image: ImageResult | null;
   error: ImageError | null;
   timing: ProviderTiming | null;
   isLoading: boolean;
   activePrompt: string;
 
-  // 模式和模型
+  // Mode and model
   mode: ImageMode;
   selectedModel: GeminiModelId;
 
-  // 编辑相关
+  // Edit-related state
   referenceImage: string | null;
   conversationHistory: ConversationMessage[];
   editHistory: EditHistoryItem[];
 
-  // Credits 相关
+  // Credits-related state
   lastCreditsUsed: number | null;
   creditErrorType: CreditErrorType | null;
 
-  // 操作方法
+  // Actions
   setMode: (mode: ImageMode) => void;
   setSelectedModel: (model: GeminiModelId) => void;
   setReferenceImage: (image: string | null) => void;
@@ -50,38 +50,40 @@ interface UseImageGenerationReturn {
   selectHistoryItem: (item: EditHistoryItem) => void;
 }
 
-// 生成唯一 ID
-const generateId = () => Math.random().toString(36).substring(2, 9);
+// Generate unique ID
+function generateId(): string {
+  return Math.random().toString(36).substring(2, 9);
+}
 
-// 对话历史最大长度限制（防止内存溢出）
+// Maximum conversation history length to prevent memory overflow
 const MAX_CONVERSATION_HISTORY = 10;
 
 export function useImageGeneration(): UseImageGenerationReturn {
-  // 基础状态
+  // Core state
   const [image, setImage] = useState<ImageResult | null>(null);
   const [error, setError] = useState<ImageError | null>(null);
   const [timing, setTiming] = useState<ProviderTiming | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activePrompt, setActivePrompt] = useState('');
 
-  // 模式和模型
+  // Mode and model state
   const [mode, setMode] = useState<ImageMode>('generate');
   const [selectedModel, setSelectedModel] =
     useState<GeminiModelId>(DEFAULT_MODEL);
 
-  // 编辑相关
+  // Edit-related state
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [conversationHistory, setConversationHistory] = useState<
     ConversationMessage[]
   >([]);
   const [editHistory, setEditHistory] = useState<EditHistoryItem[]>([]);
 
-  // Credits 相关
+  // Credits state
   const [lastCreditsUsed, setLastCreditsUsed] = useState<number | null>(null);
   const [creditErrorType, setCreditErrorType] =
     useState<CreditErrorType | null>(null);
 
-  // 重置状态
+  // Reset all state to initial values
   const resetState = useCallback(() => {
     setImage(null);
     setError(null);
@@ -93,12 +95,12 @@ export function useImageGeneration(): UseImageGenerationReturn {
     setCreditErrorType(null);
   }, []);
 
-  // 清除编辑历史
+  // Clear edit history
   const clearEditHistory = useCallback(() => {
     setEditHistory([]);
   }, []);
 
-  // 选择历史记录项
+  // Select a history item and set it as reference
   const selectHistoryItem = useCallback((item: EditHistoryItem) => {
     setReferenceImage(item.afterImage);
     setImage({
@@ -107,7 +109,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
     });
   }, []);
 
-  // 生成图像（文本到图像）
+  // Generate image from text prompt
   const generateImage = useCallback(
     async (prompt: string) => {
       setActivePrompt(prompt);
@@ -135,7 +137,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           creditsUsed?: number;
         };
 
-        // 处理特定的错误状态码
+        // Handle specific error status codes
         if (response.status === 401) {
           setCreditErrorType('unauthorized');
           throw new Error(data.error || 'Please sign in to generate images');
@@ -164,7 +166,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
         });
 
         if (data.image) {
-          // 记录消耗的 credits
+          // Record credits used
           if (data.creditsUsed) {
             setLastCreditsUsed(data.creditsUsed);
           }
@@ -176,7 +178,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
             text: data.text,
           });
 
-          // 如果是编辑模式，添加到编辑历史
+          // In edit mode, add to edit history
           if (mode === 'edit' && referenceImage) {
             setEditHistory((prev) => [
               {
@@ -188,7 +190,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
               },
               ...prev,
             ]);
-            // 更新参考图像为新生成的图像
+            // Update reference image to newly generated image
             setReferenceImage(data.image);
           }
         } else {
@@ -209,7 +211,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
     [selectedModel, mode, referenceImage]
   );
 
-  // 编辑图像（对话式编辑）
+  // Edit image using conversational approach
   const editImage = useCallback(
     async (prompt: string) => {
       if (!referenceImage) {
@@ -229,7 +231,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
       const startTime = Date.now();
       setTiming({ startTime });
 
-      // 添加用户消息到对话历史
+      // Add user message to conversation history
       const userMessage: ConversationMessage = {
         id: generateId(),
         role: 'user',
@@ -261,7 +263,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           creditsUsed?: number;
         };
 
-        // 处理特定的错误状态码
+        // Handle specific error status codes
         if (response.status === 401) {
           setCreditErrorType('unauthorized');
           throw new Error(data.error || 'Please sign in to edit images');
@@ -290,12 +292,12 @@ export function useImageGeneration(): UseImageGenerationReturn {
         });
 
         if (data.image) {
-          // 记录消耗的 credits
+          // Record credits used
           if (data.creditsUsed) {
             setLastCreditsUsed(data.creditsUsed);
           }
 
-          // 添加模型响应到对话历史
+          // Add model response to conversation history
           const modelMessage: ConversationMessage = {
             id: generateId(),
             role: 'model',
@@ -312,7 +314,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
             text: data.text,
           });
 
-          // 添加到编辑历史
+          // Add to edit history
           setEditHistory((prev) => [
             {
               id: generateId(),
@@ -324,7 +326,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
             ...prev,
           ]);
 
-          // 更新参考图像
+          // Update reference image
           setReferenceImage(data.image);
         } else {
           throw new Error('No image in response');
@@ -336,7 +338,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           message:
             err instanceof Error ? err.message : 'An unexpected error occurred',
         });
-        // 移除失败的用户消息
+        // Remove failed user message
         setConversationHistory(conversationHistory);
       } finally {
         setIsLoading(false);
@@ -346,27 +348,27 @@ export function useImageGeneration(): UseImageGenerationReturn {
   );
 
   return {
-    // 生成结果
+    // Generation results
     image,
     error,
     timing,
     isLoading,
     activePrompt,
 
-    // 模式和模型
+    // Mode and model
     mode,
     selectedModel,
 
-    // 编辑相关
+    // Edit-related state
     referenceImage,
     conversationHistory,
     editHistory,
 
-    // Credits 相关
+    // Credits state
     lastCreditsUsed,
     creditErrorType,
 
-    // 操作方法
+    // Actions
     setMode,
     setSelectedModel,
     setReferenceImage,

@@ -1,6 +1,6 @@
 ---
-title: "Introducing MKSaaS v2.0"
-description: "AI image generation, enhanced authentication, and a powerful credit system. Here's what's new in MKSaaS v2.0."
+title: "Arch AI New Features: Conversational Editing & Project Management"
+description: "Major Arch AI update: New conversational editing experience, project management system, and generation state recovery for more efficient visualization."
 image: /images/blog/post-2.png
 date: "2024-12-18"
 author: mkdirs
@@ -9,101 +9,127 @@ categories:
 published: true
 ---
 
-MKSaaS v2.0 is here. This release focuses on AI capabilities, better monetization tools, and improved developer experience.
+We're excited to announce a major update to Arch AI! This release brings a completely new conversational editing experience and project management system to make your architectural visualization workflow smoother.
 
-## What's New
+## Feature Highlights
 
-### AI Image Generation
+### 🗣️ Conversational Editing
 
-Generate images directly from your dashboard using multiple AI providers:
+Say goodbye to single-generation limitations. Now you can continuously refine your renderings like chatting with a design assistant:
 
-| Provider | Model | Use Case |
-|----------|-------|----------|
-| Forma AI | Gemini 2.0 | Fast generation |
-| Forma Pro | Gemini 2.0 | High quality output |
-| Nano Banana Pro | Imagen 4 | Professional results |
+**Workflow Example**
 
-```typescript
-const response = await fetch('/api/generate-images', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    prompt: 'A modern workspace',
-    modelId: 'forma-pro',
-  }),
-});
+```
+You: A modern minimalist three-story villa with white exterior
+
+AI: [Generates initial draft]
+
+You: Change the roof to flat and add a terrace
+
+AI: [Modifies based on previous image]
+
+You: Add a swimming pool in the front yard
+
+AI: [Continues refining]
+
+You: Perfect! Change the sky to warm sunset tones
+
+AI: [Final rendering]
 ```
 
-### Credit System
+Each conversation builds on the previous result, making iteration easier than ever.
 
-Monetize AI features with a flexible credit system:
+### 📁 Project Management
 
-- **Predefined packages** - One-time credit purchases
-- **Subscription bonuses** - Monthly credits for subscribers
-- **Usage tracking** - Monitor consumption per user
-- **Pay-per-use pricing** - Different costs per model
+All generation records are automatically organized into projects, allowing you to:
 
-```typescript
-// Check if user has enough credits
-const hasCredits = await hasEnoughCredits({
-  userId,
-  requiredCredits: 5,
-});
+- **Track Progress** - View the complete evolution of each design concept
+- **Compare Versions** - Side-by-side viewing of different stages
+- **Quick Rollback** - Return to any previous satisfactory version to continue editing
+- **Batch Export** - One-click download of all renderings in a project
 
-// Deduct credits after generation
-await consumeCredits({
-  userId,
-  amount: 5,
-  description: 'Image generation',
-});
-```
+### 🔄 Generation State Recovery
 
-### Enhanced Authentication
+Accidentally close the browser or lose network connection? Don't worry:
 
-- **Google OAuth** - One-click social login
-- **GitHub OAuth** - Developer-friendly authentication
-- **Email verification** - Confirm user email addresses
-- **Password reset** - Self-service recovery
+- Automatic progress saving
+- Auto-recovery when reopening
+- No work in progress will be lost
+- No duplicate charges
 
-### Performance Improvements
+### 📱 Multi-Image Reference Upload
 
-- 40% faster initial page load
-- Optimized database queries
-- Better caching strategy
-- Lazy loading for heavy components
+Now supports uploading multiple reference images simultaneously:
 
-## Breaking Changes
+| Type | Purpose | Limit |
+|------|---------|-------|
+| Mass Reference | Building form and spatial relationships | 1-2 images |
+| Material Reference | Material texture and color | 1-3 images |
+| Style Reference | Overall atmosphere and style | 1-2 images |
 
-### Database Migration
+AI comprehensively understands all reference images to generate renderings that combine the best of each.
 
-Run migrations to update your database:
+## Interface Improvements
 
-```bash
-pnpm db:migrate
-```
+### New Creation Interface
 
-### API Endpoint Changes
+- **Larger Preview Area** - Clearer rendering display
+- **Sidebar Organization** - Neatly categorized settings and history
+- **Quick Actions** - One-click access to common features
+- **Dark Mode** - Protect your eyes, focus on design
 
-Image generation endpoint renamed:
+### Smart Suggestions
 
-```diff
-- POST /api/generate-image
-+ POST /api/generate-images
-```
+The input box intelligently recommends based on your references and history:
 
-## Upgrade Guide
+- Common style descriptions
+- Matching material suggestions
+- Suitable lighting atmospheres
+- Popular aspect ratios
 
-1. Backup your database
-2. Update dependencies: `pnpm update`
-3. Run migrations: `pnpm db:migrate`
-4. Update environment variables (see `env.example`)
-5. Test before deploying
+## Performance Improvements
 
-## What's Next
+### Faster Generation Speed
 
-v2.1 will include:
-- Video generation capabilities
-- Advanced analytics dashboard
-- Team collaboration features
+| Quality | Before | Now | Improvement |
+|---------|--------|-----|-------------|
+| 1K | ~15s | ~10s | 33% |
+| 2K | ~30s | ~20s | 33% |
+| 4K | ~60s | ~40s | 33% |
 
-Feedback? Join the [Discord](https://discord.gg/mksaas) or contribute on [GitHub](https://github.com/mksaas/mksaas-template).
+### More Stable Service
+
+- Optimized server architecture
+- Added automatic failure recovery
+- Improved response speed during peak hours
+
+## Usage Tips
+
+### Maximize Conversational Editing
+
+1. **Establish Direction First** - Use first generation to set overall style
+2. **Step-by-Step Modifications** - Change only one or two elements at a time
+3. **Leverage Context** - AI remembers previous conversation content
+4. **Be Specific** - Use concrete position descriptions like "the window on the left"
+
+### Efficient Project Management
+
+1. **Separate by Scheme** - Manage different design concepts in separate projects
+2. **Name Promptly** - Give projects meaningful names
+3. **Mark Important Versions** - Favorite satisfactory renderings
+4. **Regular Cleanup** - Delete unneeded test images
+
+## Coming Soon
+
+We're developing more exciting features:
+
+- **Style Template Library** - One-click apply professional designer style presets
+- **Batch Generation** - Automatically generate multiple viewpoints for the same scheme
+- **Video Walkthrough** - Generate architectural walkthrough animations from renderings
+- **Team Collaboration** - Share projects and comments with colleagues
+
+## Start Experiencing
+
+Log in to Arch AI now to experience the new conversational editing and project management features.
+
+Have feedback or suggestions? We're always listening to help us build a better architectural visualization tool.
