@@ -1,24 +1,19 @@
-import { websiteConfig } from '@/config/website';
-import { StripeProvider } from './provider/stripe';
 import { ZpayProvider } from './provider/zpay';
 import type {
   CheckoutResult,
   CreateCheckoutParams,
   CreateCreditCheckoutParams,
-  CreatePortalParams,
   PaymentProvider,
-  PortalResult,
 } from './types';
 
 /**
- * Global payment provider instance
+ * Global payment provider instance (Zpay only)
  */
 let paymentProvider: PaymentProvider | null = null;
 
 /**
  * Get the payment provider
  * @returns current payment provider instance
- * @throws Error if provider is not initialized
  */
 export const getPaymentProvider = (): PaymentProvider => {
   if (!paymentProvider) {
@@ -28,19 +23,12 @@ export const getPaymentProvider = (): PaymentProvider => {
 };
 
 /**
- * Initialize the payment provider
+ * Initialize the payment provider (Zpay only)
  * @returns initialized payment provider
  */
 export const initializePaymentProvider = (): PaymentProvider => {
   if (!paymentProvider) {
-    const provider = websiteConfig.payment.provider;
-    if (provider === 'stripe') {
-      paymentProvider = new StripeProvider();
-    } else if (provider === 'zpay') {
-      paymentProvider = new ZpayProvider();
-    } else {
-      throw new Error(`Unsupported payment provider: ${provider}`);
-    }
+    paymentProvider = new ZpayProvider();
   }
   return paymentProvider;
 };
@@ -67,18 +55,6 @@ export const createCreditCheckout = async (
 ): Promise<CheckoutResult> => {
   const provider = getPaymentProvider();
   return provider.createCreditCheckout(params);
-};
-
-/**
- * Create a customer portal session
- * @param params Parameters for creating the portal
- * @returns Portal result
- */
-export const createCustomerPortal = async (
-  params: CreatePortalParams
-): Promise<PortalResult> => {
-  const provider = getPaymentProvider();
-  return provider.createCustomerPortal(params);
 };
 
 /**
