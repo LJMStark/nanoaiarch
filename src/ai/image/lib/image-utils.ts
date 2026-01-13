@@ -26,6 +26,36 @@ export function isValidBase64(str: string): boolean {
 }
 
 /**
+ * Build the allowed domains list dynamically
+ * Includes static domains and user-configured storage domain
+ */
+function getAllowedImageDomains(): string[] {
+  const staticDomains = [
+    'dmiapi.com',
+    'duomiapi.com',
+    'cloudfront.net', // AWS CloudFront CDN (Duomi backup)
+    'replicate.delivery',
+    'oaidalleapiprodscus.blob.core.windows.net', // OpenAI DALL-E
+    'cdn.openai.com',
+  ];
+
+  // Add user-configured storage domain if present
+  const storagePublicUrl = process.env.STORAGE_PUBLIC_URL;
+  if (storagePublicUrl) {
+    try {
+      const storageDomain = new URL(storagePublicUrl).hostname;
+      if (storageDomain && !staticDomains.includes(storageDomain)) {
+        staticDomains.push(storageDomain);
+      }
+    } catch {
+      // Invalid URL, skip
+    }
+  }
+
+  return staticDomains;
+}
+
+/**
  * Validate whether URL is a safe image URL
  * Uses allowlist mechanism, only permitting specific domains
  */
@@ -39,15 +69,8 @@ export function isValidImageUrl(url: string): boolean {
       return false;
     }
 
-    // URL allowlist: permitted image domains
-    const allowedDomains = [
-      'dmiapi.com',
-      'duomiapi.com',
-      'cloudfront.net', // AWS CloudFront CDN (Duomi backup)
-      'replicate.delivery',
-      'oaidalleapiprodscus.blob.core.windows.net', // OpenAI DALL-E
-      'cdn.openai.com',
-    ];
+    // URL allowlist: permitted image domains (built dynamically)
+    const allowedDomains = getAllowedImageDomains();
 
     // Check if domain is in allowlist (supports subdomains)
     const isAllowed = allowedDomains.some(
