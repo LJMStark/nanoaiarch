@@ -20,6 +20,10 @@ import { logger } from '@/lib/logger';
 import { uploadFile } from '@/storage';
 import { type NextRequest, NextResponse } from 'next/server';
 
+// Set maximum execution time for image generation (150 seconds)
+// This allows enough time for Duomi API polling (max 110s) plus buffer
+export const maxDuration = 150;
+
 /**
  * Uploads a base64 image to S3 and returns the URL
  */
@@ -110,51 +114,83 @@ export async function POST(req: NextRequest) {
     let generatePromise: ReturnType<typeof generateImageWithDuomi>;
 
     if (allReferenceImages.length > 0) {
-      // Upload base64 images to S3
-      const imageUrls: string[] = [];
-      for (let i = 0; i < allReferenceImages.length; i++) {
-        const img = allReferenceImages[i];
+      // Upload base64 images to S3 in parallel for better performance
+      const uploadPromises = allReferenceImages.map((img, i) => {
         if (img.startsWith('http')) {
-          imageUrls.push(img);
-        } else {
-          try {
-            const url = await uploadBase64ToS3(img, i);
-            imageUrls.push(url);
-            logger.api.info(
-              `[requestId=${requestId}] Uploaded reference image ${i + 1}/${allReferenceImages.length}`
-            );
-          } catch (uploadError) {
+          return Promise.resolve({ success: true, url: img, index: i });
+        }
+
+        return uploadBase64ToS3(img, i)
+          .then((url) => ({ success: true, url, index: i }))
+          .catch((uploadError) => {
             logger.api.error(
               `[requestId=${requestId}] Failed to upload reference image ${i + 1}:`,
               uploadError
             );
-          }
-        }
+            return {
+              success: false,
+              error:
+                uploadError instanceof Error
+                  ? uploadError.message
+                  : 'Upload failed',
+              index: i,
+            };
+          });
+      });
+
+      const uploadResults = await Promise.all(uploadPromises);
+
+      // Separate successful and failed uploads
+      const successfulUploads = uploadResults.filter(
+        (result): result is { success: true; url: string; index: number } =>
+          result.success
+      );
+      const failedUploads = uploadResults.filter(
+        (result): result is { success: false; error: string; index: number } =>
+          !result.success
+      );
+
+      // Log upload summary
+      logger.api.info(
+        `[requestId=${requestId}] Upload summary: ${successfulUploads.length}/${allReferenceImages.length} successful`
+      );
+
+      if (successfulUploads.length === 0) {
+        // All uploads failed
+        logger.api.error(
+          `[requestId=${requestId}] All reference images failed to upload`
+        );
+        return NextResponse.json(
+          {
+            error: 'Failed to upload reference images. Please try again.',
+            details: failedUploads.map(
+              (f) => `Image ${f.index + 1}: ${f.error}`
+            ),
+          },
+          { status: 500 }
+        );
       }
 
-      if (imageUrls.length > 0) {
-        logger.api.info(
-          `[requestId=${requestId}] Using edit API with ${imageUrls.length} reference images`
-        );
-        generatePromise = editImageWithDuomi({
-          prompt,
-          imageUrls,
-          model: duomiModel,
-          aspectRatio: duomiAspectRatio,
-          imageSize: selectedImageSize,
-        });
-      } else {
-        // Fallback to text-to-image if all uploads failed
+      // Warn about partial failures
+      if (failedUploads.length > 0) {
         logger.api.warn(
-          `[requestId=${requestId}] All reference images failed to upload, falling back to text-to-image`
+          `[requestId=${requestId}] Partial upload failure: ${failedUploads.length} images failed`,
+          { failedIndices: failedUploads.map((f) => f.index) }
         );
-        generatePromise = generateImageWithDuomi({
-          prompt,
-          model: duomiModel,
-          aspectRatio: duomiAspectRatio,
-          imageSize: selectedImageSize,
-        });
       }
+
+      const imageUrls = successfulUploads.map((r) => r.url);
+
+      logger.api.info(
+        `[requestId=${requestId}] Using edit API with ${imageUrls.length} reference images`
+      );
+      generatePromise = editImageWithDuomi({
+        prompt,
+        imageUrls,
+        model: duomiModel,
+        aspectRatio: duomiAspectRatio,
+        imageSize: selectedImageSize,
+      });
     } else {
       // Text-to-image generation
       generatePromise = generateImageWithDuomi({

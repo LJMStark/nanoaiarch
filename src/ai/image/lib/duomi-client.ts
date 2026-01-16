@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger';
+import { z } from 'zod';
 import {
   extractImageData,
   fetchWithTimeout,
@@ -7,7 +8,15 @@ import {
 } from './image-utils';
 
 // Duomi API 配置
-const DUOMI_API_BASE = 'https://duomiapi.com/api/gemini';
+const DUOMI_API_BASE =
+  process.env.DUOMI_API_BASE_URL || 'https://duomiapi.com/api/gemini';
+
+// 轮询配置 - 使用指数退避策略
+const INITIAL_POLL_DELAY_MS = 1000;
+const MAX_POLL_DELAY_MS = 8000;
+const BACKOFF_MULTIPLIER = 1.5;
+const MAX_POLL_ATTEMPTS = 30;
+const REQUEST_TIMEOUT_MS = 30000;
 
 // Duomi 模型类型 - 使用最新的 nano-banana-pro
 export type DuomiModelId = 'gemini-3-pro-image-preview';
@@ -32,9 +41,48 @@ export type DuomiImageSize = '1K' | '2K' | '4K';
 // 任务状态类型
 export type DuomiTaskState = 'pending' | 'running' | 'succeeded' | 'error';
 
-// 轮询配置
-const POLL_INTERVAL_MS = 2000; // 2 秒轮询间隔
-const MAX_POLL_ATTEMPTS = 150; // 最大轮询次数 (300秒/5分钟，适应慢速第三方服务)
+// ============================================
+// Zod Validation Schemas for API Responses
+// ============================================
+
+const DuomiSubmitResponseSchema = z.object({
+  code: z.number(),
+  msg: z.string(),
+  data: z.object({
+    task_id: z.string(),
+  }),
+  exec_time: z.number(),
+  ip: z.string(),
+});
+
+const DuomiImageSchema = z.union([
+  z.string(),
+  z.object({
+    url: z.string().optional(),
+    value: z.string().optional(),
+    data: z.string().optional(),
+  }),
+]);
+
+const DuomiTaskResponseSchema = z.object({
+  code: z.number(),
+  msg: z.string(),
+  data: z.object({
+    task_id: z.string(),
+    state: z.enum(['pending', 'running', 'succeeded', 'error']),
+    data: z.object({
+      images: z.array(DuomiImageSchema),
+      description: z.string(),
+    }),
+    create_time: z.string(),
+    update_time: z.string(),
+    msg: z.string(),
+    status: z.string(),
+    action: z.string(),
+  }),
+  exec_time: z.number(),
+  ip: z.string(),
+});
 
 /**
  * 获取 Duomi API Key
@@ -65,45 +113,8 @@ export interface GenerateImageResult {
   error?: string;
 }
 
-interface DuomiSubmitResponse {
-  code: number;
-  msg: string;
-  data: {
-    task_id: string;
-  };
-  exec_time: number;
-  ip: string;
-}
-
-// 图片可能是字符串或对象格式
-type DuomiImage =
-  | string
-  | {
-      url?: string;
-      value?: string;
-      data?: string;
-      [key: string]: unknown;
-    };
-
-interface DuomiTaskResponse {
-  code: number;
-  msg: string;
-  data: {
-    task_id: string;
-    state: DuomiTaskState;
-    data: {
-      images: DuomiImage[]; // 支持字符串或对象格式
-      description: string;
-    };
-    create_time: string;
-    update_time: string;
-    msg: string;
-    status: string;
-    action: string;
-  };
-  exec_time: number;
-  ip: string;
-}
+type DuomiSubmitResponse = z.infer<typeof DuomiSubmitResponseSchema>;
+type DuomiTaskResponse = z.infer<typeof DuomiTaskResponseSchema>;
 
 /**
  * 提交文生图任务
@@ -146,7 +157,7 @@ async function submitTextToImageTask(
       },
       body: JSON.stringify(requestBody),
     },
-    30000 // 30秒超时
+    REQUEST_TIMEOUT_MS
   );
 
   if (!response.ok) {
@@ -154,7 +165,21 @@ async function submitTextToImageTask(
     throw new Error(`Duomi API error: ${response.status} - ${errorText}`);
   }
 
-  const data = (await response.json()) as DuomiSubmitResponse;
+  const rawData = await response.json();
+
+  // Validate response with Zod
+  const parseResult = DuomiSubmitResponseSchema.safeParse(rawData);
+  if (!parseResult.success) {
+    logger.ai.error(
+      '[Duomi] Invalid submit response structure:',
+      parseResult.error
+    );
+    throw new Error(
+      'Invalid response from Duomi API: malformed submit response'
+    );
+  }
+
+  const data = parseResult.data;
 
   if (data.code !== 200) {
     throw new Error(`Duomi API error: ${data.msg}`);
@@ -179,7 +204,7 @@ async function queryTaskStatus(taskId: string): Promise<DuomiTaskResponse> {
         Authorization: apiKey,
       },
     },
-    30000 // 30秒超时
+    REQUEST_TIMEOUT_MS
   );
 
   if (!response.ok) {
@@ -187,12 +212,34 @@ async function queryTaskStatus(taskId: string): Promise<DuomiTaskResponse> {
     throw new Error(`Duomi API error: ${response.status} - ${errorText}`);
   }
 
-  return (await response.json()) as DuomiTaskResponse;
+  const rawData = await response.json();
+
+  // Validate response with Zod
+  const parseResult = DuomiTaskResponseSchema.safeParse(rawData);
+  if (!parseResult.success) {
+    logger.ai.error(
+      '[Duomi] Invalid task response structure:',
+      parseResult.error
+    );
+    throw new Error('Invalid response from Duomi API: malformed task response');
+  }
+
+  return parseResult.data;
 }
 
 /**
- * 轮询等待任务完成
+ * Calculate exponential backoff delay with jitter
  */
+function calculateBackoffDelay(attempt: number): number {
+  const exponentialDelay = Math.min(
+    INITIAL_POLL_DELAY_MS * BACKOFF_MULTIPLIER ** attempt,
+    MAX_POLL_DELAY_MS
+  );
+  // Add jitter (±20%) to prevent synchronized requests
+  const jitter = exponentialDelay * 0.2 * (Math.random() - 0.5);
+  return Math.floor(exponentialDelay + jitter);
+}
+
 async function pollTaskUntilComplete(
   taskId: string
 ): Promise<DuomiTaskResponse> {
@@ -203,10 +250,13 @@ async function pollTaskUntilComplete(
     const state = result.data.state;
 
     logger.ai.debug(
-      `[Duomi] Task status [task_id=${taskId}, state=${state}, attempt=${attempts + 1}]`
+      `[Duomi] Task status [task_id=${taskId}, state=${state}, attempt=${attempts + 1}/${MAX_POLL_ATTEMPTS}]`
     );
 
     if (state === 'succeeded') {
+      logger.ai.info(
+        `[Duomi] Task completed [task_id=${taskId}, attempts=${attempts + 1}]`
+      );
       return result;
     }
 
@@ -214,12 +264,12 @@ async function pollTaskUntilComplete(
       throw new Error(result.data.msg || 'Task failed');
     }
 
-    // pending 或 running 状态，继续等待
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+    const delay = calculateBackoffDelay(attempts);
+    await new Promise((resolve) => setTimeout(resolve, delay));
     attempts++;
   }
 
-  throw new Error('Task timeout: exceeded maximum polling attempts');
+  throw new Error(`Task timeout after ${MAX_POLL_ATTEMPTS} attempts`);
 }
 
 /**
@@ -317,7 +367,7 @@ async function submitEditImageTask(params: EditImageParams): Promise<string> {
       },
       body: JSON.stringify(requestBody),
     },
-    30000 // 30秒超时
+    REQUEST_TIMEOUT_MS
   );
 
   if (!response.ok) {
@@ -325,7 +375,21 @@ async function submitEditImageTask(params: EditImageParams): Promise<string> {
     throw new Error(`Duomi API error: ${response.status} - ${errorText}`);
   }
 
-  const data = (await response.json()) as DuomiSubmitResponse;
+  const rawData = await response.json();
+
+  // Validate response with Zod
+  const parseResult = DuomiSubmitResponseSchema.safeParse(rawData);
+  if (!parseResult.success) {
+    logger.ai.error(
+      '[Duomi] Invalid edit submit response structure:',
+      parseResult.error
+    );
+    throw new Error(
+      'Invalid response from Duomi API: malformed edit submit response'
+    );
+  }
+
+  const data = parseResult.data;
 
   if (data.code !== 200) {
     throw new Error(`Duomi API error: ${data.msg}`);

@@ -50,9 +50,9 @@ interface UseImageGenerationReturn {
   selectHistoryItem: (item: EditHistoryItem) => void;
 }
 
-// Generate unique ID
+// Generate unique ID using crypto.randomUUID for better collision resistance
 function generateId(): string {
-  return Math.random().toString(36).substring(2, 9);
+  return crypto.randomUUID();
 }
 
 // Maximum conversation history length to prevent memory overflow
@@ -65,6 +65,9 @@ export function useImageGeneration(): UseImageGenerationReturn {
   const [timing, setTiming] = useState<ProviderTiming | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activePrompt, setActivePrompt] = useState('');
+
+  // Concurrency control
+  const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
 
   // Mode and model state
   const [mode, setMode] = useState<ImageMode>('generate');
@@ -93,6 +96,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
     setConversationHistory([]);
     setLastCreditsUsed(null);
     setCreditErrorType(null);
+    setActiveRequestId(null);
   }, []);
 
   // Clear edit history
@@ -112,6 +116,17 @@ export function useImageGeneration(): UseImageGenerationReturn {
   // Generate image from text prompt
   const generateImage = useCallback(
     async (prompt: string) => {
+      // Prevent concurrent requests
+      if (activeRequestId) {
+        logger.ai.warn(
+          '[Image Generation] Request already in progress, ignoring duplicate request'
+        );
+        return;
+      }
+
+      const requestId = generateId();
+      setActiveRequestId(requestId);
+
       setActivePrompt(prompt);
       setError(null);
       setCreditErrorType(null);
@@ -120,6 +135,9 @@ export function useImageGeneration(): UseImageGenerationReturn {
 
       const startTime = Date.now();
       setTiming({ startTime });
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 150 * 1000);
 
       try {
         const response = await fetch('/api/generate-images', {
@@ -131,26 +149,23 @@ export function useImageGeneration(): UseImageGenerationReturn {
             modelId: selectedModel,
             referenceImage: mode === 'edit' ? referenceImage : undefined,
           }),
+          signal: controller.signal,
         });
 
+        clearTimeout(timeoutId);
         const data = (await response.json()) as GenerateImageResponse & {
           creditsUsed?: number;
         };
 
-        // Handle specific error status codes
+        // Handle error status codes
         if (response.status === 401) {
           setCreditErrorType('unauthorized');
           throw new Error(data.error || 'Please sign in to generate images');
         }
-
         if (response.status === 402) {
           setCreditErrorType('insufficient_credits');
-          throw new Error(
-            data.error ||
-              'Insufficient credits. Please purchase more credits to continue.'
-          );
+          throw new Error(data.error || 'Insufficient credits');
         }
-
         if (!response.ok) {
           setCreditErrorType('other');
           throw new Error(data.error || `Server error: ${response.status}`);
@@ -197,18 +212,29 @@ export function useImageGeneration(): UseImageGenerationReturn {
           throw new Error('No image in response');
         }
       } catch (err) {
-        logger.ai.error('Image generation error:', err);
-        setError({
-          provider: 'duomi',
-          message:
-            err instanceof Error ? err.message : 'An unexpected error occurred',
-        });
+        clearTimeout(timeoutId);
+        if (err instanceof Error && err.name === 'AbortError') {
+          setError({
+            provider: 'duomi',
+            message: 'Request timed out. Please try again.',
+          });
+        } else {
+          logger.ai.error('Image generation error:', err);
+          setError({
+            provider: 'duomi',
+            message:
+              err instanceof Error
+                ? err.message
+                : 'An unexpected error occurred',
+          });
+        }
         setImage(null);
       } finally {
         setIsLoading(false);
+        setActiveRequestId(null);
       }
     },
-    [selectedModel, mode, referenceImage]
+    [selectedModel, mode, referenceImage, activeRequestId]
   );
 
   // Edit image using conversational approach
@@ -221,6 +247,17 @@ export function useImageGeneration(): UseImageGenerationReturn {
         });
         return;
       }
+
+      // Prevent concurrent requests
+      if (activeRequestId) {
+        logger.ai.warn(
+          '[Image Edit] Request already in progress, ignoring duplicate request'
+        );
+        return;
+      }
+
+      const requestId = generateId();
+      setActiveRequestId(requestId);
 
       setActivePrompt(prompt);
       setError(null);
@@ -245,6 +282,9 @@ export function useImageGeneration(): UseImageGenerationReturn {
       );
       setConversationHistory(newHistory);
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 150 * 1000);
+
       try {
         const response = await fetch('/api/edit-image', {
           method: 'POST',
@@ -257,26 +297,23 @@ export function useImageGeneration(): UseImageGenerationReturn {
             })),
             modelId: selectedModel,
           }),
+          signal: controller.signal,
         });
 
+        clearTimeout(timeoutId);
         const data = (await response.json()) as GenerateImageResponse & {
           creditsUsed?: number;
         };
 
-        // Handle specific error status codes
+        // Handle error status codes
         if (response.status === 401) {
           setCreditErrorType('unauthorized');
           throw new Error(data.error || 'Please sign in to edit images');
         }
-
         if (response.status === 402) {
           setCreditErrorType('insufficient_credits');
-          throw new Error(
-            data.error ||
-              'Insufficient credits. Please purchase more credits to continue.'
-          );
+          throw new Error(data.error || 'Insufficient credits');
         }
-
         if (!response.ok) {
           setCreditErrorType('other');
           throw new Error(data.error || `Server error: ${response.status}`);
@@ -332,19 +369,30 @@ export function useImageGeneration(): UseImageGenerationReturn {
           throw new Error('No image in response');
         }
       } catch (err) {
-        logger.ai.error('Image edit error:', err);
-        setError({
-          provider: 'duomi',
-          message:
-            err instanceof Error ? err.message : 'An unexpected error occurred',
-        });
-        // Remove failed user message
-        setConversationHistory(conversationHistory);
+        clearTimeout(timeoutId);
+        if (err instanceof Error && err.name === 'AbortError') {
+          setError({
+            provider: 'duomi',
+            message: 'Request timed out. Please try again.',
+          });
+        } else {
+          logger.ai.error('Image edit error:', err);
+          setError({
+            provider: 'duomi',
+            message:
+              err instanceof Error
+                ? err.message
+                : 'An unexpected error occurred',
+          });
+        }
+        // Don't rollback conversation history - keep the user message
+        // The error state will be displayed to the user
       } finally {
         setIsLoading(false);
+        setActiveRequestId(null);
       }
     },
-    [selectedModel, referenceImage, conversationHistory]
+    [selectedModel, referenceImage, conversationHistory, activeRequestId]
   );
 
   return {

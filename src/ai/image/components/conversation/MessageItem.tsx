@@ -38,6 +38,15 @@ import {
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { z } from 'zod';
+
+// Zod schema for generation parameters validation
+const GenerationParamsSchema = z.object({
+  prompt: z.string(),
+  aspectRatio: z.string().default('1:1'),
+  model: z.string().default('forma'),
+  imageQuality: z.enum(['1K', '2K', '4K']).default('2K'),
+});
 
 interface MessageItemProps {
   message: ProjectMessageItem;
@@ -94,6 +103,7 @@ function AssistantMessage({
 
   // Prevent state updates after component unmount
   const isMountedRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const { messages, addMessage, removeMessage, setGenerating, isGenerating } =
     useConversationStore();
@@ -103,6 +113,10 @@ function AssistantMessage({
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+      // Abort any ongoing requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
   }, []);
 
@@ -159,20 +173,41 @@ function AssistantMessage({
       return;
     }
 
-    // Parse original generation parameters
-    let params: GenerationParams | null = null;
+    // Parse original generation parameters with Zod validation
+    let params: GenerationParams = {
+      prompt: userMessage.content,
+      aspectRatio: '1:1',
+      model: 'forma',
+      imageQuality: '2K',
+    };
+
     if (message.generationParams) {
       try {
-        params = JSON.parse(message.generationParams) as GenerationParams;
-      } catch {
-        // Use default parameters
+        const parsed = JSON.parse(message.generationParams);
+
+        // Validate with Zod schema
+        const validationResult = GenerationParamsSchema.safeParse(parsed);
+
+        if (validationResult.success) {
+          params = validationResult.data;
+        } else {
+          logger.ai.warn('Failed to validate generation params, using defaults', {
+            error: validationResult.error.message,
+          });
+          // Use default params already set above
+        }
+      } catch (error) {
+        logger.ai.warn('Failed to parse generation params, using defaults', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        // Use default params already set above
       }
     }
 
-    const prompt = params?.prompt || userMessage.content;
-    const aspectRatio = params?.aspectRatio || '1:1';
-    const model = params?.model || 'forma';
-    const imageQuality = (params?.imageQuality as '1K' | '2K' | '4K') || '2K';
+    const prompt = params.prompt || userMessage.content;
+    const aspectRatio = params.aspectRatio || '1:1';
+    const model = params.model || 'forma';
+    const imageQuality = (params.imageQuality as '1K' | '2K' | '4K') || '2K';
     const genParams = { prompt, aspectRatio, model, imageQuality };
 
     logger.ai.info(
@@ -195,6 +230,9 @@ function AssistantMessage({
     removeMessage(message.id);
 
     const startTime = Date.now();
+
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController();
 
     try {
       // Regenerate image
@@ -242,6 +280,7 @@ function AssistantMessage({
       if (isMountedRef.current) {
         setIsRetrying(false);
         setGenerating(false);
+        abortControllerRef.current = null;
       }
     }
   };
@@ -264,6 +303,10 @@ function AssistantMessage({
     try {
       await shareImage(message.outputImage, t('canvas.shareTitle'));
     } catch (error) {
+      // User cancellation is expected behavior, not an error
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
       logger.ai.error('Share failed:', error);
     }
   }, [message.outputImage, t]);

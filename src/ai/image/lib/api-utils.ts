@@ -188,9 +188,14 @@ export interface GenerateImageResult {
   creditsUsed?: number;
 }
 
+const CLIENT_TIMEOUT_MS = 150 * 1000;
+
 export async function generateImage(
   params: GenerateImageParams
 ): Promise<GenerateImageResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+
   try {
     const response = await fetch('/api/generate-images', {
       method: 'POST',
@@ -205,8 +210,10 @@ export async function generateImage(
         aspectRatio: params.aspectRatio,
         imageSize: params.imageSize || DEFAULT_IMAGE_QUALITY,
       }),
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
     const data = await response.json();
 
     if (!response.ok) {
@@ -230,6 +237,14 @@ export async function generateImage(
       error: data.error || 'No image generated',
     };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      logger.ai.error('Generate image timeout');
+      return {
+        success: false,
+        error: 'Request timed out. Please try again.',
+      };
+    }
     logger.ai.error('Generate image error:', error);
     return {
       success: false,

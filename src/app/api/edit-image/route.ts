@@ -16,6 +16,9 @@ import {
 import { logger } from '@/lib/logger';
 import { type NextRequest, NextResponse } from 'next/server';
 
+// Match generate-images route timeout for consistent behavior
+export const maxDuration = 150;
+
 /**
  * Conversational image editing API
  * Supports multi-turn conversation context for iterative image editing
