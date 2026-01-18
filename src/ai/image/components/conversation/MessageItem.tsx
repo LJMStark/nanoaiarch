@@ -191,9 +191,12 @@ function AssistantMessage({
         if (validationResult.success) {
           params = validationResult.data;
         } else {
-          logger.ai.warn('Failed to validate generation params, using defaults', {
-            error: validationResult.error.message,
-          });
+          logger.ai.warn(
+            'Failed to validate generation params, using defaults',
+            {
+              error: validationResult.error.message,
+            }
+          );
           // Use default params already set above
         }
       } catch (error) {

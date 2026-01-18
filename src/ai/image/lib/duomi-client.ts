@@ -70,10 +70,12 @@ const DuomiTaskResponseSchema = z.object({
   data: z.object({
     task_id: z.string(),
     state: z.enum(['pending', 'running', 'succeeded', 'error']),
-    data: z.object({
-      images: z.array(DuomiImageSchema),
-      description: z.string(),
-    }),
+    data: z
+      .object({
+        images: z.array(DuomiImageSchema),
+        description: z.string(),
+      })
+      .nullable(), // data field is null when task is pending/running
     create_time: z.string(),
     update_time: z.string(),
     msg: z.string(),
@@ -286,6 +288,13 @@ export async function generateImageWithDuomi(
     const result = await pollTaskUntilComplete(taskId);
 
     // 3. 返回结果
+    if (!result.data.data) {
+      return {
+        success: false,
+        error: 'Task completed but no data returned',
+      };
+    }
+
     const images = result.data.data.images;
     if (!images || images.length === 0) {
       return {
@@ -413,6 +422,13 @@ export async function editImageWithDuomi(
     const result = await pollTaskUntilComplete(taskId);
 
     // 3. 返回结果
+    if (!result.data.data) {
+      return {
+        success: false,
+        error: 'Task completed but no data returned',
+      };
+    }
+
     const images = result.data.data.images;
     if (!images || images.length === 0) {
       return {
