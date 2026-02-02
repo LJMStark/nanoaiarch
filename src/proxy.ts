@@ -28,16 +28,16 @@ function getBaseUrlFromRequest(req: NextRequest): string {
 }
 
 /**
- * 1. Next.js middleware
- * https://nextjs.org/docs/app/building-your-application/routing/middleware
+ * 1. Next.js proxy (formerly middleware)
+ * https://nextjs.org/docs/app/api-reference/file-conventions/proxy
  *
  * 2. Better Auth middleware
  * https://www.better-auth.com/docs/integrations/next#middleware
  *
- * In Next.js middleware, it's recommended to only check for the existence of a session cookie
+ * In Next.js proxy, it's recommended to only check for the existence of a session cookie
  * to handle redirection. To avoid blocking requests by making API or database calls.
  */
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const { nextUrl } = req;
   logger.general.debug('middleware start', { pathname: nextUrl.pathname });
 
@@ -128,6 +128,9 @@ export default async function middleware(req: NextRequest) {
   logger.general.debug('applying intlMiddleware');
   return intlMiddleware(req);
 }
+
+// Note: In Next.js 16, proxy.ts runs on Node.js runtime only (not Edge)
+// If you need Edge runtime, keep using middleware.ts
 
 /**
  * Get the pathname of the request (e.g. /zh/dashboard to /dashboard)
