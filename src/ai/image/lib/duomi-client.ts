@@ -353,8 +353,12 @@ async function submitEditImageTask(params: EditImageParams): Promise<string> {
     model,
     prompt,
     image_urls: imageUrls,
-    aspect_ratio: aspectRatio,
   };
+
+  // 仅当 aspect_ratio 不为 'auto' 时才传，文档建议："不传则自适应,单参考图尽量不要传这个参数"
+  if (aspectRatio && aspectRatio !== 'auto') {
+    requestBody.aspect_ratio = aspectRatio;
+  }
 
   // 添加分辨率参数
   if (imageSize) {
