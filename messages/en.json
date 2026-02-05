@@ -1730,6 +1730,7 @@
       "download": "Download",
       "share": "Share",
       "shareTitle": "AI Generated Image",
+      "openPreview": "Open full preview",
       "retry": "Retry",
       "edit": "Edit",
       "generatedIn": "Generated in {seconds}s",

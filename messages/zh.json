@@ -1730,6 +1730,7 @@
       "download": "下载",
       "share": "分享",
       "shareTitle": "AI 生成图像",
+      "openPreview": "查看大图",
       "retry": "重试",
       "edit": "编辑",
       "generatedIn": "生成耗时 {seconds}s",

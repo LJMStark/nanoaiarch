@@ -16,6 +16,7 @@ import {
 } from '@/ai/image/lib/image-display-utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   Tooltip,
   TooltipContent,
@@ -97,6 +98,7 @@ function AssistantMessage({
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const isFailed = message.status === 'failed';
   const isGeneratingNow = message.status === 'generating';
   const t = useTranslations('ArchPage');
@@ -356,7 +358,19 @@ function AssistantMessage({
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >
-            <div className="relative rounded-xl overflow-hidden border bg-muted">
+            <div
+              className="relative rounded-xl overflow-hidden border bg-muted cursor-zoom-in"
+              onClick={() => setIsPreviewOpen(true)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setIsPreviewOpen(true);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={t('canvas.openPreview')}
+            >
               <Image
                 src={getImageSrc(message.outputImage)}
                 alt={t('canvas.generatedImageAlt')}
@@ -378,7 +392,10 @@ function AssistantMessage({
                       <Button
                         variant="secondary"
                         size="icon"
-                        onClick={handleDownload}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleDownload();
+                        }}
                         className="h-10 w-10"
                       >
                         <Download className="h-5 w-5" />
@@ -392,7 +409,10 @@ function AssistantMessage({
                       <Button
                         variant="secondary"
                         size="icon"
-                        onClick={handleShare}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleShare();
+                        }}
                         className="h-10 w-10"
                       >
                         <Share2 className="h-5 w-5" />
@@ -408,6 +428,7 @@ function AssistantMessage({
                           variant="secondary"
                           size="icon"
                           className="h-10 w-10"
+                          onClick={(event) => event.stopPropagation()}
                         >
                           <Edit3 className="h-5 w-5" />
                         </Button>
@@ -431,6 +452,19 @@ function AssistantMessage({
                   })}`}
               </div>
             )}
+
+            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+              <DialogContent className="max-w-5xl p-0 overflow-hidden">
+                <div className="relative w-full h-[80vh] bg-black">
+                  <Image
+                    src={getImageSrc(message.outputImage)}
+                    alt={t('canvas.generatedImageAlt')}
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         ) : null}
 

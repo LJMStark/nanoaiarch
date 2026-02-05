@@ -136,7 +136,7 @@ export function ConversationLayout() {
       <div className="fixed inset-0 z-50 bg-background">
         <SidebarProvider defaultOpen={true}>
           <ProjectSidebar />
-          <SidebarInset className="flex flex-col h-screen">
+          <SidebarInset className="flex flex-col h-screen min-h-0">
             <ConversationHeader />
             <ConversationArea />
             <ConversationInput />

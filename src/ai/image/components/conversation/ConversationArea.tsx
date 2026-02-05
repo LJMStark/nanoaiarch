@@ -25,7 +25,7 @@ export function ConversationArea() {
   // 没有选中项目时显示全屏瀑布流画廊
   if (!currentProjectId && !isLoadingMessages) {
     return (
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <TemplateShowcase showFullView />
       </div>
     );
@@ -34,7 +34,7 @@ export function ConversationArea() {
   // 有项目但没有消息时也显示瀑布流（用户可以选择模板开始）
   if (!hasMessages && !isLoadingMessages) {
     return (
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <TemplateShowcase showFullView />
       </div>
     );
@@ -42,7 +42,7 @@ export function ConversationArea() {
 
   if (isLoadingMessages) {
     return (
-      <div className="flex-1 p-4">
+      <div className="flex-1 min-h-0 p-4 overflow-auto">
         <div className="max-w-3xl mx-auto space-y-6">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex gap-3">
@@ -60,7 +60,7 @@ export function ConversationArea() {
 
   // 有消息时显示消息列表
   return (
-    <ScrollArea ref={scrollRef} className="flex-1">
+    <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
       <div className="p-4">
         <div className="max-w-3xl mx-auto">
           <MessageList />
