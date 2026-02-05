@@ -7,10 +7,12 @@ vi.mock('@/stores/project-store', () => ({
   useProjectStore: () => ({
     currentProjectId: 'test-project',
     draftPrompt: '',
+    draftImage: null,
     imageQuality: 'hd',
     aspectRatio: '1:1',
     selectedModel: 'openai-dall-e-3',
     setDraftPrompt: vi.fn(),
+    setDraftImage: vi.fn(),
     setImageQuality: vi.fn(),
     setAspectRatio: vi.fn(),
     clearDraft: vi.fn(),

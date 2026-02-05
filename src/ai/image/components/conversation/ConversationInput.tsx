@@ -84,10 +84,12 @@ export function ConversationInput() {
   const {
     currentProjectId,
     draftPrompt,
+    draftImage,
     imageQuality,
     aspectRatio,
     selectedModel,
     setDraftPrompt,
+    setDraftImage,
     setImageQuality,
     setAspectRatio,
     clearDraft,
@@ -108,6 +110,18 @@ export function ConversationInput() {
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [draftPrompt]);
+
+  // Apply draft reference image from edit action
+  useEffect(() => {
+    if (!draftImage) return;
+    setReferenceImages([draftImage]);
+    setShowImageUpload(false);
+    setImageError(null);
+    setDraftImage(null);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [draftImage, setDraftImage]);
 
   // Helper function to update message state (syncs server and client)
   const updateMessageState = useCallback(

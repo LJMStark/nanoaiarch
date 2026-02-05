@@ -26,6 +26,7 @@ import {
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversation-store';
+import { useProjectStore } from '@/stores/project-store';
 import {
   AlertCircle,
   Download,
@@ -102,6 +103,7 @@ function AssistantMessage({
   const isFailed = message.status === 'failed';
   const isGeneratingNow = message.status === 'generating';
   const t = useTranslations('ArchPage');
+  const { setDraftImage } = useProjectStore();
 
   // Prevent state updates after component unmount
   const isMountedRef = useRef(true);
@@ -316,6 +318,15 @@ function AssistantMessage({
     }
   }, [message.outputImage, t]);
 
+  const handleEdit = useCallback(
+    (event: React.MouseEvent) => {
+      event.stopPropagation();
+      if (!message.outputImage) return;
+      setDraftImage(message.outputImage);
+    },
+    [message.outputImage, setDraftImage]
+  );
+
   return (
     <div className="flex gap-3">
       <Avatar className="h-8 w-8 flex-shrink-0 bg-primary">
@@ -428,7 +439,8 @@ function AssistantMessage({
                           variant="secondary"
                           size="icon"
                           className="h-10 w-10"
-                          onClick={(event) => event.stopPropagation()}
+                          onClick={handleEdit}
+                          aria-label={t('canvas.edit')}
                         >
                           <Edit3 className="h-5 w-5" />
                         </Button>
