@@ -5,7 +5,7 @@ import type { GeminiModelId } from './provider-config';
  * nano-banana-pro API 成本 0.14/次，所有分辨率价格相同
  */
 export const CREDIT_COSTS: Record<GeminiModelId, number> = {
-  // Forma Pro (Gemini 3 Pro / nano-banana-pro) - 1 credit/张
+  // Arch AI Pro (Gemini 3 Pro / nano-banana-pro) - 1 credit/张
   forma: 1,
 };
 

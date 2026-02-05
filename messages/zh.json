@@ -1157,7 +1157,7 @@
         },
         "item-3": {
           "question": "积分如何使用？",
-          "answer": "每次生成会根据使用的模型消耗积分。Arch AI 每次消耗 1 积分，Arch AI Pro 每次消耗 3 积分。您可以购买积分包或订阅获取月度积分。"
+          "answer": "每次生成消耗 1 积分（Arch AI Pro 模型）。您可以购买积分包或订阅获取月度积分。"
         },
         "item-4": {
           "question": "生成的图像可以商用吗？",
@@ -1165,7 +1165,7 @@
         },
         "item-5": {
           "question": "需要帮助或有问题？",
-          "answer": "联系我们的支持团队 support@nanobanana.com - 我们随时为您提供帮助。"
+          "answer": "联系我们的支持团队 support@nanoaiarch.com - 我们随时为您提供帮助。"
         }
       }
     },

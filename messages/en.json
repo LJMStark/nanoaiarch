@@ -1157,7 +1157,7 @@
         },
         "item-3": {
           "question": "How do credits work?",
-          "answer": "Each generation costs credits based on the model used. Arch AI uses 1 credit, Arch AI Pro uses 3 credits. You can purchase credit packs or subscribe for monthly credits."
+          "answer": "Each generation costs 1 credit using the Arch AI Pro model. You can purchase credit packs or subscribe for monthly credits."
         },
         "item-4": {
           "question": "Can I use the generated images commercially?",
@@ -1165,7 +1165,7 @@
         },
         "item-5": {
           "question": "Need help or have questions?",
-          "answer": "Contact our support team at support@nanobanana.com - we're here to help you create stunning visualizations."
+          "answer": "Contact our support team at support@nanoaiarch.com - we're here to help you create stunning visualizations."
         }
       }
     },

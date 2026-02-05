@@ -37,7 +37,7 @@ export const PROVIDERS: Record<
 
 // 模型显示名称
 export const MODEL_DISPLAY_NAMES: Record<GeminiModelId, string> = {
-  forma: 'Forma Pro',
+  forma: 'Arch AI Pro',
 };
 
 // 模型描述

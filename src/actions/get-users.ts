@@ -79,7 +79,7 @@ export const getUsersAction = adminActionClient
         items = items.map((item) => ({
           ...item,
           name: 'Demo User',
-          email: 'example@mksaas.com',
+          email: 'example@nanoaiarch.com',
           customerId: 'cus_abcdef123456',
         }));
       }

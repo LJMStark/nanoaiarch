@@ -62,7 +62,7 @@ export function ExploreDetail({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `nano-ai-${generation.id}.png`;
+      a.download = `arch-ai-${generation.id}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
