@@ -150,6 +150,7 @@ export function HeroBentoCard({
                 src={featuredTemplate.previewImage}
                 alt={tRoot(featuredTemplate.titleKey as any)}
                 fill
+                sizes="(max-width: 1024px) 100vw, 40vw"
                 className={cn(
                   'object-cover transition-all duration-700',
                   imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-105',

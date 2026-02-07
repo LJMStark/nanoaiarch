@@ -105,6 +105,7 @@ export function TemplateDetailModal({
                       src={template.inputImage}
                       alt={t('ArchPage.modal.inputLabel')}
                       fill
+                      sizes="200px"
                       className="object-cover"
                       onError={() => setInputImageError(true)}
                     />
@@ -137,6 +138,7 @@ export function TemplateDetailModal({
                       src={template.previewImage}
                       alt={t(template.titleKey as any)}
                       fill
+                      sizes="200px"
                       className="object-cover"
                       onError={() => setPreviewImageError(true)}
                     />
@@ -161,6 +163,7 @@ export function TemplateDetailModal({
                       src={template.previewImage}
                       alt={t(template.titleKey as any)}
                       fill
+                      sizes="200px"
                       className="object-cover"
                       onError={() => setPreviewImageError(true)}
                     />

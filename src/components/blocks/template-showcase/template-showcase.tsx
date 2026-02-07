@@ -170,6 +170,7 @@ function TemplateCard({
           src={template.previewImage}
           alt={template.id}
           fill
+          sizes="288px"
           className="object-cover group-hover:scale-110 transition-transform duration-500"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
