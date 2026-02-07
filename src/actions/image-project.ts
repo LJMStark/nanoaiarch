@@ -353,10 +353,31 @@ export async function deleteImageProject(projectId: string) {
   try {
     const db = await getDb();
 
-    // Delete all messages first (cascade should handle this, but being explicit)
+    // Verify project ownership first
+    const project = await db
+      .select({ id: imageProject.id })
+      .from(imageProject)
+      .where(
+        and(
+          eq(imageProject.id, projectId),
+          eq(imageProject.userId, session.user.id)
+        )
+      )
+      .limit(1);
+
+    if (!project.length) {
+      return { success: false, error: 'Project not found' };
+    }
+
+    // Delete all messages first (with user verification)
     await db
       .delete(projectMessage)
-      .where(eq(projectMessage.projectId, projectId));
+      .where(
+        and(
+          eq(projectMessage.projectId, projectId),
+          eq(projectMessage.userId, session.user.id)
+        )
+      );
 
     // Delete the project
     await db

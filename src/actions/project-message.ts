@@ -531,12 +531,29 @@ export async function getLastGeneratedImage(projectId: string) {
   try {
     const db = await getDb();
 
+    // Verify project ownership first
+    const project = await db
+      .select({ id: imageProject.id })
+      .from(imageProject)
+      .where(
+        and(
+          eq(imageProject.id, projectId),
+          eq(imageProject.userId, session.user.id)
+        )
+      )
+      .limit(1);
+
+    if (!project.length) {
+      return { success: false, error: 'Project not found' };
+    }
+
     const message = await db
       .select()
       .from(projectMessage)
       .where(
         and(
           eq(projectMessage.projectId, projectId),
+          eq(projectMessage.userId, session.user.id),
           eq(projectMessage.role, 'assistant'),
           sql`${projectMessage.outputImage} IS NOT NULL`,
           eq(projectMessage.status, 'completed')

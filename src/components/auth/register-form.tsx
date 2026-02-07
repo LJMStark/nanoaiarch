@@ -1,7 +1,7 @@
 'use client';
 
 import { handleUnverifiedRegistration } from '@/actions/handle-unverified-registration';
-import { applyReferralCode } from '@/actions/referral';
+import { applyReferralCodeInternal } from '@/actions/referral';
 import { validateCaptchaAction } from '@/actions/validate-captcha';
 import { AuthCard } from '@/components/auth/auth-card';
 import { FormError } from '@/components/shared/form-error';
@@ -189,7 +189,7 @@ export const RegisterForm = ({
           // Apply referral code if present
           if (refCode && ctx.data?.user?.id) {
             try {
-              await applyReferralCode(ctx.data.user.id, refCode);
+              await applyReferralCodeInternal(ctx.data.user.id, refCode);
               logger.auth.debug('register, referral applied', { refCode });
             } catch (error) {
               logger.auth.error('register, referral error', error, { refCode });

@@ -104,6 +104,7 @@ export async function saveCreditTransaction({
 
 /**
  * Add credits (registration, monthly, purchase, etc.)
+ * Uses atomic update to prevent race conditions
  * @param params - Credit creation parameters
  */
 export async function addCredits({
@@ -143,49 +144,58 @@ export async function addCredits({
     });
     throw new Error('Invalid expire days');
   }
-  // Update user credit balance
+
   const db = await getDb();
-  const current = await db
-    .select()
-    .from(userCredit)
-    .where(eq(userCredit.userId, userId))
-    .limit(1);
-  // const newBalance = (current[0]?.currentCredits || 0) + amount;
-  if (current.length > 0) {
-    const newBalance = (current[0]?.currentCredits || 0) + amount;
-    logger.credits.debug('addCredits update user credit', {
-      userId,
-      newBalance,
-    });
-    await db
-      .update(userCredit)
-      .set({
-        currentCredits: newBalance,
+
+  // Use transaction to ensure atomicity
+  await db.transaction(async (tx) => {
+    // Check if user credit record exists
+    const current = await tx
+      .select({ id: userCredit.id })
+      .from(userCredit)
+      .where(eq(userCredit.userId, userId))
+      .limit(1);
+
+    if (current.length > 0) {
+      // Use atomic increment to prevent race conditions
+      logger.credits.debug('addCredits atomic update user credit', {
+        userId,
+        amount,
+      });
+      await tx
+        .update(userCredit)
+        .set({
+          currentCredits: sql`${userCredit.currentCredits} + ${amount}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(userCredit.userId, userId));
+    } else {
+      logger.credits.debug('addCredits insert user credit', {
+        userId,
+        amount,
+      });
+      await tx.insert(userCredit).values({
+        id: randomUUID(),
+        userId,
+        currentCredits: amount,
+        createdAt: new Date(),
         updatedAt: new Date(),
-      })
-      .where(eq(userCredit.userId, userId));
-  } else {
-    const newBalance = amount;
-    logger.credits.debug('addCredits insert user credit', {
-      userId,
-      newBalance,
-    });
-    await db.insert(userCredit).values({
+      });
+    }
+
+    // Write credit transaction record within the same transaction
+    await tx.insert(creditTransaction).values({
       id: randomUUID(),
       userId,
-      currentCredits: newBalance,
+      type,
+      amount,
+      remainingAmount: amount,
+      description,
+      paymentId,
+      expirationDate: expireDays ? addDays(new Date(), expireDays) : undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-  }
-  // Write credit transaction record
-  await saveCreditTransaction({
-    userId,
-    type,
-    amount,
-    description,
-    paymentId,
-    expirationDate: expireDays ? addDays(new Date(), expireDays) : undefined,
   });
 }
 

@@ -53,16 +53,38 @@ export async function validateReferralCode(code: string): Promise<{
 }
 
 /**
- * Apply a referral code to a user (called after registration)
+ * Apply a referral code to the current user
+ * This is the public Server Action - only allows applying to the authenticated user
  */
 export async function applyReferralCode(
+  code: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user?.id) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    return await applyReferral(session.user.id, code);
+  } catch (error) {
+    logger.actions.error('applyReferralCode error', error);
+    return { success: false, error: 'Failed to apply referral code' };
+  }
+}
+
+/**
+ * Apply a referral code to a specific user (internal use only)
+ * This should only be called from trusted server-side code (e.g., registration callback)
+ * @internal
+ */
+export async function applyReferralCodeInternal(
   userId: string,
   code: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     return await applyReferral(userId, code);
   } catch (error) {
-    logger.actions.error('applyReferralCode error', error);
+    logger.actions.error('applyReferralCodeInternal error', error);
     return { success: false, error: 'Failed to apply referral code' };
   }
 }
