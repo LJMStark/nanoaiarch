@@ -72,8 +72,8 @@ export default async function LocaleLayout({
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://ik.imagekit.io" />
 
-        {/* PWA meta tags for iOS */}
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+        {/* PWA meta tags */}
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"

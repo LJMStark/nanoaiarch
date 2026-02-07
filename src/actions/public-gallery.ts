@@ -360,17 +360,25 @@ async function fetchAvailableTemplates(): Promise<
 /**
  * Get available styles for filtering (cached for 5 minutes)
  */
-export const getAvailableStyles = unstable_cache(
-  fetchAvailableStyles,
-  ['explore-available-styles'],
-  { revalidate: FILTER_CACHE_TTL, tags: [CACHE_TAGS.PUBLIC_GALLERY] }
-);
+export async function getAvailableStyles(): Promise<string[]> {
+  const cachedFetch = unstable_cache(
+    fetchAvailableStyles,
+    ['explore-available-styles'],
+    { revalidate: FILTER_CACHE_TTL, tags: [CACHE_TAGS.PUBLIC_GALLERY] }
+  );
+  return cachedFetch();
+}
 
 /**
  * Get available templates for filtering (cached for 5 minutes)
  */
-export const getAvailableTemplates = unstable_cache(
-  fetchAvailableTemplates,
-  ['explore-available-templates'],
-  { revalidate: FILTER_CACHE_TTL, tags: [CACHE_TAGS.PUBLIC_GALLERY] }
-);
+export async function getAvailableTemplates(): Promise<
+  { id: string; name: string }[]
+> {
+  const cachedFetch = unstable_cache(
+    fetchAvailableTemplates,
+    ['explore-available-templates'],
+    { revalidate: FILTER_CACHE_TTL, tags: [CACHE_TAGS.PUBLIC_GALLERY] }
+  );
+  return cachedFetch();
+}
