@@ -87,9 +87,7 @@ export function UpdateAvatarCard({ className }: UpdateAvatarCardProps) {
 
       // Upload the file to storage
       const result = await uploadFileFromBrowser(file, 'avatars');
-      // console.log('uploadFileFromBrowser, result', result);
       const { url } = result;
-      console.log('uploadFileFromBrowser, url', url);
 
       // Update the user's avatar using authClient
       await authClient.updateUser(

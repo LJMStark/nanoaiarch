@@ -72,7 +72,6 @@ export function UpdateNameCard({ className }: UpdateNameCardProps) {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     // Don't update if the name hasn't changed
     if (values.name === session?.user?.name) {
-      console.log('No changes to save');
       return;
     }
 

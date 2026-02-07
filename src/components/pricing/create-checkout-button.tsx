@@ -60,10 +60,6 @@ export function CheckoutButton({
             ? (window as any).promotekit_referral
             : undefined;
         if (promotekitReferral) {
-          console.log(
-            'create checkout button, promotekitReferral:',
-            promotekitReferral
-          );
           mergedMetadata.promotekit_referral = promotekitReferral;
         }
       }
@@ -80,10 +76,6 @@ export function CheckoutButton({
               })()
             : null;
         if (affonsoReferral) {
-          console.log(
-            'create checkout button, affonsoReferral:',
-            affonsoReferral
-          );
           mergedMetadata.affonso_referral = affonsoReferral;
         }
       }

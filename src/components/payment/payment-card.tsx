@@ -97,7 +97,6 @@ export function PaymentCard() {
           await queryClient.refetchQueries({
             queryKey: ['credits'],
           });
-          console.log('Refetched credits cache for credits page');
         } else if (callback === Routes.SettingsBilling) {
           // Invalidate and refetch payment/subscription related queries
           await queryClient.invalidateQueries({
@@ -107,7 +106,6 @@ export function PaymentCard() {
           await queryClient.refetchQueries({
             queryKey: ['payment'],
           });
-          console.log('Refetched payment cache for billing page');
         }
 
         // Redirect to callback url after cache is updated

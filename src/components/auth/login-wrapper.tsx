@@ -38,7 +38,6 @@ export const LoginWrapper = ({
     const loginPath = callbackUrl
       ? `${Routes.Login}?callbackUrl=${encodeURIComponent(callbackUrl)}`
       : `${Routes.Login}`;
-    console.log('login wrapper, loginPath', loginPath);
     router.push(loginPath);
   };
 

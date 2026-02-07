@@ -12,21 +12,18 @@ import { useEffect } from 'react';
 const CrispChat = () => {
   useEffect(() => {
     if (!websiteConfig.features.enableCrispChat) {
-      console.log('Crisp chat is disabled');
       return;
     }
 
     const websiteId = process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID;
     if (!websiteId) {
-      console.warn('Crisp website ID is not configured.');
       return;
     }
 
     try {
       Crisp.configure(websiteId);
-      console.log('Crisp chat initialized successfully');
-    } catch (error) {
-      console.error('Failed to initialize Crisp chat:', error);
+    } catch {
+      // Crisp initialization failed silently
     }
   }, []);
 

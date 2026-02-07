@@ -5,17 +5,22 @@ import { getDb } from '@/db';
 import { user, verification } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-import { eq } from 'drizzle-orm';
+import { eq, and, gt } from 'drizzle-orm';
 
 export interface HandleUnverifiedRegistrationResult {
-  status: 'unverified' | 'verified' | 'not_found';
+  status: 'unverified' | 'verified' | 'not_found' | 'rate_limited';
   message: string;
   success: boolean;
 }
 
+// Rate limit: max 3 verification emails per email per hour
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_MAX_ATTEMPTS = 3;
+
 /**
  * Handle registration attempt for users who already exist but haven't verified their email
  * This improves UX by automatically resending verification email instead of showing error
+ * Includes rate limiting to prevent email bombing
  */
 export async function handleUnverifiedRegistration(
   email: string,
@@ -23,6 +28,30 @@ export async function handleUnverifiedRegistration(
 ): Promise<HandleUnverifiedRegistrationResult> {
   try {
     const db = await getDb();
+
+    // Rate limit check: count recent verification records for this email
+    const rateLimitWindow = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+    const recentVerifications = await db
+      .select({ id: verification.id })
+      .from(verification)
+      .where(
+        and(
+          eq(verification.identifier, email),
+          gt(verification.createdAt, rateLimitWindow)
+        )
+      );
+
+    if (recentVerifications.length >= RATE_LIMIT_MAX_ATTEMPTS) {
+      logger.auth.warn('handleUnverifiedRegistration: rate limited', {
+        email,
+        attempts: recentVerifications.length,
+      });
+      return {
+        status: 'rate_limited',
+        message: 'Too many verification attempts. Please try again later.',
+        success: false,
+      };
+    }
 
     // Check if user exists with this email
     const [existingUser] = await db
