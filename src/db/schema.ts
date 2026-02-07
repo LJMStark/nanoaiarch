@@ -72,7 +72,10 @@ export const verification = pgTable("verification", {
 	expiresAt: timestamp('expires_at').notNull(),
 	createdAt: timestamp('created_at'),
 	updatedAt: timestamp('updated_at')
-});
+}, (table) => ({
+	verificationIdentifierIdx: index("verification_identifier_idx").on(table.identifier),
+	verificationExpiresAtIdx: index("verification_expires_at_idx").on(table.expiresAt),
+}));
 
 export const payment = pgTable("payment", {
 	id: text("id").primaryKey(),

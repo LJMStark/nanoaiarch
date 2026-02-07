@@ -1,0 +1,2 @@
+CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");--> statement-breakpoint
+CREATE INDEX "verification_expires_at_idx" ON "verification" USING btree ("expires_at");

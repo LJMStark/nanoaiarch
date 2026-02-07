@@ -180,28 +180,31 @@ export async function addUserMessage(
     const id = generateId();
     const now = new Date();
 
-    await db.insert(projectMessage).values({
-      id,
-      projectId,
-      userId: session.user.id,
-      role: 'user',
-      content: data.content,
-      inputImage: data.inputImage ?? null,
-      orderIndex: nextOrderIndex,
-      status: 'completed',
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    // Update project message count
-    await db
-      .update(imageProject)
-      .set({
-        messageCount: sql`${imageProject.messageCount} + 1`,
-        lastActiveAt: now,
+    // Use transaction to ensure message insert and project update are atomic
+    await db.transaction(async (tx) => {
+      await tx.insert(projectMessage).values({
+        id,
+        projectId,
+        userId: session.user.id,
+        role: 'user',
+        content: data.content,
+        inputImage: data.inputImage ?? null,
+        orderIndex: nextOrderIndex,
+        status: 'completed',
+        createdAt: now,
         updatedAt: now,
-      })
-      .where(eq(imageProject.id, projectId));
+      });
+
+      // Update project message count
+      await tx
+        .update(imageProject)
+        .set({
+          messageCount: sql`${imageProject.messageCount} + 1`,
+          lastActiveAt: now,
+          updatedAt: now,
+        })
+        .where(eq(imageProject.id, projectId));
+    });
 
     // Auto-generate project title if this is the first user message
     if (nextOrderIndex === 0) {
@@ -314,25 +317,6 @@ export async function addAssistantMessage(
     const now = new Date();
     const status = data.status ?? 'completed';
 
-    await db.insert(projectMessage).values({
-      id,
-      projectId,
-      userId: session.user.id,
-      role: 'assistant',
-      content: data.content,
-      outputImage: data.outputImage ?? null,
-      generationParams: data.generationParams
-        ? JSON.stringify(data.generationParams)
-        : null,
-      creditsUsed: data.creditsUsed ?? 0,
-      generationTime: data.generationTime ?? null,
-      status,
-      errorMessage: data.errorMessage ?? null,
-      orderIndex: nextOrderIndex,
-      createdAt: now,
-      updatedAt: now,
-    });
-
     // Update project stats
     const projectUpdates: Record<string, unknown> = {
       messageCount: sql`${imageProject.messageCount} + 1`,
@@ -350,10 +334,32 @@ export async function addAssistantMessage(
       projectUpdates.totalCreditsUsed = sql`${imageProject.totalCreditsUsed} + ${data.creditsUsed}`;
     }
 
-    await db
-      .update(imageProject)
-      .set(projectUpdates)
-      .where(eq(imageProject.id, projectId));
+    // Use transaction to ensure message insert and project update are atomic
+    await db.transaction(async (tx) => {
+      await tx.insert(projectMessage).values({
+        id,
+        projectId,
+        userId: session.user.id,
+        role: 'assistant',
+        content: data.content,
+        outputImage: data.outputImage ?? null,
+        generationParams: data.generationParams
+          ? JSON.stringify(data.generationParams)
+          : null,
+        creditsUsed: data.creditsUsed ?? 0,
+        generationTime: data.generationTime ?? null,
+        status,
+        errorMessage: data.errorMessage ?? null,
+        orderIndex: nextOrderIndex,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      await tx
+        .update(imageProject)
+        .set(projectUpdates)
+        .where(eq(imageProject.id, projectId));
+    });
 
     const message: ProjectMessageItem = {
       id,
