@@ -1,11 +1,18 @@
 import { MAX_FILE_SIZE } from '@/lib/constants';
 import { logger } from '@/lib/logger';
+import { getSession } from '@/lib/server';
 import { uploadFile } from '@/storage';
 import { StorageError } from '@/storage/types';
 import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
+    // Authentication check
+    const session = await getSession();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const folder = formData.get('folder') as string | null;
