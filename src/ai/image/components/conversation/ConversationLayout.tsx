@@ -1,8 +1,8 @@
 'use client';
 
-import { getImageProjects } from '@/actions/image-project';
 import { getProjectMessages } from '@/actions/project-message';
-import { TemplateDetailModal } from '@/ai/image/components/TemplateDetailModal';
+import { LazyTemplateDetailModal } from '@/ai/image/components/lazy';
+import { useConversationInit } from '@/ai/image/hooks/use-conversation-init';
 import { useGenerationRecovery } from '@/ai/image/hooks/use-generation-recovery';
 import { useTemplateApply } from '@/ai/image/hooks/use-template-apply';
 import type { ArchTemplate, AspectRatioId } from '@/ai/image/lib/arch-types';
@@ -11,7 +11,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ConversationArea } from './ConversationArea';
 import { ConversationHeader } from './ConversationHeader';
 import { ConversationInput } from './ConversationInput';
@@ -29,47 +29,17 @@ export function ConversationLayout() {
   // Use unified template apply hook
   const { applyTemplateWithProject } = useTemplateApply();
 
-  const {
-    currentProjectId,
-    projects,
-    isLoadingProjects,
-    setProjects,
-    setLoadingProjects,
-  } = useProjectStore();
+  // Use optimized conversation init hook (single request for projects + messages)
+  const { loadMessagesForProject } = useConversationInit();
+
+  const { currentProjectId } = useProjectStore();
+  const prevProjectIdRef = useRef<string | null>(null);
 
   const { setMessages, setLoadingMessages, setCurrentProject, setGenerating } =
     useConversationStore();
 
   // Enable generation recovery polling
   useGenerationRecovery(currentProjectId);
-
-  // Load projects on mount
-  useEffect(() => {
-    const loadProjects = async () => {
-      setLoadingProjects(true);
-      const result = await getImageProjects();
-      if (result.success) {
-        setProjects(result.data);
-      }
-      setLoadingProjects(false);
-    };
-    loadProjects();
-  }, [setProjects, setLoadingProjects]);
-
-  // Auto-select first project if user has projects but none selected
-  useEffect(() => {
-    const autoSelectProject = async () => {
-      // Wait for projects to finish loading
-      if (isLoadingProjects) return;
-
-      // If projects exist but none selected, select the first one
-      if (projects.length > 0 && !currentProjectId) {
-        useProjectStore.getState().selectProject(projects[0].id);
-      }
-    };
-
-    autoSelectProject();
-  }, [isLoadingProjects, projects.length, currentProjectId]);
 
   // Handle template from URL - show modal instead of direct apply
   useEffect(() => {
@@ -97,14 +67,28 @@ export function ConversationLayout() {
     await applyTemplateWithProject({ template, prompt, ratio });
   };
 
-  // Load messages when project changes
+  // Load messages when project changes (after initial load)
   useEffect(() => {
-    const loadMessages = async () => {
-      if (!currentProjectId) {
-        setCurrentProject(null);
-        return;
-      }
+    // Skip if this is the initial load (handled by useConversationInit)
+    if (prevProjectIdRef.current === null) {
+      prevProjectIdRef.current = currentProjectId;
+      return;
+    }
 
+    // Skip if project hasn't changed
+    if (prevProjectIdRef.current === currentProjectId) {
+      return;
+    }
+
+    prevProjectIdRef.current = currentProjectId;
+
+    if (!currentProjectId) {
+      setCurrentProject(null);
+      return;
+    }
+
+    // Load messages for the new project
+    const loadMessages = async () => {
       setCurrentProject(currentProjectId);
       setLoadingMessages(true);
       const result = await getProjectMessages(currentProjectId);
@@ -145,7 +129,7 @@ export function ConversationLayout() {
       </div>
 
       {/* Template detail modal for URL parameter */}
-      <TemplateDetailModal
+      <LazyTemplateDetailModal
         template={urlTemplate}
         open={isTemplateModalOpen}
         onOpenChange={setIsTemplateModalOpen}

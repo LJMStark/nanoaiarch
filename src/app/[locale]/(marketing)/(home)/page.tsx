@@ -7,10 +7,19 @@ import ShowcaseSection from '@/components/blocks/showcase/showcase';
 import StatsSection from '@/components/blocks/stats/stats';
 import TemplateShowcaseSection from '@/components/blocks/template-showcase/template-showcase';
 import CrispChat from '@/components/layout/crisp-chat';
+import { LOCALES } from '@/i18n/routing';
 import { constructMetadata } from '@/lib/metadata';
 import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+
+/**
+ * Generate static params for all locales
+ * This enables static generation for the home page
+ */
+export function generateStaticParams() {
+  return LOCALES.map((locale) => ({ locale }));
+}
 
 /**
  * https://next-intl.dev/docs/environments/actions-metadata-route-handlers#metadata-api
@@ -38,6 +47,7 @@ interface HomePageProps {
 export default async function HomePage(props: HomePageProps) {
   const params = await props.params;
   const { locale } = params;
+  setRequestLocale(locale);
   const t = await getTranslations('HomePage');
 
   return (

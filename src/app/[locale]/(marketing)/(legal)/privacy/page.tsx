@@ -1,11 +1,19 @@
 import { CustomPage } from '@/components/page/custom-page';
+import { LOCALES } from '@/i18n/routing';
 import { constructMetadata } from '@/lib/metadata';
 import { pagesSource } from '@/lib/source';
 import type { NextPageProps } from '@/types/next-page-props';
 import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
+
+/**
+ * Generate static params for all locales
+ */
+export function generateStaticParams() {
+  return LOCALES.map((locale) => ({ locale }));
+}
 
 export async function generateMetadata({
   params,
@@ -39,6 +47,7 @@ export default async function PrivacyPolicyPage(props: NextPageProps) {
   }
 
   const locale = params.locale as string;
+  setRequestLocale(locale);
   const page = pagesSource.getPage(['privacy-policy'], locale);
 
   if (!page) {

@@ -25,7 +25,7 @@ export default function AffonsoScript() {
   return (
     <Script
       src="https://affonso.io/js/pixel.min.js"
-      strategy="afterInteractive"
+      strategy="lazyOnload"
       data-affonso={affiliateId}
       data-cookie_duration="30"
     />

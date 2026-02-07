@@ -3,13 +3,14 @@
 import { getDb } from '@/db';
 import { generationHistory, user } from '@/db/schema';
 import { auth } from '@/lib/auth';
+import { CACHE_DURATIONS, CACHE_TAGS } from '@/lib/cache';
 import { logger } from '@/lib/logger';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { unstable_cache } from 'next/cache';
 import { headers } from 'next/headers';
 
 // Cache duration: 5 minutes
-const FILTER_CACHE_TTL = 300;
+const FILTER_CACHE_TTL = CACHE_DURATIONS.MEDIUM;
 
 export interface PublicGeneration {
   id: string;
@@ -45,9 +46,9 @@ export interface GetPublicGenerationsResult {
 }
 
 /**
- * Get public generations for the explore page
+ * Internal function to fetch public generations from database
  */
-export async function getPublicGenerations(
+async function fetchPublicGenerations(
   options: GetPublicGenerationsOptions = {}
 ): Promise<GetPublicGenerationsResult> {
   try {
@@ -143,6 +144,41 @@ export async function getPublicGenerations(
       error: 'Failed to load gallery',
     };
   }
+}
+
+/**
+ * Get public generations for the explore page (cached for 1 minute)
+ * Cache key includes all filter parameters for proper cache separation
+ */
+export async function getPublicGenerations(
+  options: GetPublicGenerationsOptions = {}
+): Promise<GetPublicGenerationsResult> {
+  const {
+    page = 1,
+    pageSize = 20,
+    style,
+    template,
+    sortBy = 'latest',
+  } = options;
+
+  // Create cached version with unique key based on parameters
+  const cachedFetch = unstable_cache(
+    () => fetchPublicGenerations({ page, pageSize, style, template, sortBy }),
+    [
+      'public-generations',
+      String(page),
+      String(pageSize),
+      style || '',
+      template || '',
+      sortBy,
+    ],
+    {
+      revalidate: CACHE_DURATIONS.SHORT,
+      tags: [CACHE_TAGS.PUBLIC_GALLERY],
+    }
+  );
+
+  return cachedFetch();
 }
 
 /**
@@ -327,7 +363,7 @@ async function fetchAvailableTemplates(): Promise<
 export const getAvailableStyles = unstable_cache(
   fetchAvailableStyles,
   ['explore-available-styles'],
-  { revalidate: FILTER_CACHE_TTL }
+  { revalidate: FILTER_CACHE_TTL, tags: [CACHE_TAGS.PUBLIC_GALLERY] }
 );
 
 /**
@@ -336,5 +372,5 @@ export const getAvailableStyles = unstable_cache(
 export const getAvailableTemplates = unstable_cache(
   fetchAvailableTemplates,
   ['explore-available-templates'],
-  { revalidate: FILTER_CACHE_TTL }
+  { revalidate: FILTER_CACHE_TTL, tags: [CACHE_TAGS.PUBLIC_GALLERY] }
 );

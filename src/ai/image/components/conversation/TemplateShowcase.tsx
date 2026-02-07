@@ -1,6 +1,6 @@
 'use client';
 
-import { TemplateDetailModal } from '@/ai/image/components/TemplateDetailModal';
+import { LazyTemplateDetailModal } from '@/ai/image/components/lazy';
 import { useTemplateApply } from '@/ai/image/hooks/use-template-apply';
 import type { ArchTemplate, AspectRatioId } from '@/ai/image/lib/arch-types';
 import {
@@ -17,8 +17,8 @@ import {
 } from '@/components/ui/dialog';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
-import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { ArrowRight, Layers, Loader2, Sparkles } from 'lucide-react';
+import { AnimatePresence, motion, useInView } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -282,7 +282,7 @@ export function TemplateShowcase({
         </div>
 
         {/* 模板详情模态框 */}
-        <TemplateDetailModal
+        <LazyTemplateDetailModal
           template={selectedTemplate}
           open={isModalOpen}
           onOpenChange={setIsModalOpen}
@@ -349,7 +349,7 @@ export function TemplateShowcase({
       </div>
 
       {/* 模板详情模态框 */}
-      <TemplateDetailModal
+      <LazyTemplateDetailModal
         template={selectedTemplate}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}

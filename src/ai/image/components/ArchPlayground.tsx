@@ -18,8 +18,6 @@ import {
   getTemplateCategory,
 } from '../lib/template-categories';
 import { ARCH_TEMPLATES, getTemplatesByCategory } from '../lib/templates';
-import { GenerationModal } from './GenerationModal';
-import { TemplateDetailModal } from './TemplateDetailModal';
 import {
   AllCategoriesCard,
   BentoGrid,
@@ -29,6 +27,7 @@ import {
   QuickActionCard,
   StatsCard,
 } from './bento';
+import { LazyGenerationModal, LazyTemplateDetailModal } from './lazy';
 
 /**
  * ArchPlayground - Main playground component with Bento Grid layout
@@ -333,7 +332,7 @@ export function ArchPlayground() {
       </main>
 
       {/* Template detail modal */}
-      <TemplateDetailModal
+      <LazyTemplateDetailModal
         template={selectedTemplate}
         open={showTemplateModal}
         onOpenChange={setShowTemplateModal}
@@ -341,7 +340,7 @@ export function ArchPlayground() {
       />
 
       {/* Generation modal */}
-      <GenerationModal
+      <LazyGenerationModal
         open={showGenerationModal}
         onOpenChange={handleCloseGenerationModal}
         image={image}

@@ -28,6 +28,7 @@ export function Logo({ className }: { className?: string }) {
       title="Logo"
       width={96}
       height={96}
+      sizes="32px"
       className={cn('size-8 rounded-md', className)}
     />
   );

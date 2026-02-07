@@ -6,6 +6,7 @@ import { LocaleLink } from '@/i18n/navigation';
 import { ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
+import heroDashboardImage from '../../../../public/images/generated/hero-dashboard.png';
 
 const transitionVariants = {
   item: {
@@ -164,17 +165,19 @@ export default function HeroSection() {
                 <div className="inset-shadow-2xs ring-muted/50 dark:inset-shadow-white/20 bg-muted/50 relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-4 shadow-lg shadow-zinc-950/15 ring-1">
                   <Image
                     className="bg-muted/50 relative hidden rounded-2xl dark:block"
-                    src="/images/generated/hero-dashboard.png"
+                    src={heroDashboardImage}
                     alt="Arch AI Dashboard"
-                    width={2796}
-                    height={2008}
+                    priority
+                    placeholder="blur"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1152px"
                   />
                   <Image
                     className="z-2 border-border/25 relative rounded-2xl border dark:hidden"
-                    src="/images/generated/hero-dashboard.png"
+                    src={heroDashboardImage}
                     alt="Arch AI Dashboard"
-                    width={2796}
-                    height={2008}
+                    priority
+                    placeholder="blur"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1152px"
                   />
                 </div>
               </div>

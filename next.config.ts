@@ -30,6 +30,19 @@ const nextConfig: NextConfig = {
     // https://nextjs.org/docs/app/api-reference/components/image#unoptimized
     // vercel has limits on image optimization, 1000 images per month
     unoptimized: process.env.DISABLE_IMAGE_OPTIMIZATION === 'true',
+
+    // Enable modern image formats for better compression
+    // AVIF offers ~50% smaller files than WebP, with WebP as fallback
+    formats: ['image/avif', 'image/webp'],
+
+    // Device breakpoints for responsive images (srcset generation)
+    // Optimized for common device widths
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+
+    // Image sizes for smaller images (thumbnails, avatars, icons)
+    // Combined with deviceSizes for full srcset
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+
     remotePatterns: [
       {
         protocol: 'https',

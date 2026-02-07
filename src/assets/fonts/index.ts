@@ -37,7 +37,9 @@ export const fontNotoSans = Noto_Sans({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-noto-sans',
-  weight: ['500', '600', '700'],
+  weight: ['500', '600'],
+  preload: true,
+  adjustFontFallback: true,
 });
 
 // https://fonts.google.com/noto/specimen/Noto+Serif
@@ -61,5 +63,7 @@ export const fontBricolageGrotesque = Bricolage_Grotesque({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-bricolage-grotesque',
-  weight: ['400', '500', '600', '700'],
+  weight: ['500', '600', '700'],
+  preload: true,
+  adjustFontFallback: true,
 });

@@ -27,7 +27,7 @@ export default function PromotekitScript() {
       <Script
         src="https://cdn.promotekit.com/promotekit.js"
         data-promotekit={promotekitKey}
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
     </>
   );

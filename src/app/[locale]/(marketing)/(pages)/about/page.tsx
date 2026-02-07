@@ -2,12 +2,20 @@ import Container from '@/components/layout/container';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { websiteConfig } from '@/config/website';
+import { LOCALES } from '@/i18n/routing';
 import { constructMetadata } from '@/lib/metadata';
 import { cn } from '@/lib/utils';
 import { MailIcon, TwitterIcon } from 'lucide-react';
 import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+
+/**
+ * Generate static params for all locales
+ */
+export function generateStaticParams() {
+  return LOCALES.map((locale) => ({ locale }));
+}
 
 export async function generateMetadata({
   params,
@@ -26,10 +34,16 @@ export async function generateMetadata({
   });
 }
 
+interface AboutPageProps {
+  params: Promise<{ locale: Locale }>;
+}
+
 /**
  * inspired by https://astro-nomy.vercel.app/about
  */
-export default async function AboutPage() {
+export default async function AboutPage({ params }: AboutPageProps) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations('AboutPage');
 
   return (

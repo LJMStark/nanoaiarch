@@ -11,8 +11,13 @@ import {
 import { Brush, Layers, Maximize2, Pencil } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
-import Image from 'next/image';
+import Image, { type StaticImageData } from 'next/image';
 import { useState } from 'react';
+
+import architecturalStylesImg from '../../../../public/images/generated/architectural-styles.png';
+import aspectRatiosImg from '../../../../public/images/generated/aspect-ratios.png';
+import editIterateImg from '../../../../public/images/generated/edit-iterate.png';
+import imageEnhancementImg from '../../../../public/images/generated/image-enhancement.png';
 
 /**
  * https://nsui.irung.me/features
@@ -23,25 +28,21 @@ export default function FeaturesSection() {
   type ImageKey = 'item-1' | 'item-2' | 'item-3' | 'item-4';
   const [activeItem, setActiveItem] = useState<ImageKey>('item-1');
 
-  const images = {
+  const images: Record<ImageKey, { image: StaticImageData; alt: string }> = {
     'item-1': {
-      image: '/images/generated/architectural-styles.png',
-      darkImage: '/images/generated/architectural-styles.png',
+      image: architecturalStylesImg,
       alt: 'Architectural Styles',
     },
     'item-2': {
-      image: '/images/generated/image-enhancement.png',
-      darkImage: '/images/generated/image-enhancement.png',
+      image: imageEnhancementImg,
       alt: 'Smart Image Enhancement',
     },
     'item-3': {
-      image: '/images/generated/aspect-ratios.png',
-      darkImage: '/images/generated/aspect-ratios.png',
+      image: aspectRatiosImg,
       alt: 'Multiple Aspect Ratios',
     },
     'item-4': {
-      image: '/images/generated/edit-iterate.png',
-      darkImage: '/images/generated/edit-iterate.png',
+      image: editIterateImg,
       alt: 'Edit & Iterate',
     },
   };
@@ -132,17 +133,10 @@ export default function FeaturesSection() {
                 >
                   <Image
                     src={images[activeItem].image}
-                    className="size-full object-cover object-left-top dark:hidden"
+                    className="size-full object-cover object-left-top"
                     alt={images[activeItem].alt}
-                    width={1207}
-                    height={929}
-                  />
-                  <Image
-                    src={images[activeItem].darkImage}
-                    className="size-full object-cover object-left-top dark:block hidden"
-                    alt={images[activeItem].alt}
-                    width={1207}
-                    height={929}
+                    placeholder="blur"
+                    sizes="(max-width: 1024px) 100vw, 58vw"
                   />
                 </motion.div>
               </AnimatePresence>

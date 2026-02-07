@@ -166,6 +166,8 @@ export const generationHistory = pgTable("generation_history", {
 	generationHistoryIsFavoriteIdx: index("generation_history_is_favorite_idx").on(table.isFavorite),
 	generationHistoryIsPublicIdx: index("generation_history_is_public_idx").on(table.isPublic),
 	generationHistoryCreatedAtIdx: index("generation_history_created_at_idx").on(table.createdAt),
+	// Composite index for public gallery queries (isPublic + status + createdAt)
+	generationHistoryPublicGalleryIdx: index("generation_history_public_gallery_idx").on(table.isPublic, table.status, table.createdAt),
 }));
 
 // Referral tracking table
@@ -254,4 +256,7 @@ export const projectMessage = pgTable("project_message", {
 	projectMessageUserIdIdx: index("project_message_user_id_idx").on(table.userId),
 	projectMessageStatusIdx: index("project_message_status_idx").on(table.status),
 	projectMessageOrderIdx: index("project_message_order_idx").on(table.orderIndex),
+	// Composite index for common query patterns
+	projectMessageProjectOrderIdx: index("project_message_project_order_idx").on(table.projectId, table.orderIndex),
+	projectMessageUserProjectIdx: index("project_message_user_project_idx").on(table.userId, table.projectId),
 }));

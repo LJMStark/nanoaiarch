@@ -81,6 +81,7 @@ function UserMessage({ message }: { message: ProjectMessageItem }) {
               src={getImageSrc(message.inputImage)}
               alt={t('canvas.referenceImageAlt')}
               fill
+              sizes="192px"
               className="object-cover"
             />
           </div>
@@ -387,6 +388,7 @@ function AssistantMessage({
                 alt={t('canvas.generatedImageAlt')}
                 width={512}
                 height={512}
+                sizes="(max-width: 640px) 100vw, 512px"
                 className="w-full h-auto"
               />
 
@@ -472,6 +474,7 @@ function AssistantMessage({
                     src={getImageSrc(message.outputImage)}
                     alt={t('canvas.generatedImageAlt')}
                     fill
+                    sizes="100vw"
                     className="object-contain"
                   />
                 </div>
