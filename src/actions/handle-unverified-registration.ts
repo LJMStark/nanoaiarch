@@ -5,7 +5,7 @@ import { getDb } from '@/db';
 import { user, verification } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-import { eq, and, gt } from 'drizzle-orm';
+import { and, eq, gt } from 'drizzle-orm';
 
 export interface HandleUnverifiedRegistrationResult {
   status: 'unverified' | 'verified' | 'not_found' | 'rate_limited';

@@ -34,12 +34,6 @@ import {
 } from '@/components/ui/tooltip';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { formatDate } from '@/lib/formatter';
-import { CaretDownIcon, CaretUpIcon } from '@radix-ui/react-icons';
-import {
-  IconCaretDownFilled,
-  IconCaretUpFilled,
-  IconSortAscending2,
-} from '@tabler/icons-react';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -57,9 +51,11 @@ import {
   ArrowUpDownIcon,
   ArrowUpIcon,
   BanknoteIcon,
+  ChevronDown,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronUp,
   ChevronUpIcon,
   ChevronsLeftIcon,
   ChevronsRightIcon,
@@ -123,8 +119,8 @@ function DataTableColumnHeader<TData, TValue>({
             className="h-8 data-[state=open]:bg-accent flex items-center gap-1"
           >
             <span>{title}</span>
-            {isSorted === 'asc' && <IconCaretUpFilled className="h-4 w-4" />}
-            {isSorted === 'desc' && <IconCaretDownFilled className="h-4 w-4" />}
+            {isSorted === 'asc' && <ChevronUp className="h-4 w-4" />}
+            {isSorted === 'desc' && <ChevronDown className="h-4 w-4" />}
             {/* {!isSorted && <ChevronsUpDownIcon className="h-4 w-4" />} */}
           </Button>
         </DropdownMenuTrigger>

@@ -12,16 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { websiteConfig } from '@/config/website';
 import { cn } from '@/lib/utils';
-import {
-  IconCheck,
-  IconClock,
-  IconCoin,
-  IconCopy,
-  IconGift,
-  IconUsers,
-} from '@tabler/icons-react';
 import { formatDistanceToNow } from 'date-fns';
 import { enUS, zhCN } from 'date-fns/locale';
+import { Check, Clock, Coins, Copy, Gift, Users } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
@@ -108,14 +101,14 @@ export default function ReferralPage() {
       case 'qualified':
         return (
           <Badge variant="default" className="bg-green-500">
-            <IconCheck className="mr-1 size-3" />
+            <Check className="mr-1 size-3" />
             {t('status.qualified')}
           </Badge>
         );
       default:
         return (
           <Badge variant="secondary">
-            <IconClock className="mr-1 size-3" />
+            <Clock className="mr-1 size-3" />
             {t('status.pending')}
           </Badge>
         );
@@ -137,7 +130,7 @@ export default function ReferralPage() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <IconGift className="size-5" />
+              <Gift className="size-5" />
               {t('yourLink')}
             </CardTitle>
           </CardHeader>
@@ -156,12 +149,12 @@ export default function ReferralPage() {
                 >
                   {copied ? (
                     <>
-                      <IconCheck className="mr-2 size-4" />
+                      <Check className="mr-2 size-4" />
                       {t('copied')}
                     </>
                   ) : (
                     <>
-                      <IconCopy className="mr-2 size-4" />
+                      <Copy className="mr-2 size-4" />
                       {t('copy')}
                     </>
                   )}
@@ -208,7 +201,7 @@ export default function ReferralPage() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-2 text-2xl font-bold">
-                    <IconUsers className="size-5 text-muted-foreground" />
+                    <Users className="size-5 text-muted-foreground" />
                     {stats?.totalReferred || 0}
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -219,7 +212,7 @@ export default function ReferralPage() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-2 text-2xl font-bold">
-                    <IconClock className="size-5 text-muted-foreground" />
+                    <Clock className="size-5 text-muted-foreground" />
                     {stats?.pendingCount || 0}
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -230,7 +223,7 @@ export default function ReferralPage() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-2 text-2xl font-bold">
-                    <IconCheck className="size-5 text-green-500" />
+                    <Check className="size-5 text-green-500" />
                     {stats?.qualifiedCount || 0}
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -241,7 +234,7 @@ export default function ReferralPage() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-2 text-2xl font-bold">
-                    <IconCoin className="size-5 text-yellow-500" />
+                    <Coins className="size-5 text-yellow-500" />
                     {stats?.totalEarned || 0}
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -267,7 +260,7 @@ export default function ReferralPage() {
               </div>
             ) : referrals.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <IconUsers className="mx-auto size-12 mb-4 opacity-30" />
+                <Users className="mx-auto size-12 mb-4 opacity-30" />
                 <p>{t('list.empty')}</p>
               </div>
             ) : (

@@ -33,23 +33,21 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import {
-  IconDownload,
-  IconEye,
-  IconEyeOff,
-  IconFilter,
-  IconGridDots,
-  IconHeart,
-  IconHeartFilled,
-  IconList,
-  IconSearch,
-  IconShare,
-  IconSparkles,
-  IconTrash,
-  IconWorld,
-} from '@tabler/icons-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { enUS, zhCN } from 'date-fns/locale';
+import {
+  Download,
+  Eye,
+  EyeOff,
+  Globe,
+  Grid3X3,
+  Heart,
+  List,
+  Search,
+  Share2,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
@@ -199,7 +197,7 @@ export default function GalleryPage() {
 
           <Button asChild>
             <a href="/ai/image">
-              <IconSparkles className="mr-2 size-4" />
+              <Sparkles className="mr-2 size-4" />
               {t('newGeneration')}
             </a>
           </Button>
@@ -216,7 +214,7 @@ export default function GalleryPage() {
 
           <div className="flex items-center gap-2">
             <div className="relative">
-              <IconSearch className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder={t('search')}
                 value={searchQuery}
@@ -232,7 +230,7 @@ export default function GalleryPage() {
                 className="rounded-r-none"
                 onClick={() => setViewMode('grid')}
               >
-                <IconGridDots className="size-4" />
+                <Grid3X3 className="size-4" />
               </Button>
               <Button
                 variant={viewMode === 'list' ? 'secondary' : 'ghost'}
@@ -240,7 +238,7 @@ export default function GalleryPage() {
                 className="rounded-l-none"
                 onClick={() => setViewMode('list')}
               >
-                <IconList className="size-4" />
+                <List className="size-4" />
               </Button>
             </div>
           </div>
@@ -266,7 +264,7 @@ export default function GalleryPage() {
           </div>
         ) : filteredGenerations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <IconSparkles className="size-16 text-muted-foreground/30 mb-4" />
+            <Sparkles className="size-16 text-muted-foreground/30 mb-4" />
             <h3 className="text-xl font-medium">{t('empty.title')}</h3>
             <p className="text-muted-foreground mt-2 max-w-md">
               {activeTab === 'favorites'
@@ -315,7 +313,7 @@ export default function GalleryPage() {
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center">
-                      <IconSparkles className="size-8 text-muted-foreground/30" />
+                      <Sparkles className="size-8 text-muted-foreground/30" />
                     </div>
                   )}
 
@@ -323,11 +321,11 @@ export default function GalleryPage() {
                   <div className="absolute top-2 right-2 flex items-center gap-1">
                     {generation.isPublic && (
                       <div className="rounded-full bg-black/50 p-1">
-                        <IconWorld className="size-4 text-white" />
+                        <Globe className="size-4 text-white" />
                       </div>
                     )}
                     {generation.isFavorite && (
-                      <IconHeartFilled className="size-5 text-red-500 drop-shadow" />
+                      <Heart className="size-5 fill-red-500 text-red-500 drop-shadow" />
                     )}
                   </div>
                 </div>
@@ -388,7 +386,7 @@ export default function GalleryPage() {
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center">
-                        <IconSparkles className="size-12 text-muted-foreground/30" />
+                        <Sparkles className="size-12 text-muted-foreground/30" />
                       </div>
                     )}
                   </div>
@@ -457,12 +455,12 @@ export default function GalleryPage() {
                       >
                         {selectedGeneration.isFavorite ? (
                           <>
-                            <IconHeartFilled className="mr-2 size-4 text-red-500" />
+                            <Heart className="mr-2 size-4 fill-red-500 text-red-500" />
                             {t('detail.unfavorite')}
                           </>
                         ) : (
                           <>
-                            <IconHeart className="mr-2 size-4" />
+                            <Heart className="mr-2 size-4" />
                             {t('detail.favorite')}
                           </>
                         )}
@@ -477,12 +475,12 @@ export default function GalleryPage() {
                       >
                         {selectedGeneration.isPublic ? (
                           <>
-                            <IconEyeOff className="mr-2 size-4" />
+                            <EyeOff className="mr-2 size-4" />
                             {t('detail.makePrivate')}
                           </>
                         ) : (
                           <>
-                            <IconEye className="mr-2 size-4" />
+                            <Eye className="mr-2 size-4" />
                             {t('detail.makePublic')}
                           </>
                         )}
@@ -498,7 +496,7 @@ export default function GalleryPage() {
                             )
                           }
                         >
-                          <IconDownload className="mr-2 size-4" />
+                          <Download className="mr-2 size-4" />
                           {t('detail.download')}
                         </Button>
                       )}
@@ -513,7 +511,7 @@ export default function GalleryPage() {
                             )
                           }
                         >
-                          <IconShare className="mr-2 size-4" />
+                          <Share2 className="mr-2 size-4" />
                           {t('detail.share')}
                         </Button>
                       )}
@@ -521,7 +519,7 @@ export default function GalleryPage() {
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="destructive">
-                            <IconTrash className="mr-2 size-4" />
+                            <Trash2 className="mr-2 size-4" />
                             {t('detail.delete')}
                           </Button>
                         </AlertDialogTrigger>

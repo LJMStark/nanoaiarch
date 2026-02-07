@@ -22,15 +22,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import {
-  IconDownload,
-  IconHeart,
-  IconHeartFilled,
-  IconSparkles,
-  IconTrash,
-} from '@tabler/icons-react';
 import { formatDistanceToNow } from 'date-fns';
 import { enUS, zhCN } from 'date-fns/locale';
+import { Download, Heart, Sparkles, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
 import Image from 'next/image';
@@ -126,7 +120,7 @@ export function RecentGenerations() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <IconSparkles className="size-12 text-muted-foreground/50 mb-4" />
+            <Sparkles className="size-12 text-muted-foreground/50 mb-4" />
             <h3 className="text-lg font-medium">{t('empty.title')}</h3>
             <p className="text-sm text-muted-foreground mt-1 max-w-md">
               {t('empty.description')}
@@ -166,7 +160,7 @@ export function RecentGenerations() {
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center">
-                    <IconSparkles className="size-8 text-muted-foreground/30" />
+                    <Sparkles className="size-8 text-muted-foreground/30" />
                   </div>
                 )}
 
@@ -181,9 +175,9 @@ export function RecentGenerations() {
                       disabled={isPending}
                     >
                       {generation.isFavorite ? (
-                        <IconHeartFilled className="size-4 text-red-500" />
+                        <Heart className="size-4 fill-red-500 text-red-500" />
                       ) : (
-                        <IconHeart className="size-4" />
+                        <Heart className="size-4" />
                       )}
                     </Button>
 
@@ -200,7 +194,7 @@ export function RecentGenerations() {
                             )
                           }
                         >
-                          <IconDownload className="size-4" />
+                          <Download className="size-4" />
                         </Button>
                       )}
 
@@ -211,7 +205,7 @@ export function RecentGenerations() {
                             size="icon"
                             className="h-8 w-8 text-white hover:bg-white/20 hover:text-red-400"
                           >
-                            <IconTrash className="size-4" />
+                            <Trash2 className="size-4" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>

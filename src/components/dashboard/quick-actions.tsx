@@ -2,12 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import {
-  IconHeart,
-  IconHistory,
-  IconPhoto,
-  IconSparkles,
-} from '@tabler/icons-react';
+import { Heart, History, Image, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 
@@ -16,7 +11,7 @@ const actions = [
     titleKey: 'newGeneration',
     descriptionKey: 'newGenerationDesc',
     href: '/ai/image',
-    icon: IconSparkles,
+    icon: Sparkles,
     color: 'from-violet-500/10 to-violet-600/10 border-violet-500/20',
     iconColor: 'text-violet-600',
   },
@@ -24,7 +19,7 @@ const actions = [
     titleKey: 'gallery',
     descriptionKey: 'galleryDesc',
     href: '/gallery',
-    icon: IconPhoto,
+    icon: Image,
     color: 'from-blue-500/10 to-blue-600/10 border-blue-500/20',
     iconColor: 'text-blue-600',
   },
@@ -32,7 +27,7 @@ const actions = [
     titleKey: 'history',
     descriptionKey: 'historyDesc',
     href: '/gallery?tab=history',
-    icon: IconHistory,
+    icon: History,
     color: 'from-amber-500/10 to-amber-600/10 border-amber-500/20',
     iconColor: 'text-amber-600',
   },
@@ -40,7 +35,7 @@ const actions = [
     titleKey: 'favorites',
     descriptionKey: 'favoritesDesc',
     href: '/gallery?tab=favorites',
-    icon: IconHeart,
+    icon: Heart,
     color: 'from-rose-500/10 to-rose-600/10 border-rose-500/20',
     iconColor: 'text-rose-600',
   },

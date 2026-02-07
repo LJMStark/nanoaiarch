@@ -29,7 +29,6 @@ import {
 import type { User } from '@/lib/auth-types';
 import { formatDate } from '@/lib/formatter';
 import { getStripeDashboardCustomerUrl } from '@/lib/urls/urls';
-import { IconCaretDownFilled, IconCaretUpFilled } from '@tabler/icons-react';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -43,9 +42,11 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import {
+  ChevronDown,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronUp,
   ChevronsLeftIcon,
   ChevronsRightIcon,
   MailCheckIcon,
@@ -87,8 +88,8 @@ function DataTableColumnHeader<TData, TValue>({
             className="cursor-pointer flex items-center gap-2 h-8 data-[state=open]:bg-accent"
           >
             {title}
-            {isSorted === 'asc' && <IconCaretUpFilled className="h-4 w-4" />}
-            {isSorted === 'desc' && <IconCaretDownFilled className="h-4 w-4" />}
+            {isSorted === 'asc' && <ChevronUp className="h-4 w-4" />}
+            {isSorted === 'desc' && <ChevronDown className="h-4 w-4" />}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-36">

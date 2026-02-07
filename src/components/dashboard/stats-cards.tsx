@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  IconCalendar,
-  IconHeart,
-  IconPhoto,
-  IconSparkles,
-} from '@tabler/icons-react';
+import { Calendar, Heart, Image, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
@@ -56,25 +51,25 @@ export function StatsCards() {
     {
       title: t('totalGenerations'),
       value: stats?.totalGenerations ?? 0,
-      icon: IconPhoto,
+      icon: Image,
       description: t('totalGenerationsDesc'),
     },
     {
       title: t('thisMonth'),
       value: stats?.thisMonthGenerations ?? 0,
-      icon: IconCalendar,
+      icon: Calendar,
       description: t('thisMonthDesc'),
     },
     {
       title: t('creditsUsed'),
       value: stats?.totalCreditsUsed ?? 0,
-      icon: IconSparkles,
+      icon: Sparkles,
       description: t('creditsUsedDesc'),
     },
     {
       title: t('favorites'),
       value: stats?.favoriteCount ?? 0,
-      icon: IconHeart,
+      icon: Heart,
       description: t('favoritesDesc'),
     },
   ];

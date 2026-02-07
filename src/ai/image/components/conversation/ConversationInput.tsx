@@ -16,8 +16,8 @@ import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
-import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUp, ImageIcon, Loader2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 

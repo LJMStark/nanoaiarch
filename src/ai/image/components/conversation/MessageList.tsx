@@ -1,7 +1,7 @@
 'use client';
 
 import { useConversationStore } from '@/stores/conversation-store';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { LoadingMessage } from './LoadingMessage';
 import { MessageItem } from './MessageItem';
 
