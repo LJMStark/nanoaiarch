@@ -76,6 +76,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '*.dmiapi.com',
       },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+      },
     ],
   },
 };
