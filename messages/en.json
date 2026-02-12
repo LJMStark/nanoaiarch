@@ -449,6 +449,8 @@
       "nameRequired": "Please enter your name",
       "emailRequired": "Please enter your email",
       "passwordRequired": "Please enter your password",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "registrationFailed": "Registration failed. Please try again.",
       "captchaInvalid": "Captcha verification failed",
       "captchaError": "Captcha verification error",
       "resendEmail": "Resend verification email",

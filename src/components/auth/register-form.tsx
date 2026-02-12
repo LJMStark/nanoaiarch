@@ -73,8 +73,8 @@ export const RegisterForm = ({
     email: z.email({
       message: t('emailRequired'),
     }),
-    password: z.string().min(1, {
-      message: t('passwordRequired'),
+    password: z.string().min(8, {
+      message: t('passwordTooShort'),
     }),
     name: z.string().min(1, {
       message: t('nameRequired'),
@@ -216,8 +216,7 @@ export const RegisterForm = ({
           const isUserExistsError =
             ctx.error.message?.toLowerCase().includes('already exists') ||
             ctx.error.message?.toLowerCase().includes('already registered') ||
-            ctx.error.status === 409 ||
-            ctx.error.status === 422;
+            ctx.error.status === 409;
 
           if (isUserExistsError) {
             logger.auth.info(
@@ -249,11 +248,11 @@ export const RegisterForm = ({
               }
             } catch (error) {
               logger.auth.error('handleUnverifiedRegistration error', error);
-              setError(`${ctx.error.status}: ${ctx.error.message}`);
+              setError(t('registrationFailed'));
             }
           } else {
-            // Other registration errors
-            setError(`${ctx.error.status}: ${ctx.error.message}`);
+            // Other registration errors - use i18n message instead of raw English
+            setError(t('registrationFailed'));
           }
 
           // Reset captcha on registration error
