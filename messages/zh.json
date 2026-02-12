@@ -1459,7 +1459,8 @@
       "renameUnexpected": "发生意外错误",
       "renaming": "重命名中...",
       "renameAction": "重命名",
-      "characterCount": "{count}/{max} 个字符"
+      "characterCount": "{count}/{max} 个字符",
+      "searchPlaceholder": "搜索项目..."
     },
     "controls": {
       "style": "风格",
@@ -1712,7 +1713,13 @@
       "generating": "正在生成图像...",
       "detailing": "正在补充细节...",
       "almost": "马上完成...",
-      "elapsed": "已用时 {seconds}s"
+      "elapsed": "已用时 {seconds}s",
+      "stage_submitting": "准备请求中...",
+      "stage_queued": "请求排队中...",
+      "stage_generating": "图片生成中...",
+      "stage_finishing": "处理完成中...",
+      "cancel": "取消",
+      "cancelled": "生成已取消"
     },
     "errors": {
       "unexpected": "发生意外错误",

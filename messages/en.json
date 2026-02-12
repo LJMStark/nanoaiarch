@@ -1459,7 +1459,8 @@
       "renameUnexpected": "An unexpected error occurred",
       "renaming": "Renaming...",
       "renameAction": "Rename",
-      "characterCount": "{count}/{max} characters"
+      "characterCount": "{count}/{max} characters",
+      "searchPlaceholder": "Search projects..."
     },
     "controls": {
       "style": "Style",
@@ -1712,7 +1713,13 @@
       "generating": "Generating image...",
       "detailing": "Adding details...",
       "almost": "Almost there...",
-      "elapsed": "{seconds}s elapsed"
+      "elapsed": "{seconds}s elapsed",
+      "stage_submitting": "Preparing request...",
+      "stage_queued": "Request queued...",
+      "stage_generating": "Generating image...",
+      "stage_finishing": "Finalizing...",
+      "cancel": "Cancel",
+      "cancelled": "Generation cancelled"
     },
     "errors": {
       "unexpected": "An unexpected error occurred",

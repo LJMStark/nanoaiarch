@@ -1,13 +1,13 @@
 'use client';
 
-// Arch AI Playground - Bento Grid Layout
-// Arch AI Playground - Bento 网格布局设计
+// Arch AI Playground - Template showcase and entry point
+// Redirects to Conversation mode for actual generation
 
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
-import { useCallback, useMemo } from 'react';
-import { useArchGeneration } from '../hooks/use-arch-generation';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
 import type {
   ArchTemplate,
   AspectRatioId,
@@ -24,146 +24,68 @@ import {
   BentoTemplateCard,
   CategoryCard,
   HeroBentoCard,
-  QuickActionCard,
   StatsCard,
 } from './bento';
-import { LazyGenerationModal, LazyTemplateDetailModal } from './lazy';
+import { LazyTemplateDetailModal } from './lazy';
 
 /**
- * ArchPlayground - Main playground component with Bento Grid layout
+ * ArchPlayground - Template showcase page
  *
- * Layout Structure:
- * - Top Row: Hero Card (7 cols) + Quick Action Card (5 cols)
- * - Second Row: Category Cards (2 cols each) + Stats Card (4 cols)
- * - Template Grid: Bento grid of templates based on selected category
+ * Displays templates in a Bento Grid layout.
+ * When a user selects a template, they are redirected to the
+ * Conversation page with the template ID as a URL parameter.
  */
 export function ArchPlayground() {
   const t = useTranslations('ArchPage');
-  const tRoot = useTranslations(); // Root translator for full key paths
+  const tRoot = useTranslations();
+  const router = useRouter();
 
-  // Use the arch generation hook
-  const {
-    image,
-    error,
-    timing,
-    isLoading,
-    activePrompt,
-    mode,
-    selectedModel,
-    referenceImage,
-    lastCreditsUsed,
-    setMode,
-    setReferenceImage,
-    stylePreset,
-    aspectRatio,
-    selectedTemplate,
-    templateCategory,
-    showTemplateModal,
-    promptValue,
-    setStylePreset,
-    setAspectRatio,
-    selectTemplate,
-    setTemplateCategory,
-    setShowTemplateModal,
-    setPromptValue,
-    generateWithEnhancement,
-    editWithEnhancement,
-  } = useArchGeneration();
+  // Template browsing state
+  const [templateCategory, setTemplateCategory] = useState<
+    TemplateCategoryId | 'all'
+  >('all');
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<ArchTemplate | null>(null);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
-  // Get featured template for hero card
   const featuredTemplate = useMemo(() => {
     return ARCH_TEMPLATES.find((t) => t.featured) || ARCH_TEMPLATES[0];
   }, []);
 
-  // Get templates for current category
   const templates = useMemo(() => {
     return getTemplatesByCategory(templateCategory);
   }, [templateCategory]);
 
-  // Total template count
   const totalTemplateCount = ARCH_TEMPLATES.length;
 
-  // Generation modal state
-  const showGenerationModal = isLoading || !!image || !!error;
-
-  // Handle submit
-  const handleSubmit = useCallback(async () => {
-    if (!promptValue.trim()) return;
-
-    if (mode === 'edit' && referenceImage) {
-      await editWithEnhancement(promptValue);
-    } else {
-      await generateWithEnhancement(promptValue);
-    }
-  }, [
-    promptValue,
-    mode,
-    referenceImage,
-    editWithEnhancement,
-    generateWithEnhancement,
-  ]);
-
-  // Handle template click from hero
-  const handleHeroTemplateClick = useCallback(
-    (template: ArchTemplate) => {
-      selectTemplate(template);
+  // Navigate to Conversation page with template
+  const navigateToConversation = useCallback(
+    (templateId: string) => {
+      router.push(`/ai/image?template=${templateId}`);
     },
-    [selectTemplate]
+    [router]
   );
 
-  // Handle template apply from modal
+  const handleTemplateClick = useCallback((template: ArchTemplate) => {
+    setSelectedTemplate(template);
+    setShowTemplateModal(true);
+  }, []);
+
   const handleTemplateApply = useCallback(
-    (template: ArchTemplate, prompt: string, ratio: AspectRatioId) => {
-      setPromptValue(prompt);
-      setAspectRatio(ratio);
+    (template: ArchTemplate, _prompt: string, _ratio: AspectRatioId) => {
       setShowTemplateModal(false);
-
-      if (template.requiresInput) {
-        setMode('edit');
-      } else {
-        setMode('generate');
-      }
+      navigateToConversation(template.id);
     },
-    [setPromptValue, setAspectRatio, setShowTemplateModal, setMode]
-  );
-
-  // Handle category change
-  const handleCategoryChange = useCallback(
-    (category: TemplateCategoryId | 'all') => {
-      setTemplateCategory(category);
-    },
-    [setTemplateCategory]
-  );
-
-  // Handle regenerate in modal
-  const handleRegenerate = useCallback(() => {
-    if (promptValue.trim()) {
-      handleSubmit();
-    }
-  }, [promptValue, handleSubmit]);
-
-  // Close generation modal
-  const handleCloseGenerationModal = useCallback(
-    (open: boolean) => {
-      // Only allow closing if not loading
-      if (!isLoading && !open) {
-        // Clear the results to close modal
-        // This would need to be implemented in the hook
-      }
-    },
-    [isLoading]
+    [navigateToConversation]
   );
 
   return (
     <>
       <main className="min-h-screen overflow-hidden">
-        {/* Background decorations */}
         <BackgroundDecorations />
 
-        {/* Main content */}
         <div className="relative z-10 px-4 py-8 lg:py-12">
           <div className="mx-auto max-w-7xl">
-            {/* Page header - minimal */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -177,32 +99,15 @@ export function ArchPlayground() {
               </p>
             </motion.div>
 
-            {/* Bento Grid Layout */}
             <BentoGrid className="mb-8">
-              {/* Row 1: Hero + Quick Action */}
               <HeroBentoCard
                 featuredTemplate={featuredTemplate}
-                onTemplateClick={handleHeroTemplateClick}
-              />
-              <QuickActionCard
-                promptValue={promptValue}
-                onPromptChange={setPromptValue}
-                onSubmit={handleSubmit}
-                referenceImage={referenceImage}
-                onImageUpload={setReferenceImage}
-                onImageClear={() => setReferenceImage(null)}
-                stylePreset={stylePreset}
-                onStyleChange={setStylePreset}
-                aspectRatio={aspectRatio}
-                onAspectRatioChange={setAspectRatio}
-                selectedModel={selectedModel}
-                isLoading={isLoading}
+                onTemplateClick={handleTemplateClick}
               />
 
-              {/* Row 2: Categories (3) + Stats */}
               <AllCategoriesCard
                 isSelected={templateCategory === 'all'}
-                onClick={() => handleCategoryChange('all')}
+                onClick={() => setTemplateCategory('all')}
                 totalCount={totalTemplateCount}
                 animationDelay={0.15}
               />
@@ -211,7 +116,7 @@ export function ArchPlayground() {
                   key={cat.id}
                   category={cat}
                   isSelected={templateCategory === cat.id}
-                  onClick={() => handleCategoryChange(cat.id)}
+                  onClick={() => setTemplateCategory(cat.id)}
                   animationDelay={0.2 + index * 0.05}
                 />
               ))}
@@ -223,7 +128,7 @@ export function ArchPlayground() {
               />
             </BentoGrid>
 
-            {/* Category filter - show remaining categories */}
+            {/* Category filter - remaining categories */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -237,7 +142,7 @@ export function ArchPlayground() {
                     <button
                       key={cat.id}
                       type="button"
-                      onClick={() => handleCategoryChange(cat.id)}
+                      onClick={() => setTemplateCategory(cat.id)}
                       className={cn(
                         'flex items-center gap-2 px-3 py-1.5 rounded-full',
                         'text-xs font-medium whitespace-nowrap',
@@ -294,7 +199,7 @@ export function ArchPlayground() {
                     <BentoTemplateCard
                       key={template.id}
                       template={template}
-                      onClick={() => selectTemplate(template)}
+                      onClick={() => handleTemplateClick(template)}
                       animationDelay={0.5 + index * 0.03}
                     />
                   ))}
@@ -331,39 +236,23 @@ export function ArchPlayground() {
         </div>
       </main>
 
-      {/* Template detail modal */}
+      {/* Template detail modal - redirects to Conversation on apply */}
       <LazyTemplateDetailModal
         template={selectedTemplate}
         open={showTemplateModal}
         onOpenChange={setShowTemplateModal}
         onApply={handleTemplateApply}
       />
-
-      {/* Generation modal */}
-      <LazyGenerationModal
-        open={showGenerationModal}
-        onOpenChange={handleCloseGenerationModal}
-        image={image}
-        error={error}
-        timing={timing}
-        isLoading={isLoading}
-        activePrompt={activePrompt}
-        lastCreditsUsed={lastCreditsUsed}
-        onRegenerate={handleRegenerate}
-      />
     </>
   );
 }
 
-// Background decorations component
-// 背景装饰组件
 function BackgroundDecorations() {
   return (
     <div
       aria-hidden
       className="fixed inset-0 overflow-hidden pointer-events-none"
     >
-      {/* Top left gradient orb */}
       <div
         className={cn(
           'absolute -top-40 -left-40 w-80 h-80',
@@ -371,7 +260,6 @@ function BackgroundDecorations() {
           'bg-gradient-to-br from-primary/50 to-transparent'
         )}
       />
-      {/* Bottom right gradient orb */}
       <div
         className={cn(
           'absolute -bottom-40 -right-40 w-96 h-96',
@@ -379,7 +267,6 @@ function BackgroundDecorations() {
           'bg-gradient-to-tl from-violet-500/50 to-transparent'
         )}
       />
-      {/* Grid pattern */}
       <div
         className="absolute inset-0 opacity-[0.02] dark:opacity-[0.03]"
         style={{

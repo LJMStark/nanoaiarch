@@ -18,21 +18,6 @@ function ModalLoadingFallback() {
 }
 
 /**
- * Lazy-loaded GenerationModal
- * Only loaded when user triggers image generation
- */
-export const LazyGenerationModal = dynamic(
-  () =>
-    import('./GenerationModal').then((mod) => ({
-      default: mod.GenerationModal,
-    })),
-  {
-    loading: () => <ModalLoadingFallback />,
-    ssr: false,
-  }
-);
-
-/**
  * Lazy-loaded TemplateDetailModal
  * Only loaded when user clicks on a template
  */
@@ -47,29 +32,4 @@ export const LazyTemplateDetailModal = dynamic(
   }
 );
 
-/**
- * Lazy-loaded HistoryPanel
- * Only loaded when user opens history
- */
-export const LazyHistoryPanel = dynamic(
-  () => import('./HistoryPanel').then((mod) => ({ default: mod.HistoryPanel })),
-  {
-    loading: () => <ModalLoadingFallback />,
-    ssr: false,
-  }
-);
 
-/**
- * Lazy-loaded TemplateGallery
- * Only loaded when user navigates to gallery view
- */
-export const LazyTemplateGallery = dynamic(
-  () =>
-    import('./TemplateGallery').then((mod) => ({
-      default: mod.TemplateGallery,
-    })),
-  {
-    loading: () => <ModalLoadingFallback />,
-    ssr: false,
-  }
-);

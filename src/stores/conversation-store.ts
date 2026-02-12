@@ -5,6 +5,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type MessageStatus = 'pending' | 'generating' | 'completed' | 'failed';
 
+export type GenerationStage = 'submitting' | 'queued' | 'generating' | 'finishing' | null;
+
 interface ConversationState {
   // Messages
   messages: ProjectMessageItem[];
@@ -13,6 +15,8 @@ interface ConversationState {
   // Generation state
   isGenerating: boolean;
   generatingMessageId: string | null;
+  abortController: AbortController | null;
+  generationStage: GenerationStage;
 
   // Current project context
   currentProjectId: string | null;
@@ -31,6 +35,9 @@ interface ConversationState {
 
   // Generation state
   setGenerating: (generating: boolean, messageId?: string | null) => void;
+  setAbortController: (controller: AbortController | null) => void;
+  setGenerationStage: (stage: GenerationStage) => void;
+  cancelGeneration: () => void;
 
   // Project context
   setCurrentProject: (projectId: string | null) => void;
@@ -40,6 +47,13 @@ interface ConversationState {
 
   // Get last output image
   getLastOutputImage: () => string | null;
+
+  // Get conversation history for multi-turn context
+  getConversationHistory: () => Array<{
+    role: 'user' | 'model';
+    content: string;
+    image?: string;
+  }>;
 
   // Reset
   reset: () => void;
@@ -51,6 +65,8 @@ const initialState = {
   isGenerating: false,
   generatingMessageId: null as string | null,
   currentProjectId: null as string | null,
+  abortController: null as AbortController | null,
+  generationStage: null as GenerationStage,
 };
 
 // Custom storage with error handling for localStorage operations
@@ -127,6 +143,22 @@ export const useConversationStore = create<ConversationState>()(
           generatingMessageId: generating ? messageId : null,
         }),
 
+      setAbortController: (controller) => set({ abortController: controller }),
+
+      setGenerationStage: (stage) => set({ generationStage: stage }),
+
+      cancelGeneration: () => {
+        const { abortController } = get();
+        if (abortController) {
+          abortController.abort();
+        }
+        set({
+          isGenerating: false,
+          generationStage: null,
+          abortController: null,
+        });
+      },
+
       setCurrentProject: (projectId) => {
         if (projectId !== get().currentProjectId) {
           set({
@@ -157,6 +189,41 @@ export const useConversationStore = create<ConversationState>()(
           )
           .at(-1);
         return lastMessage?.outputImage ?? null;
+      },
+
+      getConversationHistory: () => {
+        const messages = get().messages;
+
+        // Collect completed user+assistant pairs (most recent 5 rounds)
+        const pairs: Array<{
+          user: ProjectMessageItem;
+          assistant: ProjectMessageItem;
+        }> = [];
+
+        for (let i = 0; i < messages.length - 1; i++) {
+          const msg = messages[i];
+          const next = messages[i + 1];
+          if (
+            msg.role === 'user' &&
+            next.role === 'assistant' &&
+            next.status === 'completed'
+          ) {
+            pairs.push({ user: msg, assistant: next });
+          }
+        }
+
+        return pairs.slice(-5).flatMap((pair) => [
+          {
+            role: 'user' as const,
+            content: pair.user.content,
+            ...(pair.user.inputImage && { image: pair.user.inputImage }),
+          },
+          {
+            role: 'model' as const,
+            content: pair.assistant.content || '',
+            ...(pair.assistant.outputImage && { image: pair.assistant.outputImage }),
+          },
+        ]);
       },
 
       reset: () => set(initialState),

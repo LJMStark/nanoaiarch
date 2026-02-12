@@ -1,4 +1,5 @@
 import { getCreditCost } from '@/ai/image/lib/credit-costs';
+import { uploadGeneratedImage } from '@/ai/image/lib/image-storage';
 import {
   DUOMI_MODELS,
   type GeminiModelId,
@@ -195,11 +196,26 @@ export async function executeImageGeneration({
           `Image ${operationType}: ${ctx.modelId}`
         );
 
+        // Upload generated image to object storage
+        let imageData = genResult.image;
+        try {
+          const imageUrl = await uploadGeneratedImage(
+            genResult.image,
+            ctx.requestId,
+            `gen-${Date.now()}`
+          );
+          imageData = imageUrl;
+        } catch (uploadError) {
+          logger.api.warn(
+            `[requestId=${ctx.requestId}] Failed to upload generated image to storage, falling back to base64: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`
+          );
+        }
+
         logger.api.info(
           `Completed image ${operationType} [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s]`
         );
         return {
-          image: genResult.image,
+          image: imageData,
           text: genResult.text,
           creditsUsed: ctx.creditCost,
         };

@@ -101,6 +101,9 @@ export function ConversationInput() {
     updateMessage,
     setGenerating,
     getLastOutputImage,
+    getConversationHistory,
+    setAbortController,
+    setGenerationStage,
   } = useConversationStore();
 
   // Auto-resize textarea
@@ -149,6 +152,11 @@ export function ConversationInput() {
     setReferenceImages([]);
     setShowImageUpload(false);
 
+    // Set up abort controller for cancellation
+    const controller = new AbortController();
+    setAbortController(controller);
+    setGenerationStage('submitting');
+
     // Add user message (show first image as preview)
     const userResult = await addUserMessage(currentProjectId, {
       content: prompt,
@@ -157,6 +165,8 @@ export function ConversationInput() {
 
     if (!userResult.success || !userResult.data) {
       logger.ai.error('Failed to add user message');
+      setAbortController(null);
+      setGenerationStage(null);
       return;
     }
 
@@ -176,15 +186,23 @@ export function ConversationInput() {
 
     if (!generatingResult.success || !generatingResult.data) {
       logger.ai.error('Failed to create generating message');
+      setAbortController(null);
+      setGenerationStage(null);
       return;
     }
 
     const generatingMessage = generatingResult.data;
     addMessage(generatingMessage);
     setGenerating(true, generatingMessage.id);
+    setGenerationStage('queued');
     const startTime = Date.now();
 
     try {
+      // Get conversation history for multi-turn context
+      const conversationHistory = getConversationHistory();
+
+      setGenerationStage('generating');
+
       // Generate image (supports multi-image reference)
       const result = await generateImage({
         prompt,
@@ -192,9 +210,24 @@ export function ConversationInput() {
         aspectRatio: aspectRatio,
         model: selectedModel,
         imageSize: imageQuality,
+        signal: controller.signal,
+        conversationHistory:
+          conversationHistory.length > 0 ? conversationHistory : undefined,
       });
 
       const generationTime = Date.now() - startTime;
+
+      // Check if cancelled
+      if (result.error === 'Generation cancelled') {
+        await updateMessageState(generatingMessage.id, {
+          content: t('loading.cancelled'),
+          status: 'failed',
+          errorMessage: 'Generation cancelled',
+        });
+        return;
+      }
+
+      setGenerationStage('finishing');
 
       if (result.success && result.image) {
         // Update to completed status
@@ -230,10 +263,11 @@ export function ConversationInput() {
       }
     } catch (error) {
       logger.ai.error('Generation error:', error);
-      // Update to failed status
-      const errorContent = t('errors.unexpected');
-      const errorMsg =
-        error instanceof Error ? error.message : t('errors.unknown');
+      const isCancelled = error instanceof Error && error.name === 'AbortError';
+      const errorContent = isCancelled ? t('loading.cancelled') : t('errors.unexpected');
+      const errorMsg = isCancelled
+        ? 'Generation cancelled'
+        : error instanceof Error ? error.message : t('errors.unknown');
       await updateMessageState(generatingMessage.id, {
         content: errorContent,
         status: 'failed',
@@ -241,6 +275,8 @@ export function ConversationInput() {
       });
     } finally {
       setGenerating(false);
+      setAbortController(null);
+      setGenerationStage(null);
     }
   }, [
     draftPrompt,
@@ -248,12 +284,15 @@ export function ConversationInput() {
     currentProjectId,
     referenceImages,
     getLastOutputImage,
+    getConversationHistory,
     clearDraft,
     addMessage,
     aspectRatio,
     selectedModel,
     imageQuality,
     setGenerating,
+    setAbortController,
+    setGenerationStage,
     updateMessageState,
     t,
   ]);

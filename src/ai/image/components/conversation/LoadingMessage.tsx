@@ -1,36 +1,45 @@
 'use client';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type { GenerationStage } from '@/stores/conversation-store';
+import { useConversationStore } from '@/stores/conversation-store';
+import { Loader2, Sparkles, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
+const STAGES: Exclude<GenerationStage, null>[] = [
+  'submitting',
+  'queued',
+  'generating',
+  'finishing',
+];
+
 export function LoadingMessage() {
   const t = useTranslations('ArchPage');
-  const [messageIndex, setMessageIndex] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const loadingMessages = [
-    t('loading.analyzing'),
-    t('loading.generating'),
-    t('loading.detailing'),
-    t('loading.almost'),
-  ];
+  const { generationStage, cancelGeneration } = useConversationStore();
 
   useEffect(() => {
-    const messageInterval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % loadingMessages.length);
-    }, 3000);
-
     const timeInterval = setInterval(() => {
       setElapsedTime((prev) => prev + 1);
     }, 1000);
-
-    return () => {
-      clearInterval(messageInterval);
-      clearInterval(timeInterval);
-    };
+    return () => clearInterval(timeInterval);
   }, []);
+
+  const currentStageIndex = STAGES.indexOf(
+    generationStage ?? 'submitting'
+  );
+
+  const stageTextMap = {
+    submitting: t('loading.stage_submitting'),
+    queued: t('loading.stage_queued'),
+    generating: t('loading.stage_generating'),
+    finishing: t('loading.stage_finishing'),
+  } as const;
+
+  const stageText = stageTextMap[generationStage ?? 'submitting'];
 
   return (
     <div className="flex gap-3">
@@ -61,7 +70,7 @@ export function LoadingMessage() {
               />
 
               {/* Center loading indicator */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{
@@ -72,15 +81,41 @@ export function LoadingMessage() {
                 >
                   <Loader2 className="h-8 w-8 text-primary" />
                 </motion.div>
+
                 <motion.p
-                  key={messageIndex}
+                  key={generationStage}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   className="text-sm text-muted-foreground"
                 >
-                  {loadingMessages[messageIndex]}
+                  {stageText}
                 </motion.p>
+
+                {/* Stage progress dots */}
+                <div className="flex items-center gap-2">
+                  {STAGES.map((stage, i) => (
+                    <div
+                      key={stage}
+                      className={`h-1.5 w-6 rounded-full transition-colors duration-300 ${
+                        i <= currentStageIndex
+                          ? 'bg-primary'
+                          : 'bg-muted-foreground/20'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* Cancel button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={cancelGeneration}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  {t('loading.cancel')}
+                </Button>
               </div>
             </div>
           </div>

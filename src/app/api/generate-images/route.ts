@@ -8,6 +8,7 @@ import {
 } from '@/ai/image/lib/api-utils';
 import {
   editImageWithDuomi,
+  editImageWithConversationDuomi,
   generateImageWithDuomi,
 } from '@/ai/image/lib/duomi-client';
 import {
@@ -50,9 +51,15 @@ export async function POST(req: NextRequest) {
     referenceImages,
     aspectRatio,
     imageSize,
+    conversationHistory,
   } = (await req.json()) as GenerateImageRequest & {
     aspectRatio?: string;
     imageSize?: '1K' | '2K' | '4K';
+    conversationHistory?: Array<{
+      role: 'user' | 'model';
+      content: string;
+      image?: string;
+    }>;
   };
 
   try {
@@ -103,17 +110,61 @@ export async function POST(req: NextRequest) {
     );
 
     // Collect all reference images
-    const allReferenceImages: string[] = [];
-    if (referenceImages && referenceImages.length > 0) {
-      allReferenceImages.push(...referenceImages);
-    } else if (referenceImage) {
-      allReferenceImages.push(referenceImage);
-    }
+    const allReferenceImages =
+      referenceImages?.length ? referenceImages
+      : referenceImage ? [referenceImage]
+      : [];
 
     // Build generation promise based on reference images
     let generatePromise: ReturnType<typeof generateImageWithDuomi>;
 
-    if (allReferenceImages.length > 0) {
+    if (
+      conversationHistory &&
+      conversationHistory.length > 0 &&
+      conversationHistory.some((m) => m.image)
+    ) {
+      // Multi-turn conversation mode: upload any base64 images in history to S3
+      const processedMessages = await Promise.all(
+        conversationHistory.map(async (msg, i) => {
+          if (!msg.image) return msg;
+          if (msg.image.startsWith('http')) return msg;
+          // Upload base64 image to S3
+          const url = await uploadBase64ToS3(msg.image, i);
+          return { ...msg, image: url };
+        })
+      );
+
+      // Also upload current reference images if any
+      if (allReferenceImages.length > 0) {
+        const uploadedRefs = await Promise.all(
+          allReferenceImages.map(async (img, i) => {
+            if (img.startsWith('http')) return img;
+            return uploadBase64ToS3(img, i);
+          })
+        );
+        // Add current reference images as part of the latest user message context
+        const lastUserIdx = processedMessages.findLastIndex(
+          (m) => m.role === 'user'
+        );
+        if (lastUserIdx >= 0 && uploadedRefs[0]) {
+          processedMessages[lastUserIdx] = {
+            ...processedMessages[lastUserIdx],
+            image: uploadedRefs[0],
+          };
+        }
+      }
+
+      logger.api.info(
+        `[requestId=${requestId}] Using conversation mode with ${processedMessages.length} messages`
+      );
+
+      generatePromise = editImageWithConversationDuomi({
+        messages: processedMessages,
+        model: duomiModel,
+        aspectRatio: duomiAspectRatio,
+        imageSize: selectedImageSize,
+      });
+    } else if (allReferenceImages.length > 0) {
       // Upload base64 images to S3 in parallel for better performance
       const uploadPromises = allReferenceImages.map((img, i) => {
         if (img.startsWith('http')) {

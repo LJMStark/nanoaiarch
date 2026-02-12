@@ -178,6 +178,12 @@ export interface GenerateImageParams {
   aspectRatio?: string;
   model?: string;
   imageSize?: ImageQuality;
+  signal?: AbortSignal;
+  conversationHistory?: Array<{
+    role: 'user' | 'model';
+    content: string;
+    image?: string;
+  }>;
 }
 
 export interface GenerateImageResult {
@@ -193,8 +199,17 @@ const CLIENT_TIMEOUT_MS = 150 * 1000;
 export async function generateImage(
   params: GenerateImageParams
 ): Promise<GenerateImageResult> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+  const internalController = new AbortController();
+  const timeoutId = setTimeout(() => internalController.abort(), CLIENT_TIMEOUT_MS);
+
+  // If external signal provided, forward its abort to the internal controller
+  if (params.signal) {
+    if (params.signal.aborted) {
+      clearTimeout(timeoutId);
+      return { success: false, error: 'Generation cancelled' };
+    }
+    params.signal.addEventListener('abort', () => internalController.abort(), { once: true });
+  }
 
   try {
     const response = await fetch('/api/generate-images', {
@@ -209,8 +224,9 @@ export async function generateImage(
         referenceImages: params.referenceImages,
         aspectRatio: params.aspectRatio,
         imageSize: params.imageSize || DEFAULT_IMAGE_QUALITY,
+        conversationHistory: params.conversationHistory,
       }),
-      signal: controller.signal,
+      signal: internalController.signal,
     });
 
     clearTimeout(timeoutId);
@@ -239,6 +255,10 @@ export async function generateImage(
   } catch (error) {
     clearTimeout(timeoutId);
     if (error instanceof Error && error.name === 'AbortError') {
+      const wasCancelled = params.signal?.aborted;
+      if (wasCancelled) {
+        return { success: false, error: 'Generation cancelled' };
+      }
       logger.ai.error('Generate image timeout');
       return {
         success: false,

@@ -7,6 +7,7 @@ import {
   toggleProjectPin,
 } from '@/actions/image-project';
 import type { ImageProjectItem } from '@/actions/image-project';
+import { getImageSrc } from '@/ai/image/lib/image-display-utils';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -29,6 +30,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversation-store';
@@ -40,11 +42,13 @@ import {
   Pencil,
   Pin,
   Plus,
+  Search,
   Sparkles,
   Trash2,
+  X,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ProjectRenameDialog } from './ProjectRenameDialog';
 
 export function ProjectSidebar() {
@@ -53,6 +57,8 @@ export function ProjectSidebar() {
   const [renameProject, setRenameProject] = useState<ImageProjectItem | null>(
     null
   );
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const {
     projects,
@@ -68,6 +74,13 @@ export function ProjectSidebar() {
 
   const pinnedProjects = projects.filter((p) => p.isPinned);
   const recentProjects = projects.filter((p) => !p.isPinned);
+
+  const isSearching = searchQuery.trim().length > 0;
+  const filteredProjects = isSearching
+    ? projects.filter((p) =>
+        p.title.toLowerCase().includes(searchQuery.trim().toLowerCase())
+      )
+    : [];
 
   const handleNewProject = async () => {
     setIsCreating(true);
@@ -145,12 +158,69 @@ export function ProjectSidebar() {
         </SidebarHeader>
 
         <SidebarContent>
+          <div className="p-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setSearchQuery('');
+                    searchInputRef.current?.blur();
+                  }
+                }}
+                placeholder={t('projects.searchPlaceholder')}
+                className="h-7 pl-7 pr-7 text-xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    searchInputRef.current?.focus();
+                  }}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded-sm hover:bg-accent text-muted-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+
           {isLoadingProjects ? (
             <div className="p-4 space-y-3">
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
             </div>
+          ) : isSearching ? (
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {filteredProjects.length === 0 ? (
+                    <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+                      <Search className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                      <p className="text-xs">{t('projects.emptyTitle')}</p>
+                    </div>
+                  ) : (
+                    filteredProjects.map((project) => (
+                      <ProjectListItem
+                        key={project.id}
+                        project={project}
+                        isActive={currentProjectId === project.id}
+                        onSelect={() => selectProject(project.id)}
+                        onTogglePin={(e) => handleTogglePin(project, e)}
+                        onRename={(e) => handleRename(project, e)}
+                        onArchive={(e) => handleArchive(project, e)}
+                        onDelete={(e) => handleDelete(project, e)}
+                      />
+                    ))
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
           ) : (
             <>
               {pinnedProjects.length > 0 && (
@@ -272,7 +342,7 @@ function ProjectListItem({
         {project.coverImage && typeof project.coverImage === 'string' ? (
           <div className="h-4 w-4 rounded overflow-hidden flex-shrink-0 bg-muted">
             <img
-              src={`data:image/png;base64,${project.coverImage}`}
+              src={getImageSrc(project.coverImage)}
               alt=""
               className="h-full w-full object-cover"
               loading="lazy"
