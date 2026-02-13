@@ -1,6 +1,5 @@
 'use client';
 
-import { updateProjectActivity } from '@/actions/image-project';
 import {
   addAssistantMessage,
   addUserMessage,
@@ -156,6 +155,7 @@ export function ConversationInput() {
     const controller = new AbortController();
     setAbortController(controller);
     setGenerationStage('submitting');
+    let generatingMessageId: string | null = null;
 
     // Add user message (show first image as preview)
     const userResult = await addUserMessage(currentProjectId, {
@@ -165,8 +165,11 @@ export function ConversationInput() {
 
     if (!userResult.success || !userResult.data) {
       logger.ai.error('Failed to add user message');
-      setAbortController(null);
-      setGenerationStage(null);
+      const state = useConversationStore.getState();
+      if (state.abortController === controller) {
+        setAbortController(null);
+        setGenerationStage(null);
+      }
       return;
     }
 
@@ -186,12 +189,16 @@ export function ConversationInput() {
 
     if (!generatingResult.success || !generatingResult.data) {
       logger.ai.error('Failed to create generating message');
-      setAbortController(null);
-      setGenerationStage(null);
+      const state = useConversationStore.getState();
+      if (state.abortController === controller) {
+        setAbortController(null);
+        setGenerationStage(null);
+      }
       return;
     }
 
     const generatingMessage = generatingResult.data;
+    generatingMessageId = generatingMessage.id;
     addMessage(generatingMessage);
     setGenerating(true, generatingMessage.id);
     setGenerationStage('queued');
@@ -237,21 +244,6 @@ export function ConversationInput() {
           generationTime,
           status: 'completed',
         });
-
-        // Update project activity
-        const activityResult = await updateProjectActivity(currentProjectId, {
-          coverImage: result.image,
-          creditsUsed: result.creditsUsed || 1,
-          incrementGeneration: true,
-        });
-
-        if (!activityResult.success) {
-          logger.ai.error('updateProjectActivity failed', {
-            projectId: currentProjectId,
-            messageId: generatingMessage.id,
-            error: activityResult.error,
-          });
-        }
       } else {
         // Update to failed status
         const errorContent = result.error || t('errors.generationFailed');
@@ -274,9 +266,16 @@ export function ConversationInput() {
         errorMessage: errorMsg,
       });
     } finally {
-      setGenerating(false);
-      setAbortController(null);
-      setGenerationStage(null);
+      const state = useConversationStore.getState();
+
+      if (state.abortController === controller) {
+        setAbortController(null);
+      }
+
+      if (!generatingMessageId || state.generatingMessageId === generatingMessageId) {
+        setGenerating(false);
+        setGenerationStage(null);
+      }
     }
   }, [
     draftPrompt,

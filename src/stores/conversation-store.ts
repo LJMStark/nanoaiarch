@@ -161,21 +161,36 @@ export const useConversationStore = create<ConversationState>()(
 
       setCurrentProject: (projectId) => {
         if (projectId !== get().currentProjectId) {
+          const { abortController } = get();
+          if (abortController) {
+            abortController.abort();
+          }
+
           set({
             currentProjectId: projectId,
             messages: [],
             isGenerating: false,
             generatingMessageId: null,
+            abortController: null,
+            generationStage: null,
           });
         }
       },
 
-      clearMessages: () =>
+      clearMessages: () => {
+        const { abortController } = get();
+        if (abortController) {
+          abortController.abort();
+        }
+
         set({
           messages: [],
           isGenerating: false,
           generatingMessageId: null,
-        }),
+          abortController: null,
+          generationStage: null,
+        });
+      },
 
       getLastOutputImage: () => {
         const messages = get().messages;

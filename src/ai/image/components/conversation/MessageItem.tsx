@@ -1,6 +1,5 @@
 'use client';
 
-import { updateProjectActivity } from '@/actions/image-project';
 import {
   type GenerationParams,
   type ProjectMessageItem,
@@ -134,7 +133,7 @@ function AssistantMessage({
   };
 
   // Helper function to create assistant message
-  const createAssistantMessage = async (
+    const createAssistantMessage = async (
     success: boolean,
     result: { image?: string; error?: string; creditsUsed?: number },
     generationTime: number,
@@ -144,29 +143,21 @@ function AssistantMessage({
       model: string;
       imageQuality: string;
     }
-  ) => {
-    const assistantResult = await addAssistantMessage(message.projectId, {
-      content: success ? '' : result.error || t('errors.generationFailed'),
-      outputImage: success ? result.image : undefined,
-      generationParams: params,
-      creditsUsed: success ? result.creditsUsed || 1 : undefined,
-      generationTime: success ? generationTime : undefined,
-      status: success ? 'completed' : 'failed',
-      errorMessage: success ? undefined : result.error,
-    });
+    ) => {
+      const assistantResult = await addAssistantMessage(message.projectId, {
+        content: success ? '' : result.error || t('errors.generationFailed'),
+        outputImage: success ? result.image : undefined,
+        generationParams: params,
+        creditsUsed: success ? result.creditsUsed || 1 : undefined,
+        generationTime: success ? generationTime : undefined,
+        status: success ? 'completed' : 'failed',
+        errorMessage: success ? undefined : result.error,
+      });
 
-    if (assistantResult.success && assistantResult.data) {
-      addMessage(assistantResult.data);
-
-      if (success && result.image) {
-        await updateProjectActivity(message.projectId, {
-          coverImage: result.image,
-          creditsUsed: result.creditsUsed || 1,
-          incrementGeneration: true,
-        });
+      if (assistantResult.success && assistantResult.data) {
+        addMessage(assistantResult.data);
       }
-    }
-  };
+    };
 
   // Retry generation
   const handleRetry = async () => {
@@ -250,6 +241,7 @@ function AssistantMessage({
         aspectRatio,
         model,
         imageSize: imageQuality,
+        signal: abortControllerRef.current.signal,
       });
 
       // Check if component is still mounted

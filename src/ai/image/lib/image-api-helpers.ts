@@ -135,28 +135,19 @@ export async function verifyRequestContext(
 
 /**
  * Consumes credits for a successful operation
- * Logs errors but doesn't throw (to not affect user experience)
  */
 export async function consumeImageCredits(
   ctx: ApiContext,
   description: string
 ): Promise<void> {
-  try {
-    await consumeCredits({
-      userId: ctx.userId,
-      amount: ctx.creditCost,
-      description,
-    });
-    logger.api.info(
-      `Consumed ${ctx.creditCost} credits [requestId=${ctx.requestId}, userId=${ctx.userId}]`
-    );
-  } catch (error) {
-    // Log error with enough context for monitoring/alerting
-    logger.api.error(
-      `Failed to consume credits [requestId=${ctx.requestId}, userId=${ctx.userId}, amount=${ctx.creditCost}]`,
-      error
-    );
-  }
+  await consumeCredits({
+    userId: ctx.userId,
+    amount: ctx.creditCost,
+    description,
+  });
+  logger.api.info(
+    `Consumed ${ctx.creditCost} credits [requestId=${ctx.requestId}, userId=${ctx.userId}]`
+  );
 }
 
 // ============================================================================
@@ -190,11 +181,18 @@ export async function executeImageGeneration({
       const elapsed = ((performance.now() - startstamp) / 1000).toFixed(1);
 
       if (genResult.success && genResult.image) {
-        // Consume credits on success
-        await consumeImageCredits(
-          ctx,
-          `Image ${operationType}: ${ctx.modelId}`
-        );
+        // Consume credits on success; fail fast if billing cannot be completed.
+        try {
+          await consumeImageCredits(ctx, `Image ${operationType}: ${ctx.modelId}`);
+        } catch (creditError) {
+          logger.api.error(
+            `Failed to consume credits [requestId=${ctx.requestId}, userId=${ctx.userId}, amount=${ctx.creditCost}]`,
+            creditError
+          );
+          return {
+            error: 'Failed to process credits. Please try again.',
+          };
+        }
 
         // Upload generated image to object storage
         let imageData = genResult.image;

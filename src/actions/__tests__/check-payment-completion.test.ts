@@ -27,6 +27,8 @@ vi.mock('@/lib/safe-action', () => ({
 import { getDb } from '@/db';
 
 describe('checkPaymentCompletionAction', () => {
+  const ctx = { user: { id: 'user-123' } };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -51,6 +53,7 @@ describe('checkPaymentCompletionAction', () => {
 
     const result = await checkPaymentCompletionAction({
       parsedInput: { sessionId: 'session-123' },
+      ctx,
     } as any);
 
     expect(result).toEqual({
@@ -79,6 +82,7 @@ describe('checkPaymentCompletionAction', () => {
 
     const result = await checkPaymentCompletionAction({
       parsedInput: { sessionId: 'session-123' },
+      ctx,
     } as any);
 
     expect(result).toEqual({
@@ -100,6 +104,7 @@ describe('checkPaymentCompletionAction', () => {
 
     const result = await checkPaymentCompletionAction({
       parsedInput: { sessionId: 'non-existent-session' },
+      ctx,
     } as any);
 
     expect(result).toEqual({
@@ -121,6 +126,7 @@ describe('checkPaymentCompletionAction', () => {
 
     const result = await checkPaymentCompletionAction({
       parsedInput: { sessionId: 'session-123' },
+      ctx,
     } as any);
 
     expect(result).toEqual({

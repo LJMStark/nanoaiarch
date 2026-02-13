@@ -326,8 +326,7 @@ export async function addAssistantMessage(
 
     if (status === 'completed' && data.outputImage) {
       projectUpdates.generationCount = sql`${imageProject.generationCount} + 1`;
-      // Set first generated image as cover
-      projectUpdates.coverImage = sql`COALESCE(${imageProject.coverImage}, ${data.outputImage})`;
+      projectUpdates.coverImage = data.outputImage;
     }
 
     if (data.creditsUsed) {
@@ -415,6 +414,7 @@ export async function updateAssistantMessage(
       .select({
         id: projectMessage.id,
         projectId: projectMessage.projectId,
+        status: projectMessage.status,
       })
       .from(projectMessage)
       .where(
@@ -427,6 +427,13 @@ export async function updateAssistantMessage(
 
     if (!message.length) {
       return { success: false, error: 'Message not found' };
+    }
+
+    if (data.outputImage) {
+      const imageValidation = validateBase64Image(data.outputImage);
+      if (!imageValidation.valid) {
+        return { success: false, error: imageValidation.error };
+      }
     }
 
     const updates: Record<string, unknown> = {
@@ -450,15 +457,28 @@ export async function updateAssistantMessage(
       .set(updates)
       .where(eq(projectMessage.id, messageId));
 
-    // If generation completed successfully, update project cover if needed
-    if (data.status === 'completed' && data.outputImage) {
+    const isTransitionToCompleted =
+      data.status === 'completed' && message[0].status !== 'completed';
+
+    // Update aggregate project stats only when generation first becomes completed
+    if (isTransitionToCompleted) {
+      const projectUpdates: Record<string, unknown> = {
+        generationCount: sql`${imageProject.generationCount} + 1`,
+        lastActiveAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      if (data.outputImage) {
+        projectUpdates.coverImage = data.outputImage;
+      }
+
+      if (data.creditsUsed && data.creditsUsed > 0) {
+        projectUpdates.totalCreditsUsed = sql`${imageProject.totalCreditsUsed} + ${data.creditsUsed}`;
+      }
+
       await db
         .update(imageProject)
-        .set({
-          coverImage: sql`COALESCE(${imageProject.coverImage}, ${data.outputImage})`,
-          generationCount: sql`${imageProject.generationCount} + 1`,
-          updatedAt: new Date(),
-        })
+        .set(projectUpdates)
         .where(eq(imageProject.id, message[0].projectId));
     }
 

@@ -30,10 +30,11 @@ export function ConversationLayout() {
   const { applyTemplateWithProject } = useTemplateApply();
 
   // Use optimized conversation init hook (single request for projects + messages)
-  const { loadMessagesForProject } = useConversationInit();
+  useConversationInit();
 
   const { currentProjectId } = useProjectStore();
   const prevProjectIdRef = useRef<string | null>(null);
+  const loadRequestIdRef = useRef(0);
 
   const { setMessages, setLoadingMessages, setCurrentProject, setGenerating } =
     useConversationStore();
@@ -83,15 +84,25 @@ export function ConversationLayout() {
     prevProjectIdRef.current = currentProjectId;
 
     if (!currentProjectId) {
+      loadRequestIdRef.current += 1;
       setCurrentProject(null);
+      setLoadingMessages(false);
       return;
     }
+
+    const requestId = loadRequestIdRef.current + 1;
+    loadRequestIdRef.current = requestId;
 
     // Load messages for the new project
     const loadMessages = async () => {
       setCurrentProject(currentProjectId);
       setLoadingMessages(true);
       const result = await getProjectMessages(currentProjectId);
+
+      if (loadRequestIdRef.current !== requestId) {
+        return;
+      }
+
       if (result.success) {
         setMessages(result.data);
 
@@ -103,7 +114,9 @@ export function ConversationLayout() {
           setGenerating(true, generatingMessage.id);
         }
       }
-      setLoadingMessages(false);
+      if (loadRequestIdRef.current === requestId) {
+        setLoadingMessages(false);
+      }
     };
 
     loadMessages();

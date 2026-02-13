@@ -2,6 +2,8 @@ import type { EditImageRequest } from '@/ai/image/lib/api-types';
 import {
   generateRequestId,
   mapModelIdToDuomiModel,
+  validateBase64Image,
+  validatePrompt,
 } from '@/ai/image/lib/api-utils';
 import {
   editImageWithDuomi,
@@ -18,6 +20,8 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 // Match generate-images route timeout for consistent behavior
 export const maxDuration = 150;
+const MAX_CONVERSATION_MESSAGES = 10;
+const MAX_HISTORY_CONTENT_LENGTH = 4000;
 
 /**
  * Conversational image editing API
@@ -33,6 +37,62 @@ export async function POST(req: NextRequest) {
       const error = 'Invalid request parameters';
       logger.api.error(`${error} [requestId=${requestId}]`);
       return NextResponse.json({ error }, { status: 400 });
+    }
+
+    if (!Array.isArray(messages)) {
+      return NextResponse.json({ error: 'messages must be an array' }, { status: 400 });
+    }
+
+    if (messages.length > MAX_CONVERSATION_MESSAGES) {
+      return NextResponse.json(
+        {
+          error: `Maximum ${MAX_CONVERSATION_MESSAGES} conversation messages allowed`,
+        },
+        { status: 400 }
+      );
+    }
+
+    for (const [index, message] of messages.entries()) {
+      if (message.role !== 'user' && message.role !== 'model') {
+        return NextResponse.json(
+          { error: `Invalid role at conversation message ${index}` },
+          { status: 400 }
+        );
+      }
+
+      if (typeof message.content !== 'string') {
+        return NextResponse.json(
+          { error: `Invalid content at conversation message ${index}` },
+          { status: 400 }
+        );
+      }
+
+      if (message.content.length > MAX_HISTORY_CONTENT_LENGTH) {
+        return NextResponse.json(
+          { error: `Conversation message ${index} content is too long` },
+          { status: 400 }
+        );
+      }
+
+      if (message.image !== undefined) {
+        if (typeof message.image !== 'string') {
+          return NextResponse.json(
+            { error: `Invalid image payload at conversation message ${index}` },
+            { status: 400 }
+          );
+        }
+        const validation = validateBase64Image(message.image);
+        if (!validation.valid) {
+          return NextResponse.json(
+            {
+              error:
+                validation.error ||
+                `Invalid image payload at conversation message ${index}`,
+            },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     // Verify session and credits
@@ -59,6 +119,13 @@ export async function POST(req: NextRequest) {
 
     const latestUserMessage = userMessages[userMessages.length - 1];
     const prompt = latestUserMessage.content;
+    const promptValidation = validatePrompt(prompt);
+    if (!promptValidation.valid) {
+      return NextResponse.json(
+        { error: promptValidation.error || 'Invalid prompt' },
+        { status: 400 }
+      );
+    }
 
     // Collect image URLs from conversation history
     const imageUrls: string[] = [];

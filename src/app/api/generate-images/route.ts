@@ -4,6 +4,7 @@ import {
   generateRequestId,
   mapAspectRatioToDuomi,
   mapModelIdToDuomiModel,
+  validateBase64Image,
   validatePrompt,
 } from '@/ai/image/lib/api-utils';
 import {
@@ -24,6 +25,9 @@ import { type NextRequest, NextResponse } from 'next/server';
 // Set maximum execution time for image generation (150 seconds)
 // This allows enough time for Duomi API polling (max 110s) plus buffer
 export const maxDuration = 150;
+const MAX_REFERENCE_IMAGES = 5;
+const MAX_CONVERSATION_MESSAGES = 10;
+const MAX_HISTORY_CONTENT_LENGTH = 4000;
 
 /**
  * Uploads a base64 image to S3 and returns the URL
@@ -92,6 +96,111 @@ export async function POST(req: NextRequest) {
         { error: 'Invalid image size. Must be 1K, 2K, or 4K' },
         { status: 400 }
       );
+    }
+
+    // Validate reference images count
+    const referenceCount =
+      (referenceImages?.length ?? 0) + (referenceImage ? 1 : 0);
+    if (referenceCount > MAX_REFERENCE_IMAGES) {
+      logger.api.error(
+        `Too many reference images [requestId=${requestId}, count=${referenceCount}]`
+      );
+      return NextResponse.json(
+        { error: `Maximum ${MAX_REFERENCE_IMAGES} reference images allowed` },
+        { status: 400 }
+      );
+    }
+
+    // Validate reference image payloads
+    for (const [index, image] of (referenceImages ?? []).entries()) {
+      if (typeof image !== 'string') {
+        return NextResponse.json(
+          { error: `Invalid reference image at index ${index}` },
+          { status: 400 }
+        );
+      }
+      const validation = validateBase64Image(image);
+      if (!validation.valid) {
+        return NextResponse.json(
+          { error: validation.error || `Invalid reference image at index ${index}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (referenceImage) {
+      const validation = validateBase64Image(referenceImage);
+      if (!validation.valid) {
+        return NextResponse.json(
+          { error: validation.error || 'Invalid reference image' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate conversation history payload
+    if (conversationHistory) {
+      if (!Array.isArray(conversationHistory)) {
+        return NextResponse.json(
+          { error: 'conversationHistory must be an array' },
+          { status: 400 }
+        );
+      }
+
+      if (conversationHistory.length > MAX_CONVERSATION_MESSAGES) {
+        return NextResponse.json(
+          {
+            error: `Maximum ${MAX_CONVERSATION_MESSAGES} conversation messages allowed`,
+          },
+          { status: 400 }
+        );
+      }
+
+      for (const [index, message] of conversationHistory.entries()) {
+        if (
+          message.role !== 'user' &&
+          message.role !== 'model'
+        ) {
+          return NextResponse.json(
+            { error: `Invalid role at conversation message ${index}` },
+            { status: 400 }
+          );
+        }
+
+        if (typeof message.content !== 'string') {
+          return NextResponse.json(
+            { error: `Invalid content at conversation message ${index}` },
+            { status: 400 }
+          );
+        }
+
+        if (message.content.length > MAX_HISTORY_CONTENT_LENGTH) {
+          return NextResponse.json(
+            { error: `Conversation message ${index} content is too long` },
+            { status: 400 }
+          );
+        }
+
+        if (message.image !== undefined) {
+          if (typeof message.image !== 'string') {
+            return NextResponse.json(
+              { error: `Invalid image payload at conversation message ${index}` },
+              { status: 400 }
+            );
+          }
+          const validation = validateBase64Image(message.image);
+          if (!validation.valid) {
+            return NextResponse.json(
+              {
+                error:
+                  validation.error ||
+                  `Invalid image payload at conversation message ${index}`,
+              },
+              { status: 400 }
+            );
+          }
+        }
+      }
     }
 
     // Verify session and credits

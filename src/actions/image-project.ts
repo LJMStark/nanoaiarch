@@ -237,7 +237,6 @@ export async function updateProjectActivity(
 
     if (data.incrementGeneration) {
       updates.generationCount = sql`${imageProject.generationCount} + 1`;
-      updates.messageCount = sql`${imageProject.messageCount} + 2`; // user + assistant
     }
 
     if (data.creditsUsed) {
