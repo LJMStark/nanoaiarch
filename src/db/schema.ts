@@ -24,7 +24,6 @@ export const user = pgTable("user", {
 	bio: text('bio'),
 	isProfilePublic: boolean('is_profile_public').notNull().default(true),
 }, (table) => ({
-	userIdIdx: index("user_id_idx").on(table.id),
 	userCustomerIdIdx: index("user_customer_id_idx").on(table.customerId),
 	userRoleIdx: index("user_role_idx").on(table.role),
 	userReferralCodeIdx: index("user_referral_code_idx").on(table.referralCode),
@@ -104,7 +103,6 @@ export const payment = pgTable("payment", {
 	paymentUserIdIdx: index("payment_user_id_idx").on(table.userId),
 	paymentCustomerIdIdx: index("payment_customer_id_idx").on(table.customerId),
 	paymentStatusIdx: index("payment_status_idx").on(table.status),
-	paymentPaidIdx: index("payment_paid_idx").on(table.paid),
 	paymentSubscriptionIdIdx: index("payment_subscription_id_idx").on(table.subscriptionId),
 	paymentSessionIdIdx: index("payment_session_id_idx").on(table.sessionId),
 	paymentInvoiceIdIdx: index("payment_invoice_id_idx").on(table.invoiceId),
@@ -131,11 +129,18 @@ export const creditTransaction = pgTable("credit_transaction", {
 	paymentId: text("payment_id"), // field name is paymentId, but actually it's invoiceId
 	expirationDate: timestamp("expiration_date"),
 	expirationDateProcessedAt: timestamp("expiration_date_processed_at"),
+	// Hold system fields
+	holdStatus: text("hold_status"), // 'pending' | 'confirmed' | 'released' - null for legacy transactions
+	idempotencyKey: text("idempotency_key").unique(), // prevents duplicate holds
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
 	creditTransactionUserIdIdx: index("credit_transaction_user_id_idx").on(table.userId),
 	creditTransactionTypeIdx: index("credit_transaction_type_idx").on(table.type),
+	// Composite index for user transaction history queries
+	creditTransactionUserCreatedAtIdx: index("credit_transaction_user_created_at_idx").on(table.userId, table.createdAt),
+	creditTransactionHoldStatusIdx: index("credit_transaction_hold_status_idx").on(table.holdStatus),
+	creditTransactionIdempotencyKeyIdx: index("credit_transaction_idempotency_key_idx").on(table.idempotencyKey),
 }));
 
 // Generation history table for storing user's AI generation records
@@ -163,8 +168,6 @@ export const generationHistory = pgTable("generation_history", {
 	generationHistoryUserIdIdx: index("generation_history_user_id_idx").on(table.userId),
 	generationHistoryTemplateIdIdx: index("generation_history_template_id_idx").on(table.templateId),
 	generationHistoryStatusIdx: index("generation_history_status_idx").on(table.status),
-	generationHistoryIsFavoriteIdx: index("generation_history_is_favorite_idx").on(table.isFavorite),
-	generationHistoryIsPublicIdx: index("generation_history_is_public_idx").on(table.isPublic),
 	generationHistoryCreatedAtIdx: index("generation_history_created_at_idx").on(table.createdAt),
 	// Composite index for public gallery queries (isPublic + status + createdAt)
 	generationHistoryPublicGalleryIdx: index("generation_history_public_gallery_idx").on(table.isPublic, table.status, table.createdAt),
@@ -259,4 +262,5 @@ export const projectMessage = pgTable("project_message", {
 	// Composite index for common query patterns
 	projectMessageProjectOrderIdx: index("project_message_project_order_idx").on(table.projectId, table.orderIndex),
 	projectMessageUserProjectIdx: index("project_message_user_project_idx").on(table.userId, table.projectId),
+	projectMessageProjectCreatedAtIdx: index("project_message_project_created_at_idx").on(table.projectId, table.createdAt),
 }));

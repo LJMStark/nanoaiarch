@@ -57,6 +57,7 @@ function generateId(): string {
 
 // Maximum conversation history length to prevent memory overflow
 const MAX_CONVERSATION_HISTORY = 10;
+const MAX_EDIT_HISTORY = 20;
 
 export function useImageGeneration(): UseImageGenerationReturn {
   // Core state
@@ -204,7 +205,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
                 timestamp: Date.now(),
               },
               ...prev,
-            ]);
+            ].slice(0, MAX_EDIT_HISTORY));
             // Update reference image to newly generated image
             setReferenceImage(data.image);
           }
@@ -361,7 +362,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
               timestamp: Date.now(),
             },
             ...prev,
-          ]);
+          ].slice(0, MAX_EDIT_HISTORY));
 
           // Update reference image
           setReferenceImage(data.image);

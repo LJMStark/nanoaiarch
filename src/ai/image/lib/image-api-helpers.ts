@@ -4,7 +4,7 @@ import {
   DUOMI_MODELS,
   type GeminiModelId,
 } from '@/ai/image/lib/provider-config';
-import { consumeCredits, hasEnoughCredits } from '@/credits/credits';
+import { consumeCredits, hasEnoughCredits, holdCredits, confirmHold, releaseHold } from '@/credits/credits';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { NextResponse } from 'next/server';
@@ -22,6 +22,7 @@ export interface ApiContext {
   userId: string;
   modelId: string;
   creditCost: number;
+  holdId?: string;
 }
 
 export interface ImageGenerationResult {
@@ -119,18 +120,42 @@ export async function verifyRequestContext(
 
   const { userId } = sessionResult;
 
-  // Verify credits
+  // Verify credits (quick check before hold)
   const creditResult = await verifyCredits(userId, modelId, requestId);
   if (creditResult instanceof NextResponse) {
     return creditResult;
   }
 
-  return {
-    requestId,
-    userId,
-    modelId,
-    creditCost: creditResult.creditCost,
-  };
+  // Hold credits atomically with idempotency
+  try {
+    const hold = await holdCredits({
+      userId,
+      amount: creditResult.creditCost,
+      idempotencyKey: `img-gen-${requestId}`,
+      description: `Image generation hold: ${modelId}`,
+    });
+
+    return {
+      requestId,
+      userId,
+      modelId,
+      creditCost: creditResult.creditCost,
+      holdId: hold.holdId,
+    };
+  } catch (holdError) {
+    const message = holdError instanceof Error ? holdError.message : String(holdError);
+    if (message.includes('Insufficient credits')) {
+      return NextResponse.json(
+        { error: 'Insufficient credits. Please purchase more credits to continue.' },
+        { status: 402 }
+      );
+    }
+    logger.api.error(`Failed to hold credits [requestId=${requestId}]`, holdError);
+    return NextResponse.json(
+      { error: 'Failed to reserve credits. Please try again.' },
+      { status: 500 }
+    );
+  }
 }
 
 /**
@@ -162,8 +187,9 @@ interface ExecuteGenerationOptions {
 }
 
 /**
- * Executes image generation with timeout, credit consumption, and logging
- * Returns the result for NextResponse
+ * Executes image generation with timeout, credit hold confirm/release, and logging
+ * Credits are held before generation starts (in verifyRequestContext).
+ * On success: hold is confirmed. On failure: hold is released (credits refunded).
  */
 export async function executeImageGeneration({
   ctx,
@@ -176,60 +202,92 @@ export async function executeImageGeneration({
   error?: string;
   creditsUsed?: number;
 }> {
-  return withTimeout(
-    generatePromise.then(async (genResult) => {
-      const elapsed = ((performance.now() - startstamp) / 1000).toFixed(1);
+  try {
+    return await withTimeout(
+      generatePromise.then(async (genResult) => {
+        const elapsed = ((performance.now() - startstamp) / 1000).toFixed(1);
 
-      if (genResult.success && genResult.image) {
-        // Consume credits on success; fail fast if billing cannot be completed.
-        try {
-          await consumeImageCredits(ctx, `Image ${operationType}: ${ctx.modelId}`);
-        } catch (creditError) {
-          logger.api.error(
-            `Failed to consume credits [requestId=${ctx.requestId}, userId=${ctx.userId}, amount=${ctx.creditCost}]`,
-            creditError
+        if (genResult.success && genResult.image) {
+          // Confirm the credit hold on success
+          try {
+            if (ctx.holdId) {
+              await confirmHold(ctx.holdId);
+            } else {
+              // Fallback for legacy flow without hold
+              await consumeImageCredits(ctx, `Image ${operationType}: ${ctx.modelId}`);
+            }
+          } catch (creditError) {
+            logger.api.error(
+              `Failed to confirm credit hold [requestId=${ctx.requestId}, holdId=${ctx.holdId}]`,
+              creditError
+            );
+            return {
+              error: 'Failed to process credits. Please try again.',
+            };
+          }
+
+          // Upload generated image to object storage
+          let imageData = genResult.image;
+          try {
+            const imageUrl = await uploadGeneratedImage(
+              genResult.image,
+              ctx.requestId,
+              `gen-${Date.now()}`
+            );
+            imageData = imageUrl;
+          } catch (uploadError) {
+            logger.api.warn(
+              `[requestId=${ctx.requestId}] Failed to upload generated image to storage, falling back to base64: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`
+            );
+          }
+
+          logger.api.info(
+            `Completed image ${operationType} [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s]`
           );
           return {
-            error: 'Failed to process credits. Please try again.',
+            image: imageData,
+            text: genResult.text,
+            creditsUsed: ctx.creditCost,
           };
         }
 
-        // Upload generated image to object storage
-        let imageData = genResult.image;
-        try {
-          const imageUrl = await uploadGeneratedImage(
-            genResult.image,
-            ctx.requestId,
-            `gen-${Date.now()}`
-          );
-          imageData = imageUrl;
-        } catch (uploadError) {
-          logger.api.warn(
-            `[requestId=${ctx.requestId}] Failed to upload generated image to storage, falling back to base64: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`
-          );
+        // Generation failed - release the hold to refund credits
+        if (ctx.holdId) {
+          try {
+            await releaseHold(ctx.holdId);
+          } catch (releaseError) {
+            logger.api.error(
+              `Failed to release credit hold [requestId=${ctx.requestId}, holdId=${ctx.holdId}]`,
+              releaseError
+            );
+          }
         }
 
-        logger.api.info(
-          `Completed image ${operationType} [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s]`
+        logger.api.error(
+          `Image ${operationType} failed [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s]: ${genResult.error}`
         );
         return {
-          image: imageData,
-          text: genResult.text,
-          creditsUsed: ctx.creditCost,
+          error:
+            genResult.error ||
+            `Failed to ${operationType === 'edit' ? 'edit' : 'generate'} image`,
         };
+      }),
+      TIMEOUT_MILLIS
+    );
+  } catch (timeoutOrError) {
+    // Timeout or unexpected error - release the hold to refund credits
+    if (ctx.holdId) {
+      try {
+        await releaseHold(ctx.holdId);
+      } catch (releaseError) {
+        logger.api.error(
+          `Failed to release credit hold after timeout [requestId=${ctx.requestId}, holdId=${ctx.holdId}]`,
+          releaseError
+        );
       }
-
-      logger.api.error(
-        `Image ${operationType} failed [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s]: ${genResult.error}`
-      );
-      return {
-        error:
-          genResult.error ||
-          `Failed to ${operationType === 'edit' ? 'edit' : 'generate'} image`,
-      };
-    }),
-    TIMEOUT_MILLIS
-  );
+    }
+    throw timeoutOrError;
+  }
 }
 
 /**

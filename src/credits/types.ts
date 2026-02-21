@@ -9,9 +9,28 @@ export enum CREDIT_TRANSACTION_TYPE {
   LIFETIME_MONTHLY = 'LIFETIME_MONTHLY',      // Credits earned by lifetime plan monthly distribution
   USAGE = 'USAGE',                            // Credits spent by usage
   EXPIRE = 'EXPIRE',                          // Credits expired
+  HOLD = 'HOLD',                              // Credits held (pre-deducted, pending confirmation)
   // Referral rewards
   REFERRAL_SIGNUP_BONUS = 'REFERRAL_SIGNUP_BONUS',  // Credits earned by being referred (new user bonus)
   REFERRAL_COMMISSION = 'REFERRAL_COMMISSION',      // Credits earned by referring someone (commission)
+}
+
+/**
+ * Hold status for credit transactions
+ */
+export enum HOLD_STATUS {
+  PENDING = 'pending',     // Credits held, awaiting confirmation
+  CONFIRMED = 'confirmed', // Hold confirmed, credits permanently consumed
+  RELEASED = 'released',   // Hold released, credits returned to user
+}
+
+/**
+ * Result of a holdCredits operation
+ */
+export interface CreditHoldResult {
+  holdId: string;
+  userId: string;
+  amount: number;
 }
 
 /**

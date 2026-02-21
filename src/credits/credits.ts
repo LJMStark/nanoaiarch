@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
 import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
 import { addDays } from 'date-fns';
 import { and, asc, eq, gt, inArray, isNull, not, or, sql } from 'drizzle-orm';
-import { CREDIT_TRANSACTION_TYPE } from './types';
+import { CREDIT_TRANSACTION_TYPE, HOLD_STATUS, type CreditHoldResult } from './types';
 
 /**
  * Get user's current credit balance
@@ -621,4 +621,219 @@ export async function addLifetimeMonthlyCredits(
       month: `${now.getFullYear()}-${now.getMonth() + 1}`,
     });
   }
+}
+
+// ============================================================================
+// Credit Hold System (Pre-deduction)
+// ============================================================================
+
+/**
+ * Hold credits before an operation begins.
+ * Atomically deducts credits and creates a pending hold transaction.
+ * If the same idempotencyKey already exists, returns the existing hold.
+ */
+export async function holdCredits({
+  userId,
+  amount,
+  idempotencyKey,
+  description,
+}: {
+  userId: string;
+  amount: number;
+  idempotencyKey: string;
+  description: string;
+}): Promise<CreditHoldResult> {
+  if (!userId || !idempotencyKey || !description) {
+    throw new Error('holdCredits: invalid params');
+  }
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error('holdCredits: invalid amount');
+  }
+
+  // Admin users bypass credit holds
+  if (await isAdminUser(userId)) {
+    logger.credits.debug('holdCredits: admin user bypassed', { userId, amount });
+    const holdId = randomUUID();
+    return { holdId, userId, amount };
+  }
+
+  const db = await getDb();
+
+  // Check for existing hold with same idempotency key
+  const existing = await db
+    .select({ id: creditTransaction.id, holdStatus: creditTransaction.holdStatus })
+    .from(creditTransaction)
+    .where(eq(creditTransaction.idempotencyKey, idempotencyKey))
+    .limit(1);
+
+  if (existing.length > 0) {
+    const record = existing[0];
+    if (record.holdStatus === HOLD_STATUS.PENDING) {
+      logger.credits.debug('holdCredits: returning existing pending hold', {
+        holdId: record.id,
+        idempotencyKey,
+      });
+      return { holdId: record.id, userId, amount };
+    }
+    throw new Error(`holdCredits: idempotency key already used (status=${record.holdStatus})`);
+  }
+
+  const holdId = randomUUID();
+
+  await db.transaction(async (tx) => {
+    const currentRecord = await tx
+      .select({ currentCredits: userCredit.currentCredits })
+      .from(userCredit)
+      .where(eq(userCredit.userId, userId))
+      .limit(1);
+
+    const currentBalance = currentRecord[0]?.currentCredits || 0;
+    if (currentBalance < amount) {
+      throw new Error('Insufficient credits');
+    }
+
+    // Deduct from balance atomically
+    await tx
+      .update(userCredit)
+      .set({
+        currentCredits: sql`${userCredit.currentCredits} - ${amount}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(userCredit.userId, userId));
+
+    // Create hold transaction record
+    await tx.insert(creditTransaction).values({
+      id: holdId,
+      userId,
+      type: CREDIT_TRANSACTION_TYPE.HOLD,
+      amount: -amount,
+      remainingAmount: null,
+      description,
+      holdStatus: HOLD_STATUS.PENDING,
+      idempotencyKey,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  });
+
+  logger.credits.info('holdCredits: hold created', { holdId, userId, amount, idempotencyKey });
+  return { holdId, userId, amount };
+}
+
+/**
+ * Confirm a pending hold - credits are permanently consumed.
+ * Transitions hold status from pending to confirmed and converts to USAGE type.
+ */
+export async function confirmHold(holdId: string): Promise<void> {
+  if (!holdId) {
+    throw new Error('confirmHold: holdId required');
+  }
+
+  const db = await getDb();
+
+  const hold = await db
+    .select({
+      id: creditTransaction.id,
+      userId: creditTransaction.userId,
+      holdStatus: creditTransaction.holdStatus,
+      amount: creditTransaction.amount,
+    })
+    .from(creditTransaction)
+    .where(eq(creditTransaction.id, holdId))
+    .limit(1);
+
+  if (hold.length === 0) {
+    // Admin users don't create real holds
+    logger.credits.debug('confirmHold: hold not found (likely admin)', { holdId });
+    return;
+  }
+
+  const record = hold[0];
+
+  if (record.holdStatus === HOLD_STATUS.CONFIRMED) {
+    logger.credits.debug('confirmHold: already confirmed', { holdId });
+    return;
+  }
+
+  if (record.holdStatus !== HOLD_STATUS.PENDING) {
+    throw new Error(`confirmHold: invalid hold status (${record.holdStatus})`);
+  }
+
+  await db
+    .update(creditTransaction)
+    .set({
+      holdStatus: HOLD_STATUS.CONFIRMED,
+      type: CREDIT_TRANSACTION_TYPE.USAGE,
+      updatedAt: new Date(),
+    })
+    .where(eq(creditTransaction.id, holdId));
+
+  logger.credits.info('confirmHold: hold confirmed', {
+    holdId,
+    userId: record.userId,
+    amount: record.amount,
+  });
+}
+
+/**
+ * Release a pending hold - credits are returned to the user.
+ * Transitions hold status from pending to released and refunds the balance.
+ */
+export async function releaseHold(holdId: string): Promise<void> {
+  if (!holdId) {
+    throw new Error('releaseHold: holdId required');
+  }
+
+  const db = await getDb();
+
+  await db.transaction(async (tx) => {
+    const hold = await tx
+      .select({
+        id: creditTransaction.id,
+        userId: creditTransaction.userId,
+        holdStatus: creditTransaction.holdStatus,
+        amount: creditTransaction.amount,
+      })
+      .from(creditTransaction)
+      .where(eq(creditTransaction.id, holdId))
+      .limit(1);
+
+    if (hold.length === 0) {
+      logger.credits.debug('releaseHold: hold not found (likely admin)', { holdId });
+      return;
+    }
+
+    const record = hold[0];
+
+    if (record.holdStatus === HOLD_STATUS.RELEASED) {
+      logger.credits.debug('releaseHold: already released', { holdId });
+      return;
+    }
+
+    if (record.holdStatus !== HOLD_STATUS.PENDING) {
+      throw new Error(`releaseHold: invalid hold status (${record.holdStatus})`);
+    }
+
+    const refundAmount = Math.abs(record.amount);
+
+    // Return credits to user balance
+    await tx
+      .update(userCredit)
+      .set({
+        currentCredits: sql`${userCredit.currentCredits} + ${refundAmount}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(userCredit.userId, record.userId));
+
+    // Mark hold as released
+    await tx
+      .update(creditTransaction)
+      .set({
+        holdStatus: HOLD_STATUS.RELEASED,
+        updatedAt: new Date(),
+      })
+      .where(eq(creditTransaction.id, holdId));
+  });
+
+  logger.credits.info('releaseHold: hold released', { holdId });
 }

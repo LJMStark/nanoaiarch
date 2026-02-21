@@ -452,34 +452,52 @@ export async function updateAssistantMessage(
       updates.generationParams = JSON.stringify(data.generationParams);
     }
 
-    await db
-      .update(projectMessage)
-      .set(updates)
-      .where(eq(projectMessage.id, messageId));
-
     const isTransitionToCompleted =
       data.status === 'completed' && message[0].status !== 'completed';
 
-    // Update aggregate project stats only when generation first becomes completed
     if (isTransitionToCompleted) {
-      const projectUpdates: Record<string, unknown> = {
-        generationCount: sql`${imageProject.generationCount} + 1`,
-        lastActiveAt: new Date(),
-        updatedAt: new Date(),
-      };
+      // Use transaction with conditional update to prevent race conditions
+      // The WHERE clause ensures only one concurrent request can transition the status
+      await db.transaction(async (tx) => {
+        const result = await tx
+          .update(projectMessage)
+          .set(updates)
+          .where(
+            and(
+              eq(projectMessage.id, messageId),
+              sql`${projectMessage.status} != 'completed'`
+            )
+          )
+          .returning({ id: projectMessage.id });
 
-      if (data.outputImage) {
-        projectUpdates.coverImage = data.outputImage;
-      }
+        // Only update project stats if the message was actually transitioned
+        if (result.length > 0) {
+          const projectUpdates: Record<string, unknown> = {
+            generationCount: sql`${imageProject.generationCount} + 1`,
+            lastActiveAt: new Date(),
+            updatedAt: new Date(),
+          };
 
-      if (data.creditsUsed && data.creditsUsed > 0) {
-        projectUpdates.totalCreditsUsed = sql`${imageProject.totalCreditsUsed} + ${data.creditsUsed}`;
-      }
+          if (data.outputImage) {
+            projectUpdates.coverImage = data.outputImage;
+          }
 
+          if (data.creditsUsed && data.creditsUsed > 0) {
+            projectUpdates.totalCreditsUsed = sql`${imageProject.totalCreditsUsed} + ${data.creditsUsed}`;
+          }
+
+          await tx
+            .update(imageProject)
+            .set(projectUpdates)
+            .where(eq(imageProject.id, message[0].projectId));
+        }
+      });
+    } else {
+      // Non-completion updates don't need transaction protection
       await db
-        .update(imageProject)
-        .set(projectUpdates)
-        .where(eq(imageProject.id, message[0].projectId));
+        .update(projectMessage)
+        .set(updates)
+        .where(eq(projectMessage.id, messageId));
     }
 
     return { success: true };
