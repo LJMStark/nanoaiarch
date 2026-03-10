@@ -432,8 +432,16 @@
       "or": "Or continue with",
       "emailRequired": "Please enter your email",
       "passwordRequired": "Please enter your password",
+      "captchaRequired": "Please complete the captcha",
       "captchaInvalid": "Captcha verification failed",
-      "captchaError": "Captcha verification error"
+      "captchaError": "Captcha verification error",
+      "invalidCredentials": "Incorrect email or password.",
+      "emailNotVerified": "Please verify your email before signing in.",
+      "tooManyAttempts": "Too many attempts. Please wait a moment and try again.",
+      "loginFailed": "Unable to sign in right now. Please try again.",
+      "socialAccountNotLinked": "This email is already linked to a different sign-in method.",
+      "socialLoginCancelled": "Sign-in was cancelled. Please try again.",
+      "socialLoginFailed": "Unable to complete social sign in. Please try again."
     },
     "register": {
       "title": "Register",
@@ -451,6 +459,7 @@
       "passwordRequired": "Please enter your password",
       "passwordTooShort": "Password must be at least 8 characters",
       "registrationFailed": "Registration failed. Please try again.",
+      "captchaRequired": "Please complete the captcha",
       "captchaInvalid": "Captcha verification failed",
       "captchaError": "Captcha verification error",
       "resendEmail": "Resend verification email",
@@ -467,7 +476,9 @@
       "send": "Send reset link",
       "backToLogin": "Back to login",
       "checkEmail": "Please check your email inbox",
-      "emailRequired": "Please enter your email"
+      "emailRequired": "Please enter your email",
+      "requestFailed": "Unable to send the reset link right now. Please try again.",
+      "tooManyRequests": "Too many requests. Please wait a moment and try again."
     },
     "resetPassword": {
       "title": "Reset Password",
@@ -476,7 +487,10 @@
       "backToLogin": "Back to login",
       "showPassword": "Show password",
       "hidePassword": "Hide password",
-      "minLength": "Password must be at least 8 characters"
+      "minLength": "Password must be at least 8 characters",
+      "invalidToken": "This reset link is invalid or has expired.",
+      "resetFailed": "Unable to reset your password right now. Please try again.",
+      "tooManyRequests": "Too many requests. Please wait a moment and try again."
     },
     "error": {
       "title": "Oops! Something went wrong!",

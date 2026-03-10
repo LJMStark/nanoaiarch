@@ -8,13 +8,6 @@ import { getSession } from './server';
 // -----------------------------------------------------------------------------
 export const actionClient = createSafeActionClient({
   handleServerError: (e) => {
-    if (e instanceof Error) {
-      return {
-        success: false,
-        error: e.message,
-      };
-    }
-
     return {
       success: false,
       error: 'Something went wrong while executing the action',

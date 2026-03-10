@@ -29,6 +29,10 @@ import { useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import * as z from 'zod';
 import { Captcha } from '../shared/captcha';
+import {
+  getLoginCallbackErrorMessage,
+  getLoginErrorMessage,
+} from './auth-error-messages';
 import { SocialLoginButton } from './social-login-button';
 
 export interface LoginFormProps {
@@ -44,10 +48,22 @@ export const LoginForm = ({
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
   const paramCallbackUrl = searchParams.get('callbackUrl');
+  const refCode = searchParams.get('ref');
   // Use prop callback URL or param callback URL if provided, otherwise use the default login redirect
   const locale = useLocale();
   const defaultCallbackUrl = getUrlWithLocale(DEFAULT_LOGIN_REDIRECT, locale);
   const callbackUrl = propCallbackUrl || paramCallbackUrl || defaultCallbackUrl;
+  const registerSearchParams = new URLSearchParams();
+  if (paramCallbackUrl) {
+    registerSearchParams.set('callbackUrl', paramCallbackUrl);
+  }
+  if (refCode) {
+    registerSearchParams.set('ref', refCode);
+  }
+  const registerHref = registerSearchParams.size
+    ? `${Routes.Register}?${registerSearchParams.toString()}`
+    : Routes.Register;
+  const callbackError = getLoginCallbackErrorMessage(urlError, t);
   logger.auth.debug('login form, callbackUrl', { callbackUrl });
 
   const [error, setError] = useState<string | undefined>('');
@@ -64,7 +80,7 @@ export const LoginForm = ({
   const captchaSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const captchaConfigured = turnstileEnabled && !!captchaSiteKey;
   const captchaSchema = captchaConfigured
-    ? z.string().min(1, 'Please complete the captcha')
+    ? z.string().min(1, t('captchaRequired'))
     : z.string().optional();
 
   const LoginSchema = z.object({
@@ -115,7 +131,10 @@ export const LoginForm = ({
         logger.auth.error('login, captcha invalid', undefined, {
           captchaToken: values.captchaToken,
         });
-        const errorMessage = captchaResult?.data?.error || t('captchaInvalid');
+        const errorMessage =
+          captchaResult?.data?.success === false
+            ? t('captchaError')
+            : t('captchaInvalid');
         setError(errorMessage);
         setIsPending(false);
         resetCaptcha(); // Reset captcha on validation failure
@@ -149,7 +168,9 @@ export const LoginForm = ({
             status: ctx.error.status,
             message: ctx.error.message,
           });
-          setError(`${ctx.error.status}: ${ctx.error.message}`);
+          setError(
+            getLoginErrorMessage(ctx.error.status, ctx.error.message, t)
+          );
           // Reset captcha on login error
           if (captchaConfigured) {
             resetCaptcha();
@@ -167,7 +188,7 @@ export const LoginForm = ({
     <AuthCard
       headerLabel={t('welcomeBack')}
       bottomButtonLabel={t('signUpHint')}
-      bottomButtonHref={`${Routes.Register}`}
+      bottomButtonHref={registerHref}
       className={cn('', className)}
     >
       {credentialLoginEnabled && (
@@ -248,7 +269,7 @@ export const LoginForm = ({
                 )}
               />
             </div>
-            <FormError message={error || urlError || undefined} />
+            <FormError message={error || callbackError} />
             <FormSuccess message={success} />
             {captchaConfigured && (
               <Captcha

@@ -1,9 +1,14 @@
 import { ConversationLayout } from '@/ai/image/components/conversation';
+import { PendingReferralRecovery } from '@/components/auth/pending-referral-recovery';
 import { Skeleton } from '@/components/ui/skeleton';
+import { routing } from '@/i18n/routing';
 import { constructMetadata } from '@/lib/metadata';
+import { getSession } from '@/lib/server';
+import { Routes } from '@/routes';
 import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
+import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
 export async function generateMetadata({
@@ -49,9 +54,30 @@ function LoadingFallback() {
   );
 }
 
-export default async function AIImagePage() {
+function getLocaleHref(locale: Locale, route: string): string {
+  return locale === routing.defaultLocale ? route : `/${locale}${route}`;
+}
+
+export default async function AIImagePage({
+  params,
+}: {
+  params: Promise<{ locale: Locale }>;
+}) {
+  const { locale } = await params;
+  const session = await getSession();
+
+  if (!session?.user) {
+    const loginSearchParams = new URLSearchParams({
+      callbackUrl: getLocaleHref(locale, Routes.AIImage),
+    });
+    redirect(
+      `${getLocaleHref(locale, Routes.Login)}?${loginSearchParams.toString()}`
+    );
+  }
+
   return (
     <Suspense fallback={<LoadingFallback />}>
+      <PendingReferralRecovery />
       <ConversationLayout />
     </Suspense>
   );

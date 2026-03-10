@@ -1,7 +1,6 @@
 'use client';
 
 import { handleUnverifiedRegistration } from '@/actions/handle-unverified-registration';
-import { applyReferralCodeInternal } from '@/actions/referral';
 import { validateCaptchaAction } from '@/actions/validate-captcha';
 import { AuthCard } from '@/components/auth/auth-card';
 import { FormError } from '@/components/shared/form-error';
@@ -29,6 +28,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import * as z from 'zod';
 import { Captcha } from '../shared/captcha';
+import { persistPendingReferralCode } from './pending-referral-code';
 import { SocialLoginButton } from './social-login-button';
 
 interface RegisterFormProps {
@@ -46,6 +46,16 @@ export const RegisterForm = ({
   const locale = useLocale();
   const defaultCallbackUrl = getUrlWithLocale(DEFAULT_LOGIN_REDIRECT, locale);
   const callbackUrl = propCallbackUrl || paramCallbackUrl || defaultCallbackUrl;
+  const loginSearchParams = new URLSearchParams();
+  if (paramCallbackUrl) {
+    loginSearchParams.set('callbackUrl', paramCallbackUrl);
+  }
+  if (refCode) {
+    loginSearchParams.set('ref', refCode);
+  }
+  const loginHref = loginSearchParams.size
+    ? `${Routes.Login}?${loginSearchParams.toString()}`
+    : Routes.Login;
   logger.auth.debug('register form, callbackUrl', { callbackUrl });
 
   const [error, setError] = useState<string | undefined>('');
@@ -66,7 +76,7 @@ export const RegisterForm = ({
   const captchaSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const captchaConfigured = turnstileEnabled && !!captchaSiteKey;
   const captchaSchema = captchaConfigured
-    ? z.string().min(1, 'Please complete the captcha')
+    ? z.string().min(1, t('captchaRequired'))
     : z.string().optional();
 
   const RegisterSchema = z.object({
@@ -152,7 +162,10 @@ export const RegisterForm = ({
         logger.auth.error('register, captcha invalid', undefined, {
           captchaToken: values.captchaToken,
         });
-        const errorMessage = captchaResult?.data?.error || t('captchaInvalid');
+        const errorMessage =
+          captchaResult?.data?.success === false
+            ? t('captchaError')
+            : t('captchaInvalid');
         setError(errorMessage);
         setIsPending(false);
         resetCaptcha(); // Reset captcha on validation failure
@@ -186,14 +199,9 @@ export const RegisterForm = ({
           setRegisteredEmail(values.email);
           setResendCountdown(60); // Start cooldown immediately after registration
 
-          // Apply referral code if present
-          if (refCode && ctx.data?.user?.id) {
-            try {
-              await applyReferralCodeInternal(ctx.data.user.id, refCode);
-              logger.auth.debug('register, referral applied', { refCode });
-            } catch (error) {
-              logger.auth.error('register, referral error', error, { refCode });
-            }
+          if (refCode) {
+            persistPendingReferralCode(refCode);
+            logger.auth.debug('register, referral queued for recovery');
           }
 
           // add affonso affiliate
@@ -272,7 +280,7 @@ export const RegisterForm = ({
     <AuthCard
       headerLabel={t('createAccount')}
       bottomButtonLabel={t('signInHint')}
-      bottomButtonHref={`${Routes.Login}`}
+      bottomButtonHref={loginHref}
     >
       {credentialLoginEnabled && (
         <Form {...form}>

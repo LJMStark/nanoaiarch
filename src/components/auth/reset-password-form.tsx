@@ -24,6 +24,7 @@ import { notFound, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { getResetPasswordErrorMessage } from './auth-error-messages';
 
 /**
  * https://www.better-auth.com/docs/authentication/email-password#forget-password
@@ -89,7 +90,9 @@ export const ResetPasswordForm = () => {
             status: ctx.error.status,
             message: ctx.error.message,
           });
-          setError(`${ctx.error.status}: ${ctx.error.message}`);
+          setError(
+            getResetPasswordErrorMessage(ctx.error.status, ctx.error.message, t)
+          );
         },
       }
     );

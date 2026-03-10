@@ -24,6 +24,7 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { getForgotPasswordErrorMessage } from './auth-error-messages';
 
 export const ForgotPasswordForm = ({ className }: { className?: string }) => {
   const t = useTranslations('AuthPage.forgotPassword');
@@ -76,7 +77,13 @@ export const ForgotPasswordForm = ({ className }: { className?: string }) => {
             status: ctx.error.status,
             message: ctx.error.message,
           });
-          setError(`${ctx.error.status}: ${ctx.error.message}`);
+          setError(
+            getForgotPasswordErrorMessage(
+              ctx.error.status,
+              ctx.error.message,
+              t
+            )
+          );
         },
       }
     );

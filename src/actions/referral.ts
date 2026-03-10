@@ -73,23 +73,6 @@ export async function applyReferralCode(
 }
 
 /**
- * Apply a referral code to a specific user (internal use only)
- * This should only be called from trusted server-side code (e.g., registration callback)
- * @internal
- */
-export async function applyReferralCodeInternal(
-  userId: string,
-  code: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    return await applyReferral(userId, code);
-  } catch (error) {
-    logger.actions.error('applyReferralCodeInternal error', error);
-    return { success: false, error: 'Failed to apply referral code' };
-  }
-}
-
-/**
  * Get referral statistics for the current user
  */
 export async function getReferralStats(): Promise<{
