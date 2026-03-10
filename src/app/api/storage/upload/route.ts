@@ -14,12 +14,67 @@ import {
 import { StorageError } from '@/storage/types';
 import { type NextRequest, NextResponse } from 'next/server';
 
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+function createUploadErrorResponse(
+  error: string,
+  status: number,
+  headers?: HeadersInit
+): NextResponse {
+  return NextResponse.json(
+    { error },
+    {
+      status,
+      headers,
+    }
+  );
+}
+
+function validateUploadedFile(file: File | null): string | null {
+  if (!file) {
+    return 'No file provided';
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    logger.api.warn('uploadFile, file size exceeds the server limit', {
+      size: file.size,
+      maxSize: MAX_FILE_SIZE,
+    });
+    return 'File size exceeds the server limit';
+  }
+
+  if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+    logger.api.warn('uploadFile, file type not supported', {
+      type: file.type,
+    });
+    return 'File type not supported';
+  }
+
+  return null;
+}
+
+function resolveScopedFolder(
+  userId: string,
+  folder: string | null
+): string | null {
+  const safeFolder = sanitizeStorageFolder(folder);
+
+  if (folder && !safeFolder) {
+    return null;
+  }
+
+  if (safeFolder) {
+    return `users/${userId}/${safeFolder}`;
+  }
+
+  return `users/${userId}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Authentication check
     const session = await getSession();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return createUploadErrorResponse('Unauthorized', 401);
     }
 
     const rateLimitResult = applyRateLimit({
@@ -29,62 +84,34 @@ export async function POST(request: NextRequest) {
     });
 
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many upload requests. Please try again later.' },
-        {
-          status: 429,
-          headers: getRateLimitHeaders(rateLimitResult),
-        }
+      return createUploadErrorResponse(
+        'Too many upload requests. Please try again later.',
+        429,
+        getRateLimitHeaders(rateLimitResult)
       );
     }
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const folder = formData.get('folder') as string | null;
+    const validationError = validateUploadedFile(file);
+
+    if (validationError) {
+      return createUploadErrorResponse(validationError, 400);
+    }
 
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      return createUploadErrorResponse('No file provided', 400);
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > MAX_FILE_SIZE) {
-      logger.api.warn('uploadFile, file size exceeds the server limit', {
-        size: file.size,
-        maxSize: MAX_FILE_SIZE,
-      });
-      return NextResponse.json(
-        { error: 'File size exceeds the server limit' },
-        { status: 400 }
-      );
-    }
-
-    // Validate file type (optional, based on your requirements)
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      logger.api.warn('uploadFile, file type not supported', {
-        type: file.type,
-      });
-      return NextResponse.json(
-        { error: 'File type not supported' },
-        { status: 400 }
-      );
-    }
-
-    // Convert File to Buffer
     const buffer = Buffer.from(await file.arrayBuffer());
-    const safeFolder = sanitizeStorageFolder(folder);
-    if (folder && !safeFolder) {
-      return NextResponse.json(
-        { error: 'Invalid upload folder' },
-        { status: 400 }
-      );
-    }
-    const safeFilename = resolveSafeUploadFilename(file.name, file.type);
-    const scopedFolder = safeFolder
-      ? `users/${session.user.id}/${safeFolder}`
-      : `users/${session.user.id}`;
+    const scopedFolder = resolveScopedFolder(session.user.id, folder);
 
-    // Upload to storage
+    if (!scopedFolder) {
+      return createUploadErrorResponse('Invalid upload folder', 400);
+    }
+
+    const safeFilename = resolveSafeUploadFilename(file.name, file.type);
     const result = await uploadFile(
       buffer,
       safeFilename,
@@ -100,12 +127,12 @@ export async function POST(request: NextRequest) {
     logger.api.error('Error uploading file:', error);
 
     if (error instanceof StorageError) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return createUploadErrorResponse(error.message, 500);
     }
 
-    return NextResponse.json(
-      { error: 'Something went wrong while uploading the file' },
-      { status: 500 }
+    return createUploadErrorResponse(
+      'Something went wrong while uploading the file',
+      500
     );
   }
 }

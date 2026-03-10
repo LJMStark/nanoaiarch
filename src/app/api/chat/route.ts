@@ -10,10 +10,17 @@ import { resolveChatRequestPolicy } from './chat-policy';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
+
 const CHAT_RATE_LIMIT = {
   limit: 20,
   windowMs: 60 * 1000,
 } as const;
+
+interface ChatRequestBody {
+  messages?: UIMessage[];
+  model?: string;
+  webSearch?: boolean;
+}
 
 const openRouter = createOpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -21,43 +28,71 @@ const openRouter = createOpenAI({
   name: 'openrouter',
 });
 
+function createChatErrorResponse(
+  error: string,
+  status: number,
+  headers?: HeadersInit
+): NextResponse {
+  return NextResponse.json(
+    { error },
+    {
+      status,
+      headers,
+    }
+  );
+}
+
+async function parseChatRequest(req: Request): Promise<ChatRequestBody | null> {
+  try {
+    return (await req.json()) as ChatRequestBody;
+  } catch {
+    return null;
+  }
+}
+
+function createHoldSettler(holdId: string, requestId: string) {
+  let holdSettled = false;
+
+  return async function settleHold(mode: 'confirm' | 'release'): Promise<void> {
+    if (holdSettled) {
+      return;
+    }
+
+    holdSettled = true;
+
+    try {
+      if (mode === 'confirm') {
+        await confirmHold(holdId);
+        return;
+      }
+
+      await releaseHold(holdId);
+    } catch (error) {
+      logger.api.error(
+        `Failed to ${mode} chat credit hold [requestId=${requestId}, holdId=${holdId}]`,
+        error
+      );
+    }
+  };
+}
+
 export async function POST(req: Request) {
   const session = await auth.api.getSession({
     headers: req.headers,
   });
 
   if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: 'Please sign in to use chat' },
-      { status: 401 }
-    );
+    return createChatErrorResponse('Please sign in to use chat', 401);
   }
 
-  let requestBody: {
-    messages?: UIMessage[];
-    model?: string;
-    webSearch?: boolean;
-  };
-
-  try {
-    requestBody = (await req.json()) as {
-      messages?: UIMessage[];
-      model?: string;
-      webSearch?: boolean;
-    };
-  } catch {
-    return NextResponse.json(
-      { error: 'Invalid request body' },
-      { status: 400 }
-    );
+  const requestBody = await parseChatRequest(req);
+  if (!requestBody) {
+    return createChatErrorResponse('Invalid request body', 400);
   }
 
   const { messages, model, webSearch = false } = requestBody;
   if (!Array.isArray(messages) || messages.length === 0 || !model) {
-    return NextResponse.json(
-      { error: 'messages and model are required' },
-      { status: 400 }
-    );
+    return createChatErrorResponse('messages and model are required', 400);
   }
 
   const policy = resolveChatRequestPolicy({
@@ -65,9 +100,9 @@ export async function POST(req: Request) {
     webSearch,
   });
   if (!policy) {
-    return NextResponse.json(
-      { error: 'Invalid chat model. Please select a supported model.' },
-      { status: 400 }
+    return createChatErrorResponse(
+      'Invalid chat model. Please select a supported model.',
+      400
     );
   }
 
@@ -83,12 +118,10 @@ export async function POST(req: Request) {
   const rateLimitHeaders = createRateLimitHeaders(rateLimit);
 
   if (!rateLimit.success) {
-    return NextResponse.json(
-      { error: 'Too many chat requests. Please try again shortly.' },
-      {
-        status: 429,
-        headers: rateLimitHeaders,
-      }
+    return createChatErrorResponse(
+      'Too many chat requests. Please try again shortly.',
+      429,
+      rateLimitHeaders
     );
   }
 
@@ -106,15 +139,10 @@ export async function POST(req: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (message.includes('Insufficient credits')) {
-      return NextResponse.json(
-        {
-          error:
-            'Insufficient credits. Please purchase more credits to continue.',
-        },
-        {
-          status: 402,
-          headers: rateLimitHeaders,
-        }
+      return createChatErrorResponse(
+        'Insufficient credits. Please purchase more credits to continue.',
+        402,
+        rateLimitHeaders
       );
     }
 
@@ -122,36 +150,14 @@ export async function POST(req: Request) {
       `Failed to reserve chat credits [requestId=${requestId}, userId=${session.user.id}]`,
       error
     );
-    return NextResponse.json(
-      { error: 'Failed to reserve credits. Please try again.' },
-      {
-        status: 500,
-        headers: rateLimitHeaders,
-      }
+    return createChatErrorResponse(
+      'Failed to reserve credits. Please try again.',
+      500,
+      rateLimitHeaders
     );
   }
 
-  let holdSettled = false;
-  const settleHold = async (mode: 'confirm' | 'release'): Promise<void> => {
-    if (holdSettled) {
-      return;
-    }
-
-    holdSettled = true;
-
-    try {
-      if (mode === 'confirm') {
-        await confirmHold(holdId);
-      } else {
-        await releaseHold(holdId);
-      }
-    } catch (error) {
-      logger.api.error(
-        `Failed to ${mode} chat credit hold [requestId=${requestId}, holdId=${holdId}]`,
-        error
-      );
-    }
-  };
+  const settleHold = createHoldSettler(holdId, requestId);
 
   try {
     const result = streamText({
@@ -189,12 +195,10 @@ export async function POST(req: Request) {
       `Unhandled chat route error [requestId=${requestId}, model=${policy.modelId}]`,
       error
     );
-    return NextResponse.json(
-      { error: 'Failed to generate chat response.' },
-      {
-        status: 500,
-        headers: rateLimitHeaders,
-      }
+    return createChatErrorResponse(
+      'Failed to generate chat response.',
+      500,
+      rateLimitHeaders
     );
   }
 }

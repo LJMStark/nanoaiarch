@@ -20,6 +20,13 @@ export interface MessageUpdateData {
   errorMessage?: string;
 }
 
+interface GenerationStateDependencies {
+  setAbortController: (controller: AbortController | null) => void;
+  setGenerationStage: (
+    stage: 'submitting' | 'queued' | 'generating' | 'finishing' | null
+  ) => void;
+}
+
 interface ConversationMessageLike {
   role: 'user' | 'model';
   content: string;
@@ -53,6 +60,70 @@ interface UseConversationSubmitParams {
   setGenerationStage: (
     stage: 'submitting' | 'queued' | 'generating' | 'finishing' | null
   ) => void;
+}
+
+function getInputImages(
+  referenceImages: string[],
+  getLastOutputImage: () => string | null
+): string[] {
+  if (referenceImages.length > 0) {
+    return referenceImages;
+  }
+
+  return [getLastOutputImage()].filter(Boolean) as string[];
+}
+
+function resetPendingGeneration(
+  controller: AbortController,
+  dependencies: GenerationStateDependencies
+): void {
+  const state = useConversationStore.getState();
+
+  if (state.abortController === controller) {
+    dependencies.setAbortController(null);
+    dependencies.setGenerationStage(null);
+  }
+}
+
+function clearFinishedGeneration(
+  controller: AbortController,
+  generatingMessageId: string | null,
+  dependencies: GenerationStateDependencies & {
+    setGenerating: (
+      isGenerating: boolean,
+      generatingMessageId?: string
+    ) => void;
+  }
+): void {
+  const state = useConversationStore.getState();
+
+  if (state.abortController === controller) {
+    dependencies.setAbortController(null);
+  }
+
+  if (
+    !generatingMessageId ||
+    state.generatingMessageId === generatingMessageId
+  ) {
+    dependencies.setGenerating(false);
+    dependencies.setGenerationStage(null);
+  }
+}
+
+function getFailureState(
+  error: unknown,
+  t: (key: ConversationTranslationKey) => string
+): Pick<MessageUpdateData, 'content' | 'errorMessage'> {
+  const isCancelled = error instanceof Error && error.name === 'AbortError';
+
+  return {
+    content: isCancelled ? t('loading.cancelled') : t('errors.unexpected'),
+    errorMessage: isCancelled
+      ? 'Generation cancelled'
+      : error instanceof Error
+        ? error.message
+        : t('errors.unknown'),
+  };
 }
 
 export function useConversationSubmit({
@@ -91,10 +162,7 @@ export function useConversationSubmit({
     }
 
     const prompt = draftPrompt.trim();
-    const inputImages =
-      referenceImages.length > 0
-        ? referenceImages
-        : ([getLastOutputImage()].filter(Boolean) as string[]);
+    const inputImages = getInputImages(referenceImages, getLastOutputImage);
 
     clearDraft();
     setReferenceImages([]);
@@ -112,11 +180,10 @@ export function useConversationSubmit({
 
     if (!userResult.success || !userResult.data) {
       logger.ai.error('Failed to add user message');
-      const state = useConversationStore.getState();
-      if (state.abortController === controller) {
-        setAbortController(null);
-        setGenerationStage(null);
-      }
+      resetPendingGeneration(controller, {
+        setAbortController,
+        setGenerationStage,
+      });
       return;
     }
 
@@ -135,11 +202,10 @@ export function useConversationSubmit({
 
     if (!generatingResult.success || !generatingResult.data) {
       logger.ai.error('Failed to create generating message');
-      const state = useConversationStore.getState();
-      if (state.abortController === controller) {
-        setAbortController(null);
-        setGenerationStage(null);
-      }
+      resetPendingGeneration(controller, {
+        setAbortController,
+        setGenerationStage,
+      });
       return;
     }
 
@@ -196,35 +262,19 @@ export function useConversationSubmit({
       });
     } catch (error) {
       logger.ai.error('Generation error:', error);
-      const isCancelled = error instanceof Error && error.name === 'AbortError';
-      const errorContent = isCancelled
-        ? t('loading.cancelled')
-        : t('errors.unexpected');
-      const errorMessage = isCancelled
-        ? 'Generation cancelled'
-        : error instanceof Error
-          ? error.message
-          : t('errors.unknown');
+      const failureState = getFailureState(error, t);
 
       await updateMessageState(generatingMessage.id, {
-        content: errorContent,
+        content: failureState.content,
         status: 'failed',
-        errorMessage,
+        errorMessage: failureState.errorMessage,
       });
     } finally {
-      const state = useConversationStore.getState();
-
-      if (state.abortController === controller) {
-        setAbortController(null);
-      }
-
-      if (
-        !generatingMessageId ||
-        state.generatingMessageId === generatingMessageId
-      ) {
-        setGenerating(false);
-        setGenerationStage(null);
-      }
+      clearFinishedGeneration(controller, generatingMessageId, {
+        setAbortController,
+        setGenerating,
+        setGenerationStage,
+      });
     }
   }, [
     addMessage,
