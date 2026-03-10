@@ -8,13 +8,12 @@ import {
 import { getSession } from '@/lib/server';
 import { uploadFile } from '@/storage';
 import {
+  ALLOWED_STORAGE_MIME_TYPES,
   resolveSafeUploadFilename,
   sanitizeStorageFolder,
 } from '@/storage/sanitize';
 import { StorageError } from '@/storage/types';
 import { type NextRequest, NextResponse } from 'next/server';
-
-const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 function createUploadErrorResponse(
   error: string,
@@ -43,7 +42,11 @@ function validateUploadedFile(file: File | null): string | null {
     return 'File size exceeds the server limit';
   }
 
-  if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+  if (
+    !ALLOWED_STORAGE_MIME_TYPES.includes(
+      file.type as (typeof ALLOWED_STORAGE_MIME_TYPES)[number]
+    )
+  ) {
     logger.api.warn('uploadFile, file type not supported', {
       type: file.type,
     });

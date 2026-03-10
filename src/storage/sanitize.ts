@@ -1,4 +1,13 @@
-const MIME_EXTENSION_MAP: Record<string, string> = {
+export const ALLOWED_STORAGE_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+] as const;
+
+const MIME_EXTENSION_MAP: Record<
+  (typeof ALLOWED_STORAGE_MIME_TYPES)[number],
+  string
+> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
@@ -30,7 +39,8 @@ export function resolveSafeUploadFilename(
   originalFilename: string | null | undefined,
   mimeType: string
 ): string {
-  const inferredExtension = MIME_EXTENSION_MAP[mimeType];
+  const inferredExtension =
+    MIME_EXTENSION_MAP[mimeType as keyof typeof MIME_EXTENSION_MAP];
   const normalizedName = originalFilename
     ?.split(/[\\/]/)
     .pop()

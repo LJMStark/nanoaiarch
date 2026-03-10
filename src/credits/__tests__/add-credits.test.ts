@@ -107,4 +107,26 @@ describe('addCredits', () => {
     expect(tx.__updateChain.where).toHaveBeenCalledTimes(1);
     expect(tx.insert).toHaveBeenCalledTimes(1);
   });
+
+  it('writes the credit transaction when no idempotency key is provided', async () => {
+    const tx = createMockTx();
+    tx.__selectChain.limit.mockResolvedValue([{ id: 'credit-row-1' }]);
+
+    mocks.getDb.mockResolvedValue({
+      transaction: async (callback: (value: typeof tx) => Promise<void>) =>
+        callback(tx),
+    });
+
+    const result = await addCredits({
+      userId: 'user-1',
+      amount: 10,
+      type: 'purchase_package',
+      description: 'Package credits',
+    });
+
+    expect(result).toBe(true);
+    expect(tx.insert).toHaveBeenCalledTimes(1);
+    expect(tx.__insertValues).toHaveBeenCalledTimes(1);
+    expect(tx.update).toHaveBeenCalledTimes(1);
+  });
 });

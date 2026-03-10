@@ -28,6 +28,93 @@ export function buildMonthlyCreditGrantIdempotencyKey(
   return `credit-grant:${creditType}:${userId}:${date.getUTCFullYear()}-${date.getUTCMonth() + 1}`;
 }
 
+function buildCreditTransactionPayload({
+  userId,
+  type,
+  amount,
+  description,
+  paymentId,
+  expirationDate,
+  now,
+}: {
+  userId: string;
+  type: string;
+  amount: number;
+  description: string;
+  paymentId?: string;
+  expirationDate?: Date;
+  now: Date;
+}) {
+  return {
+    id: randomUUID(),
+    userId,
+    type,
+    amount,
+    remainingAmount: amount,
+    description,
+    paymentId,
+    expirationDate,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+async function grantMonthlyCreditsIfEligible({
+  userId,
+  type,
+  credits,
+  expireDays,
+  descriptionPrefix,
+  logLabel,
+  logContext,
+}: {
+  userId: string;
+  type: string;
+  credits: number;
+  expireDays?: number;
+  descriptionPrefix: string;
+  logLabel: string;
+  logContext?: Record<string, string | number | boolean>;
+}): Promise<void> {
+  const canAdd = await canAddCreditsByType(userId, type);
+  const now = new Date();
+  const month = `${now.getFullYear()}-${now.getMonth() + 1}`;
+
+  if (!canAdd) {
+    logger.credits.debug(`${logLabel} skipped (already added)`, {
+      userId,
+      month,
+      ...logContext,
+    });
+    return;
+  }
+
+  const added = await addCredits({
+    userId,
+    amount: credits,
+    type,
+    description: `${descriptionPrefix}: ${credits} for ${month}`,
+    expireDays,
+    idempotencyKey: buildMonthlyCreditGrantIdempotencyKey(userId, type, now),
+  });
+
+  if (added) {
+    logger.credits.info(`${logLabel} completed`, {
+      userId,
+      credits,
+      month,
+      ...logContext,
+    });
+    return;
+  }
+
+  logger.credits.debug(`${logLabel} skipped (duplicate idempotency key)`, {
+    userId,
+    month,
+    ...logContext,
+  });
+}
+
 /**
  * Get user's current credit balance
  * @param userId - User ID
@@ -173,22 +260,22 @@ export async function addCredits({
   await db.transaction(async (tx) => {
     const now = new Date();
     const expirationDate = expireDays ? addDays(now, expireDays) : undefined;
+    const transactionPayload = buildCreditTransactionPayload({
+      userId,
+      type,
+      amount,
+      description,
+      paymentId,
+      expirationDate,
+      now,
+    });
 
     if (idempotencyKey) {
       const insertedTransactions = await tx
         .insert(creditTransaction)
         .values({
-          id: randomUUID(),
-          userId,
-          type,
-          amount,
-          remainingAmount: amount,
-          description,
-          paymentId,
-          expirationDate,
+          ...transactionPayload,
           idempotencyKey,
-          createdAt: now,
-          updatedAt: now,
         })
         .onConflictDoNothing({
           target: creditTransaction.idempotencyKey,
@@ -242,18 +329,7 @@ export async function addCredits({
 
     if (!idempotencyKey) {
       // Write credit transaction record within the same transaction
-      await tx.insert(creditTransaction).values({
-        id: randomUUID(),
-        userId,
-        type,
-        amount,
-        remainingAmount: amount,
-        description,
-        paymentId,
-        expirationDate,
-        createdAt: now,
-        updatedAt: now,
-      });
+      await tx.insert(creditTransaction).values(transactionPayload);
     }
   });
 
@@ -547,50 +623,16 @@ export async function addMonthlyFreeCredits(userId: string, planId: string) {
     return;
   }
 
-  const canAdd = await canAddCreditsByType(
+  const credits = pricePlan.credits?.amount || 0;
+  const expireDays = pricePlan.credits?.expireDays || 0;
+  await grantMonthlyCreditsIfEligible({
     userId,
-    CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH
-  );
-  const now = new Date();
-
-  // add credits if it's a new month
-  if (canAdd) {
-    const credits = pricePlan.credits?.amount || 0;
-    const expireDays = pricePlan.credits?.expireDays || 0;
-    const added = await addCredits({
-      userId,
-      amount: credits,
-      type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
-      description: `Free monthly credits: ${credits} for ${now.getFullYear()}-${now.getMonth() + 1}`,
-      expireDays,
-      idempotencyKey: buildMonthlyCreditGrantIdempotencyKey(
-        userId,
-        CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
-        now
-      ),
-    });
-
-    if (added) {
-      logger.credits.info('addMonthlyFreeCredits completed', {
-        userId,
-        credits,
-        month: `${now.getFullYear()}-${now.getMonth() + 1}`,
-      });
-    } else {
-      logger.credits.debug(
-        'addMonthlyFreeCredits skipped (duplicate idempotency key)',
-        {
-          userId,
-          month: `${now.getFullYear()}-${now.getMonth() + 1}`,
-        }
-      );
-    }
-  } else {
-    logger.credits.debug('addMonthlyFreeCredits skipped (already added)', {
-      userId,
-      month: `${now.getFullYear()}-${now.getMonth() + 1}`,
-    });
-  }
+    type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
+    credits,
+    expireDays,
+    descriptionPrefix: 'Free monthly credits',
+    logLabel: 'addMonthlyFreeCredits',
+  });
 }
 
 /**
@@ -613,52 +655,17 @@ export async function addSubscriptionCredits(userId: string, priceId: string) {
     return;
   }
 
-  const canAdd = await canAddCreditsByType(
+  await grantMonthlyCreditsIfEligible({
     userId,
-    CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL
-  );
-  const now = new Date();
-
-  // Add credits if it's a new month
-  if (canAdd) {
-    const credits = pricePlan.credits.amount;
-    const expireDays = pricePlan.credits.expireDays;
-
-    const added = await addCredits({
-      userId,
-      amount: credits,
-      type: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
-      description: `Subscription renewal credits: ${credits} for ${now.getFullYear()}-${now.getMonth() + 1}`,
-      expireDays,
-      idempotencyKey: buildMonthlyCreditGrantIdempotencyKey(
-        userId,
-        CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
-        now
-      ),
-    });
-
-    if (added) {
-      logger.credits.info('addSubscriptionCredits completed', {
-        userId,
-        priceId,
-        credits,
-        month: `${now.getFullYear()}-${now.getMonth() + 1}`,
-      });
-    } else {
-      logger.credits.debug(
-        'addSubscriptionCredits skipped (duplicate idempotency key)',
-        {
-          userId,
-          month: `${now.getFullYear()}-${now.getMonth() + 1}`,
-        }
-      );
-    }
-  } else {
-    logger.credits.debug('addSubscriptionCredits skipped (already added)', {
-      userId,
-      month: `${now.getFullYear()}-${now.getMonth() + 1}`,
-    });
-  }
+    type: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
+    credits: pricePlan.credits.amount,
+    expireDays: pricePlan.credits.expireDays,
+    descriptionPrefix: 'Subscription renewal credits',
+    logLabel: 'addSubscriptionCredits',
+    logContext: {
+      priceId,
+    },
+  });
 }
 
 /**
@@ -685,51 +692,14 @@ export async function addLifetimeMonthlyCredits(
     return;
   }
 
-  const canAdd = await canAddCreditsByType(
+  await grantMonthlyCreditsIfEligible({
     userId,
-    CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY
-  );
-  const now = new Date();
-
-  // Add credits if it's a new month
-  if (canAdd) {
-    const credits = pricePlan.credits.amount;
-    const expireDays = pricePlan.credits.expireDays;
-
-    const added = await addCredits({
-      userId,
-      amount: credits,
-      type: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
-      description: `Lifetime monthly credits: ${credits} for ${now.getFullYear()}-${now.getMonth() + 1}`,
-      expireDays,
-      idempotencyKey: buildMonthlyCreditGrantIdempotencyKey(
-        userId,
-        CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
-        now
-      ),
-    });
-
-    if (added) {
-      logger.credits.info('addLifetimeMonthlyCredits completed', {
-        userId,
-        credits,
-        month: `${now.getFullYear()}-${now.getMonth() + 1}`,
-      });
-    } else {
-      logger.credits.debug(
-        'addLifetimeMonthlyCredits skipped (duplicate idempotency key)',
-        {
-          userId,
-          month: `${now.getFullYear()}-${now.getMonth() + 1}`,
-        }
-      );
-    }
-  } else {
-    logger.credits.debug('addLifetimeMonthlyCredits skipped (already added)', {
-      userId,
-      month: `${now.getFullYear()}-${now.getMonth() + 1}`,
-    });
-  }
+    type: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
+    credits: pricePlan.credits.amount,
+    expireDays: pricePlan.credits.expireDays,
+    descriptionPrefix: 'Lifetime monthly credits',
+    logLabel: 'addLifetimeMonthlyCredits',
+  });
 }
 
 // ============================================================================
