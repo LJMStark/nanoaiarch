@@ -4,7 +4,13 @@ import {
   DUOMI_MODELS,
   type GeminiModelId,
 } from '@/ai/image/lib/provider-config';
-import { consumeCredits, hasEnoughCredits, holdCredits, confirmHold, releaseHold } from '@/credits/credits';
+import {
+  confirmHold,
+  consumeCredits,
+  hasEnoughCredits,
+  holdCredits,
+  releaseHold,
+} from '@/credits/credits';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { NextResponse } from 'next/server';
@@ -143,14 +149,21 @@ export async function verifyRequestContext(
       holdId: hold.holdId,
     };
   } catch (holdError) {
-    const message = holdError instanceof Error ? holdError.message : String(holdError);
+    const message =
+      holdError instanceof Error ? holdError.message : String(holdError);
     if (message.includes('Insufficient credits')) {
       return NextResponse.json(
-        { error: 'Insufficient credits. Please purchase more credits to continue.' },
+        {
+          error:
+            'Insufficient credits. Please purchase more credits to continue.',
+        },
         { status: 402 }
       );
     }
-    logger.api.error(`Failed to hold credits [requestId=${requestId}]`, holdError);
+    logger.api.error(
+      `Failed to hold credits [requestId=${requestId}]`,
+      holdError
+    );
     return NextResponse.json(
       { error: 'Failed to reserve credits. Please try again.' },
       { status: 500 }
@@ -214,7 +227,10 @@ export async function executeImageGeneration({
               await confirmHold(ctx.holdId);
             } else {
               // Fallback for legacy flow without hold
-              await consumeImageCredits(ctx, `Image ${operationType}: ${ctx.modelId}`);
+              await consumeImageCredits(
+                ctx,
+                `Image ${operationType}: ${ctx.modelId}`
+              );
             }
           } catch (creditError) {
             logger.api.error(
@@ -314,13 +330,17 @@ export function createErrorResponse(
 /**
  * Creates a standardized success/error response based on result
  */
-export function createImageResponse(result: {
-  image?: string;
-  text?: string;
-  error?: string;
-  creditsUsed?: number;
-}): NextResponse {
+export function createImageResponse(
+  result: {
+    image?: string;
+    text?: string;
+    error?: string;
+    creditsUsed?: number;
+  },
+  headers?: HeadersInit
+): NextResponse {
   return NextResponse.json(result, {
     status: result.image ? 200 : 500,
+    headers,
   });
 }

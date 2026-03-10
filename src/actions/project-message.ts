@@ -9,7 +9,7 @@ import { logger } from '@/lib/logger';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 
-const generateId = () => crypto.randomUUID().slice(0, 8);
+const generateId = () => crypto.randomUUID();
 
 export type MessageRole = 'user' | 'assistant';
 
@@ -519,42 +519,37 @@ export async function deleteMessage(messageId: string) {
   try {
     const db = await getDb();
 
-    // First, get the message to find its project
-    const message = await db
-      .select({ projectId: projectMessage.projectId })
-      .from(projectMessage)
-      .where(
-        and(
-          eq(projectMessage.id, messageId),
-          eq(projectMessage.userId, session.user.id)
-        )
-      )
-      .limit(1);
+    let deletedProjectId: string | null = null;
 
-    if (!message.length) {
+    await db.transaction(async (tx) => {
+      const deleted = await tx
+        .delete(projectMessage)
+        .where(
+          and(
+            eq(projectMessage.id, messageId),
+            eq(projectMessage.userId, session.user.id)
+          )
+        )
+        .returning({ projectId: projectMessage.projectId });
+
+      if (!deleted.length) {
+        return;
+      }
+
+      deletedProjectId = deleted[0].projectId;
+
+      await tx
+        .update(imageProject)
+        .set({
+          messageCount: sql`GREATEST(0, ${imageProject.messageCount} - 1)`,
+          updatedAt: new Date(),
+        })
+        .where(eq(imageProject.id, deletedProjectId));
+    });
+
+    if (!deletedProjectId) {
       return { success: false, error: 'Message not found' };
     }
-
-    const projectId = message[0].projectId;
-
-    // Delete the message
-    await db
-      .delete(projectMessage)
-      .where(
-        and(
-          eq(projectMessage.id, messageId),
-          eq(projectMessage.userId, session.user.id)
-        )
-      );
-
-    // Update project message count
-    await db
-      .update(imageProject)
-      .set({
-        messageCount: sql`GREATEST(0, ${imageProject.messageCount} - 1)`,
-        updatedAt: new Date(),
-      })
-      .where(eq(imageProject.id, projectId));
 
     return { success: true };
   } catch (error) {

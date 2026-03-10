@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { resolveSafeUploadFilename, sanitizeStorageFolder } from '../sanitize';
 
 describe('sanitizeStorageFolder', () => {

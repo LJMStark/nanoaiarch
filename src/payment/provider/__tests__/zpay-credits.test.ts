@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { resolveCreditPurchaseFromWebhook } from '../zpay-credits';
 
 describe('resolveCreditPurchaseFromWebhook', () => {

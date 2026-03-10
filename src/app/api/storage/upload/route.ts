@@ -1,7 +1,16 @@
 import { MAX_FILE_SIZE } from '@/lib/constants';
 import { logger } from '@/lib/logger';
+import {
+  applyRateLimit,
+  getRateLimitHeaders,
+  getRateLimitIdentifier,
+} from '@/lib/rate-limit';
 import { getSession } from '@/lib/server';
 import { uploadFile } from '@/storage';
+import {
+  resolveSafeUploadFilename,
+  sanitizeStorageFolder,
+} from '@/storage/sanitize';
 import { StorageError } from '@/storage/types';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -11,6 +20,22 @@ export async function POST(request: NextRequest) {
     const session = await getSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rateLimitResult = applyRateLimit({
+      key: `storage-upload:${session.user.id}:${getRateLimitIdentifier(request.headers, session.user.id)}`,
+      limit: 10,
+      windowMs: 60 * 1000,
+    });
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many upload requests. Please try again later.' },
+        {
+          status: 429,
+          headers: getRateLimitHeaders(rateLimitResult),
+        }
+      );
     }
 
     const formData = await request.formData();
@@ -47,17 +72,30 @@ export async function POST(request: NextRequest) {
 
     // Convert File to Buffer
     const buffer = Buffer.from(await file.arrayBuffer());
+    const safeFolder = sanitizeStorageFolder(folder);
+    if (folder && !safeFolder) {
+      return NextResponse.json(
+        { error: 'Invalid upload folder' },
+        { status: 400 }
+      );
+    }
+    const safeFilename = resolveSafeUploadFilename(file.name, file.type);
+    const scopedFolder = safeFolder
+      ? `users/${session.user.id}/${safeFolder}`
+      : `users/${session.user.id}`;
 
     // Upload to storage
     const result = await uploadFile(
       buffer,
-      file.name,
+      safeFilename,
       file.type,
-      folder || undefined
+      scopedFolder
     );
 
     logger.api.debug('uploadFile, result', { result });
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: getRateLimitHeaders(rateLimitResult),
+    });
   } catch (error) {
     logger.api.error('Error uploading file:', error);
 

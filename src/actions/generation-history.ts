@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 
-const generateId = () => crypto.randomUUID().slice(0, 8);
+const generateId = () => crypto.randomUUID();
 
 export type GenerationHistoryItem = {
   id: string;

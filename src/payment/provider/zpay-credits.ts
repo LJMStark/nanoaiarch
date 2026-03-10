@@ -7,6 +7,11 @@ type CreditPackageLike = {
   id: string;
   amount: number;
   expireDays?: number;
+  price?: {
+    priceId: string;
+    amount: number;
+    currency: string;
+  };
 };
 
 export function resolveCreditPurchaseFromWebhook({

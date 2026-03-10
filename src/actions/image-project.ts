@@ -1,13 +1,13 @@
 'use server';
 
 import { getDb } from '@/db';
-import { imageProject, projectMessage } from '@/db/schema';
+import { imageProject } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 
-const generateId = () => crypto.randomUUID().slice(0, 8);
+const generateId = () => crypto.randomUUID();
 
 export type ImageProjectItem = {
   id: string;
@@ -368,25 +368,20 @@ export async function deleteImageProject(projectId: string) {
       return { success: false, error: 'Project not found' };
     }
 
-    // Delete all messages first (with user verification)
-    await db
-      .delete(projectMessage)
-      .where(
-        and(
-          eq(projectMessage.projectId, projectId),
-          eq(projectMessage.userId, session.user.id)
-        )
-      );
-
-    // Delete the project
-    await db
+    // The project_message FK already cascades on delete. Delete the parent row once.
+    const deleted = await db
       .delete(imageProject)
       .where(
         and(
           eq(imageProject.id, projectId),
           eq(imageProject.userId, session.user.id)
         )
-      );
+      )
+      .returning({ id: imageProject.id });
+
+    if (deleted.length === 0) {
+      return { success: false, error: 'Project not found' };
+    }
 
     return { success: true };
   } catch (error) {

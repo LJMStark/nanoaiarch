@@ -30,7 +30,7 @@ export function withTimeout<T>(
  * Generate a safe request ID
  */
 export function generateRequestId(): string {
-  return crypto.randomUUID().slice(0, 8);
+  return crypto.randomUUID();
 }
 
 /**
@@ -200,7 +200,10 @@ export async function generateImage(
   params: GenerateImageParams
 ): Promise<GenerateImageResult> {
   const internalController = new AbortController();
-  const timeoutId = setTimeout(() => internalController.abort(), CLIENT_TIMEOUT_MS);
+  const timeoutId = setTimeout(
+    () => internalController.abort(),
+    CLIENT_TIMEOUT_MS
+  );
 
   // If external signal provided, forward its abort to the internal controller
   if (params.signal) {
@@ -208,7 +211,9 @@ export async function generateImage(
       clearTimeout(timeoutId);
       return { success: false, error: 'Generation cancelled' };
     }
-    params.signal.addEventListener('abort', () => internalController.abort(), { once: true });
+    params.signal.addEventListener('abort', () => internalController.abort(), {
+      once: true,
+    });
   }
 
   try {

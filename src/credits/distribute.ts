@@ -6,7 +6,10 @@ import { findPlanByPriceId, getAllPricePlans } from '@/lib/price-plan';
 import { PlanIntervals } from '@/payment/types';
 import { addDays } from 'date-fns';
 import { and, eq, gt, inArray, isNull, lt, not, or, sql } from 'drizzle-orm';
-import { batchCanAddCreditsByType } from './credits';
+import {
+  batchCanAddCreditsByType,
+  buildMonthlyCreditGrantIdempotencyKey,
+} from './credits';
 import { CREDIT_TRANSACTION_TYPE } from './types';
 
 /**
@@ -632,7 +635,6 @@ async function batchAddCreditsCore({
       return;
     }
 
-    processedCount = eligibleUserIds.length;
     const expirationDate = expireDays ? addDays(now, expireDays) : undefined;
 
     // Batch insert credit transactions
@@ -644,17 +646,39 @@ async function batchAddCreditsCore({
       remainingAmount: credits,
       description: descriptionTemplate(credits, dateStr),
       expirationDate,
+      idempotencyKey: buildMonthlyCreditGrantIdempotencyKey(
+        userId,
+        creditType,
+        now
+      ),
       createdAt: now,
       updatedAt: now,
     }));
 
-    await tx.insert(creditTransaction).values(transactions);
+    const insertedTransactions = await tx
+      .insert(creditTransaction)
+      .values(transactions)
+      .onConflictDoNothing({
+        target: creditTransaction.idempotencyKey,
+      })
+      .returning({ userId: creditTransaction.userId });
+
+    const insertedUserIds = insertedTransactions.map(
+      (transaction) => transaction.userId
+    );
+
+    if (insertedUserIds.length === 0) {
+      logger.credits.debug(`${logPrefix}: no transactions inserted`);
+      return;
+    }
+
+    processedCount = insertedUserIds.length;
 
     // Prepare user credit updates
-    const existingUserIds = eligibleUserIds.filter((userId) =>
+    const existingUserIds = insertedUserIds.filter((userId) =>
       userCreditMap.has(userId)
     );
-    const newUserIds = eligibleUserIds.filter(
+    const newUserIds = insertedUserIds.filter(
       (userId) => !userCreditMap.has(userId)
     );
 

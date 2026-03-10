@@ -7,7 +7,26 @@ import { logger } from '@/lib/logger';
 import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
 import { addDays } from 'date-fns';
 import { and, asc, eq, gt, inArray, isNull, not, or, sql } from 'drizzle-orm';
-import { CREDIT_TRANSACTION_TYPE, HOLD_STATUS, type CreditHoldResult } from './types';
+import {
+  CREDIT_TRANSACTION_TYPE,
+  type CreditHoldResult,
+  HOLD_STATUS,
+} from './types';
+
+function buildOneTimeCreditGrantIdempotencyKey(
+  userId: string,
+  creditType: string
+): string {
+  return `credit-grant:${creditType}:${userId}`;
+}
+
+export function buildMonthlyCreditGrantIdempotencyKey(
+  userId: string,
+  creditType: string,
+  date: Date
+): string {
+  return `credit-grant:${creditType}:${userId}:${date.getUTCFullYear()}-${date.getUTCMonth() + 1}`;
+}
 
 /**
  * Get user's current credit balance
@@ -114,6 +133,7 @@ export async function addCredits({
   description,
   paymentId,
   expireDays,
+  idempotencyKey,
 }: {
   userId: string;
   amount: number;
@@ -121,7 +141,8 @@ export async function addCredits({
   description: string;
   paymentId?: string;
   expireDays?: number;
-}) {
+  idempotencyKey?: string;
+}): Promise<boolean> {
   if (!userId || !type || !description) {
     logger.credits.error('addCredits invalid params', null, {
       userId,
@@ -146,9 +167,45 @@ export async function addCredits({
   }
 
   const db = await getDb();
+  let applied = true;
 
   // Use transaction to ensure atomicity
   await db.transaction(async (tx) => {
+    const now = new Date();
+    const expirationDate = expireDays ? addDays(now, expireDays) : undefined;
+
+    if (idempotencyKey) {
+      const insertedTransactions = await tx
+        .insert(creditTransaction)
+        .values({
+          id: randomUUID(),
+          userId,
+          type,
+          amount,
+          remainingAmount: amount,
+          description,
+          paymentId,
+          expirationDate,
+          idempotencyKey,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoNothing({
+          target: creditTransaction.idempotencyKey,
+        })
+        .returning({ id: creditTransaction.id });
+
+      if (insertedTransactions.length === 0) {
+        logger.credits.debug('addCredits skipped duplicate idempotency key', {
+          userId,
+          type,
+          idempotencyKey,
+        });
+        applied = false;
+        return;
+      }
+    }
+
     // Check if user credit record exists
     const current = await tx
       .select({ id: userCredit.id })
@@ -166,7 +223,7 @@ export async function addCredits({
         .update(userCredit)
         .set({
           currentCredits: sql`${userCredit.currentCredits} + ${amount}`,
-          updatedAt: new Date(),
+          updatedAt: now,
         })
         .where(eq(userCredit.userId, userId));
     } else {
@@ -178,25 +235,29 @@ export async function addCredits({
         id: randomUUID(),
         userId,
         currentCredits: amount,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
       });
     }
 
-    // Write credit transaction record within the same transaction
-    await tx.insert(creditTransaction).values({
-      id: randomUUID(),
-      userId,
-      type,
-      amount,
-      remainingAmount: amount,
-      description,
-      paymentId,
-      expirationDate: expireDays ? addDays(new Date(), expireDays) : undefined,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    if (!idempotencyKey) {
+      // Write credit transaction record within the same transaction
+      await tx.insert(creditTransaction).values({
+        id: randomUUID(),
+        userId,
+        type,
+        amount,
+        remainingAmount: amount,
+        description,
+        paymentId,
+        expirationDate,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
   });
+
+  return applied;
 }
 
 /**
@@ -386,7 +447,6 @@ export async function canAddCreditsByType(userId: string, creditType: string) {
 export async function batchCanAddCreditsByType(
   userIds: string[],
   creditType: string,
-  // biome-ignore lint/suspicious/noExplicitAny: Drizzle transaction type
   tx?: any
 ): Promise<Set<string>> {
   if (userIds.length === 0) {
@@ -453,6 +513,10 @@ export async function addRegisterGiftCredits(userId: string) {
       type: CREDIT_TRANSACTION_TYPE.REGISTER_GIFT,
       description: `Register gift credits: ${credits}`,
       expireDays,
+      idempotencyKey: buildOneTimeCreditGrantIdempotencyKey(
+        userId,
+        CREDIT_TRANSACTION_TYPE.REGISTER_GIFT
+      ),
     });
 
     logger.credits.info('addRegisterGiftCredits completed', {
@@ -493,19 +557,34 @@ export async function addMonthlyFreeCredits(userId: string, planId: string) {
   if (canAdd) {
     const credits = pricePlan.credits?.amount || 0;
     const expireDays = pricePlan.credits?.expireDays || 0;
-    await addCredits({
+    const added = await addCredits({
       userId,
       amount: credits,
       type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
       description: `Free monthly credits: ${credits} for ${now.getFullYear()}-${now.getMonth() + 1}`,
       expireDays,
+      idempotencyKey: buildMonthlyCreditGrantIdempotencyKey(
+        userId,
+        CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
+        now
+      ),
     });
 
-    logger.credits.info('addMonthlyFreeCredits completed', {
-      userId,
-      credits,
-      month: `${now.getFullYear()}-${now.getMonth() + 1}`,
-    });
+    if (added) {
+      logger.credits.info('addMonthlyFreeCredits completed', {
+        userId,
+        credits,
+        month: `${now.getFullYear()}-${now.getMonth() + 1}`,
+      });
+    } else {
+      logger.credits.debug(
+        'addMonthlyFreeCredits skipped (duplicate idempotency key)',
+        {
+          userId,
+          month: `${now.getFullYear()}-${now.getMonth() + 1}`,
+        }
+      );
+    }
   } else {
     logger.credits.debug('addMonthlyFreeCredits skipped (already added)', {
       userId,
@@ -545,20 +624,35 @@ export async function addSubscriptionCredits(userId: string, priceId: string) {
     const credits = pricePlan.credits.amount;
     const expireDays = pricePlan.credits.expireDays;
 
-    await addCredits({
+    const added = await addCredits({
       userId,
       amount: credits,
       type: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
       description: `Subscription renewal credits: ${credits} for ${now.getFullYear()}-${now.getMonth() + 1}`,
       expireDays,
+      idempotencyKey: buildMonthlyCreditGrantIdempotencyKey(
+        userId,
+        CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
+        now
+      ),
     });
 
-    logger.credits.info('addSubscriptionCredits completed', {
-      userId,
-      priceId,
-      credits,
-      month: `${now.getFullYear()}-${now.getMonth() + 1}`,
-    });
+    if (added) {
+      logger.credits.info('addSubscriptionCredits completed', {
+        userId,
+        priceId,
+        credits,
+        month: `${now.getFullYear()}-${now.getMonth() + 1}`,
+      });
+    } else {
+      logger.credits.debug(
+        'addSubscriptionCredits skipped (duplicate idempotency key)',
+        {
+          userId,
+          month: `${now.getFullYear()}-${now.getMonth() + 1}`,
+        }
+      );
+    }
   } else {
     logger.credits.debug('addSubscriptionCredits skipped (already added)', {
       userId,
@@ -602,19 +696,34 @@ export async function addLifetimeMonthlyCredits(
     const credits = pricePlan.credits.amount;
     const expireDays = pricePlan.credits.expireDays;
 
-    await addCredits({
+    const added = await addCredits({
       userId,
       amount: credits,
       type: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
       description: `Lifetime monthly credits: ${credits} for ${now.getFullYear()}-${now.getMonth() + 1}`,
       expireDays,
+      idempotencyKey: buildMonthlyCreditGrantIdempotencyKey(
+        userId,
+        CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
+        now
+      ),
     });
 
-    logger.credits.info('addLifetimeMonthlyCredits completed', {
-      userId,
-      credits,
-      month: `${now.getFullYear()}-${now.getMonth() + 1}`,
-    });
+    if (added) {
+      logger.credits.info('addLifetimeMonthlyCredits completed', {
+        userId,
+        credits,
+        month: `${now.getFullYear()}-${now.getMonth() + 1}`,
+      });
+    } else {
+      logger.credits.debug(
+        'addLifetimeMonthlyCredits skipped (duplicate idempotency key)',
+        {
+          userId,
+          month: `${now.getFullYear()}-${now.getMonth() + 1}`,
+        }
+      );
+    }
   } else {
     logger.credits.debug('addLifetimeMonthlyCredits skipped (already added)', {
       userId,
@@ -652,7 +761,10 @@ export async function holdCredits({
 
   // Admin users bypass credit holds
   if (await isAdminUser(userId)) {
-    logger.credits.debug('holdCredits: admin user bypassed', { userId, amount });
+    logger.credits.debug('holdCredits: admin user bypassed', {
+      userId,
+      amount,
+    });
     const holdId = randomUUID();
     return { holdId, userId, amount };
   }
@@ -661,7 +773,10 @@ export async function holdCredits({
 
   // Check for existing hold with same idempotency key
   const existing = await db
-    .select({ id: creditTransaction.id, holdStatus: creditTransaction.holdStatus })
+    .select({
+      id: creditTransaction.id,
+      holdStatus: creditTransaction.holdStatus,
+    })
     .from(creditTransaction)
     .where(eq(creditTransaction.idempotencyKey, idempotencyKey))
     .limit(1);
@@ -675,7 +790,9 @@ export async function holdCredits({
       });
       return { holdId: record.id, userId, amount };
     }
-    throw new Error(`holdCredits: idempotency key already used (status=${record.holdStatus})`);
+    throw new Error(
+      `holdCredits: idempotency key already used (status=${record.holdStatus})`
+    );
   }
 
   const holdId = randomUUID();
@@ -716,7 +833,12 @@ export async function holdCredits({
     });
   });
 
-  logger.credits.info('holdCredits: hold created', { holdId, userId, amount, idempotencyKey });
+  logger.credits.info('holdCredits: hold created', {
+    holdId,
+    userId,
+    amount,
+    idempotencyKey,
+  });
   return { holdId, userId, amount };
 }
 
@@ -744,7 +866,9 @@ export async function confirmHold(holdId: string): Promise<void> {
 
   if (hold.length === 0) {
     // Admin users don't create real holds
-    logger.credits.debug('confirmHold: hold not found (likely admin)', { holdId });
+    logger.credits.debug('confirmHold: hold not found (likely admin)', {
+      holdId,
+    });
     return;
   }
 
@@ -799,7 +923,9 @@ export async function releaseHold(holdId: string): Promise<void> {
       .limit(1);
 
     if (hold.length === 0) {
-      logger.credits.debug('releaseHold: hold not found (likely admin)', { holdId });
+      logger.credits.debug('releaseHold: hold not found (likely admin)', {
+        holdId,
+      });
       return;
     }
 
@@ -811,7 +937,9 @@ export async function releaseHold(holdId: string): Promise<void> {
     }
 
     if (record.holdStatus !== HOLD_STATUS.PENDING) {
-      throw new Error(`releaseHold: invalid hold status (${record.holdStatus})`);
+      throw new Error(
+        `releaseHold: invalid hold status (${record.holdStatus})`
+      );
     }
 
     const refundAmount = Math.abs(record.amount);

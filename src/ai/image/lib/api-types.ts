@@ -34,6 +34,7 @@ export interface EditImageRequest {
     image?: string; // base64 编码的图像
   }>;
   modelId: GeminiModelId;
+  imageSize?: '1K' | '2K' | '4K';
 }
 
 // 对话式编辑响应

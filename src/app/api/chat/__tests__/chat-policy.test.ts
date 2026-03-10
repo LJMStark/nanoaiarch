@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import {
   CHAT_MODEL_COSTS,
   WEB_SEARCH_CREDIT_COST,

@@ -1,8 +1,8 @@
-export const CHAT_MODEL_COSTS = {
+export const CHAT_MODEL_COSTS: Record<string, number> = {
   'openai/gpt-4.1-mini': 1,
   'openai/gpt-4.1': 3,
   'anthropic/claude-3-5-sonnet-latest': 3,
-} as const;
+};
 
 export const WEB_SEARCH_MODEL_ID = 'perplexity/sonar';
 export const WEB_SEARCH_CREDIT_COST = 5;
