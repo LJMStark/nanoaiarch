@@ -1,0 +1,249 @@
+'use client';
+
+import {
+  type ProjectMessageItem,
+  addAssistantMessage,
+  addUserMessage,
+  updateAssistantMessage,
+} from '@/actions/project-message';
+import { generateImage } from '@/ai/image/lib/api-utils';
+import { logger } from '@/lib/logger';
+import { useConversationStore } from '@/stores/conversation-store';
+import { useCallback } from 'react';
+
+export interface MessageUpdateData {
+  outputImage?: string;
+  creditsUsed?: number;
+  generationTime?: number;
+  status: 'completed' | 'failed';
+  content?: string;
+  errorMessage?: string;
+}
+
+interface ConversationMessageLike {
+  role: 'user' | 'model';
+  content: string;
+  image?: string;
+}
+
+type ConversationTranslationKey =
+  | 'loading.cancelled'
+  | 'errors.generationFailed'
+  | 'errors.unexpected'
+  | 'errors.unknown';
+
+interface UseConversationSubmitParams {
+  t: (key: ConversationTranslationKey) => string;
+  currentProjectId: string | null;
+  draftPrompt: string;
+  referenceImages: string[];
+  aspectRatio: string;
+  selectedModel: string;
+  imageQuality: '1K' | '2K' | '4K';
+  isGenerating: boolean;
+  clearDraft: () => void;
+  setReferenceImages: (images: string[]) => void;
+  setShowImageUpload: (visible: boolean) => void;
+  addMessage: (message: ProjectMessageItem) => void;
+  updateMessage: (messageId: string, data: MessageUpdateData) => void;
+  setGenerating: (isGenerating: boolean, generatingMessageId?: string) => void;
+  getLastOutputImage: () => string | null;
+  getConversationHistory: () => ConversationMessageLike[];
+  setAbortController: (controller: AbortController | null) => void;
+  setGenerationStage: (
+    stage: 'submitting' | 'queued' | 'generating' | 'finishing' | null
+  ) => void;
+}
+
+export function useConversationSubmit({
+  t,
+  currentProjectId,
+  draftPrompt,
+  referenceImages,
+  aspectRatio,
+  selectedModel,
+  imageQuality,
+  isGenerating,
+  clearDraft,
+  setReferenceImages,
+  setShowImageUpload,
+  addMessage,
+  updateMessage,
+  setGenerating,
+  getLastOutputImage,
+  getConversationHistory,
+  setAbortController,
+  setGenerationStage,
+}: UseConversationSubmitParams): () => Promise<void> {
+  const updateMessageState = useCallback(
+    async (messageId: string, data: MessageUpdateData): Promise<void> => {
+      const updateResult = await updateAssistantMessage(messageId, data);
+      if (updateResult.success) {
+        updateMessage(messageId, data);
+      }
+    },
+    [updateMessage]
+  );
+
+  return useCallback(async () => {
+    if (!draftPrompt.trim() || isGenerating || !currentProjectId) {
+      return;
+    }
+
+    const prompt = draftPrompt.trim();
+    const inputImages =
+      referenceImages.length > 0
+        ? referenceImages
+        : ([getLastOutputImage()].filter(Boolean) as string[]);
+
+    clearDraft();
+    setReferenceImages([]);
+    setShowImageUpload(false);
+
+    const controller = new AbortController();
+    setAbortController(controller);
+    setGenerationStage('submitting');
+    let generatingMessageId: string | null = null;
+
+    const userResult = await addUserMessage(currentProjectId, {
+      content: prompt,
+      inputImage: inputImages[0] || undefined,
+    });
+
+    if (!userResult.success || !userResult.data) {
+      logger.ai.error('Failed to add user message');
+      const state = useConversationStore.getState();
+      if (state.abortController === controller) {
+        setAbortController(null);
+        setGenerationStage(null);
+      }
+      return;
+    }
+
+    addMessage(userResult.data);
+
+    const generatingResult = await addAssistantMessage(currentProjectId, {
+      content: '',
+      status: 'generating',
+      generationParams: {
+        prompt,
+        aspectRatio,
+        model: selectedModel,
+        imageQuality,
+      },
+    });
+
+    if (!generatingResult.success || !generatingResult.data) {
+      logger.ai.error('Failed to create generating message');
+      const state = useConversationStore.getState();
+      if (state.abortController === controller) {
+        setAbortController(null);
+        setGenerationStage(null);
+      }
+      return;
+    }
+
+    const generatingMessage = generatingResult.data;
+    generatingMessageId = generatingMessage.id;
+    addMessage(generatingMessage);
+    setGenerating(true, generatingMessage.id);
+    setGenerationStage('queued');
+    const startTime = Date.now();
+
+    try {
+      const conversationHistory = getConversationHistory();
+      setGenerationStage('generating');
+
+      const result = await generateImage({
+        prompt,
+        referenceImages: inputImages.length > 0 ? inputImages : undefined,
+        aspectRatio,
+        model: selectedModel,
+        imageSize: imageQuality,
+        signal: controller.signal,
+        conversationHistory:
+          conversationHistory.length > 0 ? conversationHistory : undefined,
+      });
+
+      const generationTime = Date.now() - startTime;
+
+      if (result.error === 'Generation cancelled') {
+        await updateMessageState(generatingMessage.id, {
+          content: t('loading.cancelled'),
+          status: 'failed',
+          errorMessage: 'Generation cancelled',
+        });
+        return;
+      }
+
+      setGenerationStage('finishing');
+
+      if (result.success && result.image) {
+        await updateMessageState(generatingMessage.id, {
+          outputImage: result.image,
+          creditsUsed: result.creditsUsed || 1,
+          generationTime,
+          status: 'completed',
+        });
+        return;
+      }
+
+      const errorContent = result.error || t('errors.generationFailed');
+      await updateMessageState(generatingMessage.id, {
+        content: errorContent,
+        status: 'failed',
+        errorMessage: result.error,
+      });
+    } catch (error) {
+      logger.ai.error('Generation error:', error);
+      const isCancelled = error instanceof Error && error.name === 'AbortError';
+      const errorContent = isCancelled
+        ? t('loading.cancelled')
+        : t('errors.unexpected');
+      const errorMessage = isCancelled
+        ? 'Generation cancelled'
+        : error instanceof Error
+          ? error.message
+          : t('errors.unknown');
+
+      await updateMessageState(generatingMessage.id, {
+        content: errorContent,
+        status: 'failed',
+        errorMessage,
+      });
+    } finally {
+      const state = useConversationStore.getState();
+
+      if (state.abortController === controller) {
+        setAbortController(null);
+      }
+
+      if (
+        !generatingMessageId ||
+        state.generatingMessageId === generatingMessageId
+      ) {
+        setGenerating(false);
+        setGenerationStage(null);
+      }
+    }
+  }, [
+    addMessage,
+    aspectRatio,
+    clearDraft,
+    currentProjectId,
+    draftPrompt,
+    getConversationHistory,
+    getLastOutputImage,
+    imageQuality,
+    isGenerating,
+    referenceImages,
+    selectedModel,
+    setAbortController,
+    setGenerating,
+    setGenerationStage,
+    setReferenceImages,
+    setShowImageUpload,
+    t,
+    updateMessageState,
+  ]);
+}

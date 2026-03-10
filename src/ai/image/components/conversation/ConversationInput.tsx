@@ -1,17 +1,11 @@
 'use client';
 
-import {
-  addAssistantMessage,
-  addUserMessage,
-  updateAssistantMessage,
-} from '@/actions/project-message';
 import { MultiImageUploader } from '@/ai/image/components/MultiImageUploader';
 import { GenerationSettings } from '@/ai/image/components/conversation/GenerationSettings';
 import { ReferenceImagesPreview } from '@/ai/image/components/conversation/ReferenceImagesPreview';
-import { generateImage, validateBase64Image } from '@/ai/image/lib/api-utils';
+import { validateBase64Image } from '@/ai/image/lib/api-utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
@@ -19,16 +13,7 @@ import { ArrowUp, ImageIcon, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-// Message update data type for server/client sync
-interface MessageUpdateData {
-  outputImage?: string;
-  creditsUsed?: number;
-  generationTime?: number;
-  status: 'completed' | 'failed';
-  content?: string;
-  errorMessage?: string;
-}
+import { useConversationSubmit } from './use-conversation-submit';
 
 export function ConversationInput() {
   const t = useTranslations('ArchPage');
@@ -125,176 +110,26 @@ export function ConversationInput() {
     }
   }, [draftImage, setDraftImage]);
 
-  // Helper function to update message state (syncs server and client)
-  const updateMessageState = useCallback(
-    async (messageId: string, data: MessageUpdateData): Promise<void> => {
-      const updateResult = await updateAssistantMessage(messageId, data);
-      if (updateResult.success) {
-        updateMessage(messageId, data);
-      }
-    },
-    [updateMessage]
-  );
-
-  const handleSubmit = useCallback(async () => {
-    if (!draftPrompt.trim() || isGenerating || !currentProjectId) return;
-
-    const prompt = draftPrompt.trim();
-    // Multi-image support: prefer user-uploaded images, fallback to last generated image
-    const inputImages =
-      referenceImages.length > 0
-        ? referenceImages
-        : ([getLastOutputImage()].filter(Boolean) as string[]);
-
-    // Clear input immediately
-    clearDraft();
-    setReferenceImages([]);
-    setShowImageUpload(false);
-
-    // Set up abort controller for cancellation
-    const controller = new AbortController();
-    setAbortController(controller);
-    setGenerationStage('submitting');
-    let generatingMessageId: string | null = null;
-
-    // Add user message (show first image as preview)
-    const userResult = await addUserMessage(currentProjectId, {
-      content: prompt,
-      inputImage: inputImages[0] || undefined,
-    });
-
-    if (!userResult.success || !userResult.data) {
-      logger.ai.error('Failed to add user message');
-      const state = useConversationStore.getState();
-      if (state.abortController === controller) {
-        setAbortController(null);
-        setGenerationStage(null);
-      }
-      return;
-    }
-
-    addMessage(userResult.data);
-
-    // Create message with 'generating' status
-    const generatingResult = await addAssistantMessage(currentProjectId, {
-      content: '',
-      status: 'generating',
-      generationParams: {
-        prompt,
-        aspectRatio,
-        model: selectedModel,
-        imageQuality,
-      },
-    });
-
-    if (!generatingResult.success || !generatingResult.data) {
-      logger.ai.error('Failed to create generating message');
-      const state = useConversationStore.getState();
-      if (state.abortController === controller) {
-        setAbortController(null);
-        setGenerationStage(null);
-      }
-      return;
-    }
-
-    const generatingMessage = generatingResult.data;
-    generatingMessageId = generatingMessage.id;
-    addMessage(generatingMessage);
-    setGenerating(true, generatingMessage.id);
-    setGenerationStage('queued');
-    const startTime = Date.now();
-
-    try {
-      // Get conversation history for multi-turn context
-      const conversationHistory = getConversationHistory();
-
-      setGenerationStage('generating');
-
-      // Generate image (supports multi-image reference)
-      const result = await generateImage({
-        prompt,
-        referenceImages: inputImages.length > 0 ? inputImages : undefined,
-        aspectRatio: aspectRatio,
-        model: selectedModel,
-        imageSize: imageQuality,
-        signal: controller.signal,
-        conversationHistory:
-          conversationHistory.length > 0 ? conversationHistory : undefined,
-      });
-
-      const generationTime = Date.now() - startTime;
-
-      // Check if cancelled
-      if (result.error === 'Generation cancelled') {
-        await updateMessageState(generatingMessage.id, {
-          content: t('loading.cancelled'),
-          status: 'failed',
-          errorMessage: 'Generation cancelled',
-        });
-        return;
-      }
-
-      setGenerationStage('finishing');
-
-      if (result.success && result.image) {
-        // Update to completed status
-        await updateMessageState(generatingMessage.id, {
-          outputImage: result.image,
-          creditsUsed: result.creditsUsed || 1,
-          generationTime,
-          status: 'completed',
-        });
-      } else {
-        // Update to failed status
-        const errorContent = result.error || t('errors.generationFailed');
-        await updateMessageState(generatingMessage.id, {
-          content: errorContent,
-          status: 'failed',
-          errorMessage: result.error,
-        });
-      }
-    } catch (error) {
-      logger.ai.error('Generation error:', error);
-      const isCancelled = error instanceof Error && error.name === 'AbortError';
-      const errorContent = isCancelled ? t('loading.cancelled') : t('errors.unexpected');
-      const errorMsg = isCancelled
-        ? 'Generation cancelled'
-        : error instanceof Error ? error.message : t('errors.unknown');
-      await updateMessageState(generatingMessage.id, {
-        content: errorContent,
-        status: 'failed',
-        errorMessage: errorMsg,
-      });
-    } finally {
-      const state = useConversationStore.getState();
-
-      if (state.abortController === controller) {
-        setAbortController(null);
-      }
-
-      if (!generatingMessageId || state.generatingMessageId === generatingMessageId) {
-        setGenerating(false);
-        setGenerationStage(null);
-      }
-    }
-  }, [
-    draftPrompt,
-    isGenerating,
+  const handleSubmit = useConversationSubmit({
+    t,
     currentProjectId,
+    draftPrompt,
     referenceImages,
-    getLastOutputImage,
-    getConversationHistory,
-    clearDraft,
-    addMessage,
     aspectRatio,
     selectedModel,
     imageQuality,
+    isGenerating,
+    clearDraft,
+    setReferenceImages,
+    setShowImageUpload,
+    addMessage,
+    updateMessage,
     setGenerating,
+    getLastOutputImage,
+    getConversationHistory,
     setAbortController,
     setGenerationStage,
-    updateMessageState,
-    t,
-  ]);
+  });
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
