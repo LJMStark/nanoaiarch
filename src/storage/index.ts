@@ -1,6 +1,7 @@
 import { websiteConfig } from '@/config/website';
 import { storageConfig } from './config/storage-config';
 import { S3Provider } from './provider/s3';
+import { resolveSafeUploadFilename, sanitizeStorageFolder } from './sanitize';
 import type { StorageConfig, StorageProvider, UploadFileResult } from './types';
 
 /**
@@ -58,7 +59,12 @@ export const uploadFile = async (
   folder?: string
 ): Promise<UploadFileResult> => {
   const provider = getStorageProvider();
-  return provider.uploadFile({ file, filename, contentType, folder });
+  return provider.uploadFile({
+    file,
+    filename: resolveSafeUploadFilename(filename, contentType),
+    contentType,
+    folder: sanitizeStorageFolder(folder),
+  });
 };
 
 /**

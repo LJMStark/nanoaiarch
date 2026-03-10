@@ -4,12 +4,11 @@ import {
   generateRequestId,
   mapAspectRatioToDuomi,
   mapModelIdToDuomiModel,
-  validateBase64Image,
   validatePrompt,
 } from '@/ai/image/lib/api-utils';
 import {
-  editImageWithDuomi,
   editImageWithConversationDuomi,
+  editImageWithDuomi,
   generateImageWithDuomi,
 } from '@/ai/image/lib/duomi-client';
 import {
@@ -18,17 +17,23 @@ import {
   executeImageGeneration,
   verifyRequestContext,
 } from '@/ai/image/lib/image-api-helpers';
+import {
+  resolveRequestedImageSize,
+  validateConversationMessages,
+  validateReferenceImages,
+} from '@/ai/image/lib/request-validation';
 import { logger } from '@/lib/logger';
+import {
+  applyRateLimit,
+  getRateLimitHeaders,
+  getRateLimitIdentifier,
+} from '@/lib/rate-limit';
 import { uploadFile } from '@/storage';
 import { type NextRequest, NextResponse } from 'next/server';
 
 // Set maximum execution time for image generation (150 seconds)
 // This allows enough time for Duomi API polling (max 110s) plus buffer
 export const maxDuration = 150;
-const MAX_REFERENCE_IMAGES = 5;
-const MAX_CONVERSATION_MESSAGES = 10;
-const MAX_HISTORY_CONTENT_LENGTH = 4000;
-
 /**
  * Uploads a base64 image to S3 and returns the URL
  */
@@ -86,120 +91,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate imageSize
-    const validImageSizes = ['1K', '2K', '4K'];
-    if (imageSize && !validImageSizes.includes(imageSize)) {
+    const imageSizeValidation = resolveRequestedImageSize(
+      imageSize,
+      DEFAULT_IMAGE_QUALITY
+    );
+    if (!imageSizeValidation.valid) {
       logger.api.error(
         `Invalid imageSize [requestId=${requestId}]: ${imageSize}`
       );
       return NextResponse.json(
-        { error: 'Invalid image size. Must be 1K, 2K, or 4K' },
+        { error: imageSizeValidation.error },
         { status: 400 }
       );
     }
 
-    // Validate reference images count
-    const referenceCount =
-      (referenceImages?.length ?? 0) + (referenceImage ? 1 : 0);
-    if (referenceCount > MAX_REFERENCE_IMAGES) {
-      logger.api.error(
-        `Too many reference images [requestId=${requestId}, count=${referenceCount}]`
-      );
+    const referenceValidation = validateReferenceImages(
+      referenceImage,
+      referenceImages
+    );
+    if (!referenceValidation.valid) {
       return NextResponse.json(
-        { error: `Maximum ${MAX_REFERENCE_IMAGES} reference images allowed` },
+        { error: referenceValidation.error },
         { status: 400 }
       );
-    }
-
-    // Validate reference image payloads
-    for (const [index, image] of (referenceImages ?? []).entries()) {
-      if (typeof image !== 'string') {
-        return NextResponse.json(
-          { error: `Invalid reference image at index ${index}` },
-          { status: 400 }
-        );
-      }
-      const validation = validateBase64Image(image);
-      if (!validation.valid) {
-        return NextResponse.json(
-          { error: validation.error || `Invalid reference image at index ${index}` },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (referenceImage) {
-      const validation = validateBase64Image(referenceImage);
-      if (!validation.valid) {
-        return NextResponse.json(
-          { error: validation.error || 'Invalid reference image' },
-          { status: 400 }
-        );
-      }
     }
 
     // Validate conversation history payload
     if (conversationHistory) {
-      if (!Array.isArray(conversationHistory)) {
+      const historyValidation =
+        validateConversationMessages(conversationHistory);
+      if (!historyValidation.valid) {
         return NextResponse.json(
-          { error: 'conversationHistory must be an array' },
+          { error: historyValidation.error },
           { status: 400 }
         );
-      }
-
-      if (conversationHistory.length > MAX_CONVERSATION_MESSAGES) {
-        return NextResponse.json(
-          {
-            error: `Maximum ${MAX_CONVERSATION_MESSAGES} conversation messages allowed`,
-          },
-          { status: 400 }
-        );
-      }
-
-      for (const [index, message] of conversationHistory.entries()) {
-        if (
-          message.role !== 'user' &&
-          message.role !== 'model'
-        ) {
-          return NextResponse.json(
-            { error: `Invalid role at conversation message ${index}` },
-            { status: 400 }
-          );
-        }
-
-        if (typeof message.content !== 'string') {
-          return NextResponse.json(
-            { error: `Invalid content at conversation message ${index}` },
-            { status: 400 }
-          );
-        }
-
-        if (message.content.length > MAX_HISTORY_CONTENT_LENGTH) {
-          return NextResponse.json(
-            { error: `Conversation message ${index} content is too long` },
-            { status: 400 }
-          );
-        }
-
-        if (message.image !== undefined) {
-          if (typeof message.image !== 'string') {
-            return NextResponse.json(
-              { error: `Invalid image payload at conversation message ${index}` },
-              { status: 400 }
-            );
-          }
-          const validation = validateBase64Image(message.image);
-          if (!validation.valid) {
-            return NextResponse.json(
-              {
-                error:
-                  validation.error ||
-                  `Invalid image payload at conversation message ${index}`,
-              },
-              { status: 400 }
-            );
-          }
-        }
       }
     }
 
@@ -209,20 +134,38 @@ export async function POST(req: NextRequest) {
       return ctx;
     }
 
+    const rateLimitResult = applyRateLimit({
+      key: `generate-images:${ctx.userId}:${getRateLimitIdentifier(req.headers, ctx.userId)}`,
+      limit: 10,
+      windowMs: 60 * 1000,
+    });
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many image generation requests. Please try again later.',
+        },
+        {
+          status: 429,
+          headers: getRateLimitHeaders(rateLimitResult),
+        }
+      );
+    }
+
     const startstamp = performance.now();
     const duomiModel = mapModelIdToDuomiModel(modelId);
     const duomiAspectRatio = mapAspectRatioToDuomi(aspectRatio);
-    const selectedImageSize = imageSize || DEFAULT_IMAGE_QUALITY;
+    const selectedImageSize = imageSizeValidation.value;
 
     logger.api.info(
       `Starting image generation [requestId=${requestId}, userId=${ctx.userId}, model=${modelId}, duomiModel=${duomiModel}, creditCost=${ctx.creditCost}]`
     );
 
     // Collect all reference images
-    const allReferenceImages =
-      referenceImages?.length ? referenceImages
-      : referenceImage ? [referenceImage]
-      : [];
+    const allReferenceImages = referenceImages?.length
+      ? referenceImages
+      : referenceImage
+        ? [referenceImage]
+        : [];
 
     // Build generation promise based on reference images
     let generatePromise: ReturnType<typeof generateImageWithDuomi>;
@@ -369,7 +312,13 @@ export async function POST(req: NextRequest) {
       startstamp,
     });
 
-    return createImageResponse(result);
+    const response = createImageResponse(result);
+    const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
+    for (const [header, value] of Object.entries(rateLimitHeaders)) {
+      response.headers.set(header, value);
+    }
+
+    return response;
   } catch (error) {
     return createErrorResponse(error, requestId, modelId, 'generation');
   }

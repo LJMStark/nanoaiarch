@@ -1,0 +1,59 @@
+import {
+  resolveRequestedImageSize,
+  validateConversationMessages,
+} from '../request-validation';
+
+describe('resolveRequestedImageSize', () => {
+  it('returns the provided valid image size', () => {
+    expect(resolveRequestedImageSize('2K', '1K')).toEqual({
+      valid: true,
+      value: '2K',
+    });
+  });
+
+  it('rejects unsupported image sizes', () => {
+    expect(resolveRequestedImageSize('8K', '1K')).toEqual({
+      valid: false,
+      error: 'Invalid image size. Must be 1K, 2K, or 4K',
+    });
+  });
+
+  it('falls back to the configured default when omitted', () => {
+    expect(resolveRequestedImageSize(undefined, '4K')).toEqual({
+      valid: true,
+      value: '4K',
+    });
+  });
+});
+
+describe('validateConversationMessages', () => {
+  it('accepts valid multi-turn history with optional image URLs', () => {
+    expect(
+      validateConversationMessages([
+        {
+          role: 'user',
+          content: 'Make it warmer',
+        },
+        {
+          role: 'model',
+          content: 'Sure',
+          image: 'https://example.com/image.png',
+        },
+      ])
+    ).toEqual({ valid: true });
+  });
+
+  it('rejects invalid roles', () => {
+    expect(
+      validateConversationMessages([
+        {
+          role: 'assistant',
+          content: 'bad',
+        } as never,
+      ])
+    ).toEqual({
+      valid: false,
+      error: 'Invalid role at conversation message 0',
+    });
+  });
+});

@@ -1,8 +1,8 @@
+import { DEFAULT_IMAGE_QUALITY } from '@/ai/image/components/ImageQualitySelect';
 import type { EditImageRequest } from '@/ai/image/lib/api-types';
 import {
   generateRequestId,
   mapModelIdToDuomiModel,
-  validateBase64Image,
   validatePrompt,
 } from '@/ai/image/lib/api-utils';
 import {
@@ -15,13 +15,20 @@ import {
   executeImageGeneration,
   verifyRequestContext,
 } from '@/ai/image/lib/image-api-helpers';
+import {
+  resolveRequestedImageSize,
+  validateConversationMessages,
+} from '@/ai/image/lib/request-validation';
 import { logger } from '@/lib/logger';
+import {
+  applyRateLimit,
+  getRateLimitHeaders,
+  getRateLimitIdentifier,
+} from '@/lib/rate-limit';
 import { type NextRequest, NextResponse } from 'next/server';
 
 // Match generate-images route timeout for consistent behavior
 export const maxDuration = 150;
-const MAX_CONVERSATION_MESSAGES = 10;
-const MAX_HISTORY_CONTENT_LENGTH = 4000;
 
 /**
  * Conversational image editing API
@@ -29,7 +36,10 @@ const MAX_HISTORY_CONTENT_LENGTH = 4000;
  */
 export async function POST(req: NextRequest) {
   const requestId = generateRequestId();
-  const { messages, modelId } = (await req.json()) as EditImageRequest;
+  const { messages, modelId, imageSize } =
+    (await req.json()) as EditImageRequest & {
+      imageSize?: string;
+    };
 
   try {
     // Validate request parameters
@@ -39,60 +49,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error }, { status: 400 });
     }
 
-    if (!Array.isArray(messages)) {
-      return NextResponse.json({ error: 'messages must be an array' }, { status: 400 });
-    }
-
-    if (messages.length > MAX_CONVERSATION_MESSAGES) {
+    const conversationValidation = validateConversationMessages(messages);
+    if (!conversationValidation.valid) {
       return NextResponse.json(
-        {
-          error: `Maximum ${MAX_CONVERSATION_MESSAGES} conversation messages allowed`,
-        },
+        { error: conversationValidation.error },
         { status: 400 }
       );
     }
 
-    for (const [index, message] of messages.entries()) {
-      if (message.role !== 'user' && message.role !== 'model') {
-        return NextResponse.json(
-          { error: `Invalid role at conversation message ${index}` },
-          { status: 400 }
-        );
-      }
-
-      if (typeof message.content !== 'string') {
-        return NextResponse.json(
-          { error: `Invalid content at conversation message ${index}` },
-          { status: 400 }
-        );
-      }
-
-      if (message.content.length > MAX_HISTORY_CONTENT_LENGTH) {
-        return NextResponse.json(
-          { error: `Conversation message ${index} content is too long` },
-          { status: 400 }
-        );
-      }
-
-      if (message.image !== undefined) {
-        if (typeof message.image !== 'string') {
-          return NextResponse.json(
-            { error: `Invalid image payload at conversation message ${index}` },
-            { status: 400 }
-          );
-        }
-        const validation = validateBase64Image(message.image);
-        if (!validation.valid) {
-          return NextResponse.json(
-            {
-              error:
-                validation.error ||
-                `Invalid image payload at conversation message ${index}`,
-            },
-            { status: 400 }
-          );
-        }
-      }
+    const imageSizeValidation = resolveRequestedImageSize(
+      imageSize,
+      DEFAULT_IMAGE_QUALITY
+    );
+    if (!imageSizeValidation.valid) {
+      return NextResponse.json(
+        { error: imageSizeValidation.error },
+        { status: 400 }
+      );
     }
 
     // Verify session and credits
@@ -101,8 +74,24 @@ export async function POST(req: NextRequest) {
       return ctx;
     }
 
+    const rateLimitResult = applyRateLimit({
+      key: `edit-image:${ctx.userId}:${getRateLimitIdentifier(req.headers, ctx.userId)}`,
+      limit: 10,
+      windowMs: 60 * 1000,
+    });
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many image edit requests. Please try again later.' },
+        {
+          status: 429,
+          headers: getRateLimitHeaders(rateLimitResult),
+        }
+      );
+    }
+
     const startstamp = performance.now();
     const duomiModel = mapModelIdToDuomiModel(modelId);
+    const selectedImageSize = imageSizeValidation.value;
 
     logger.api.info(
       `Starting image edit [requestId=${requestId}, userId=${ctx.userId}, model=${modelId}, messageCount=${messages.length}, creditCost=${ctx.creditCost}]`
@@ -146,7 +135,7 @@ export async function POST(req: NextRequest) {
         imageUrls: limitedImageUrls,
         model: duomiModel,
         aspectRatio: 'auto',
-        imageSize: '1K',
+        imageSize: selectedImageSize,
       });
     } else {
       // Fallback to text-to-image
@@ -154,7 +143,7 @@ export async function POST(req: NextRequest) {
         prompt,
         model: duomiModel,
         aspectRatio: 'auto',
-        imageSize: '1K',
+        imageSize: selectedImageSize,
       });
     }
 
@@ -166,7 +155,7 @@ export async function POST(req: NextRequest) {
       startstamp,
     });
 
-    return createImageResponse(result);
+    return createImageResponse(result, getRateLimitHeaders(rateLimitResult));
   } catch (error) {
     return createErrorResponse(error, requestId, modelId, 'edit');
   }

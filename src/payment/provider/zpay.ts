@@ -22,6 +22,7 @@ import {
   PaymentTypes,
   type PortalResult,
 } from '../types';
+import { resolveCreditPurchaseFromWebhook } from './zpay-credits';
 
 /**
  * zpay payment provider implementation
@@ -316,7 +317,7 @@ export class ZpayProvider implements PaymentProvider {
       name: creditPackage.name || `${creditPackage.amount} Credits`,
       money: zpayAmount.toFixed(2),
       sign_type: 'MD5',
-      param: JSON.stringify({ packageId, credits: creditPackage.amount }),
+      param: JSON.stringify({ packageId }),
     };
 
     // Generate signature
@@ -442,38 +443,67 @@ export class ZpayProvider implements PaymentProvider {
   ): Promise<void> {
     logger.payment.info('Process credit purchase');
 
-    // Get credits info from custom param
-    let packageId: string | undefined;
-    let credits: number | undefined;
-
+    let packageId: string | null = null;
     if (params.param) {
       try {
-        const customParams = JSON.parse(params.param);
-        packageId = customParams.packageId;
-        credits = customParams.credits;
+        const customParams = JSON.parse(params.param) as {
+          packageId?: unknown;
+        };
+        packageId =
+          typeof customParams.packageId === 'string'
+            ? customParams.packageId
+            : null;
       } catch {
         logger.payment.warn('Failed to parse custom params');
       }
     }
 
-    if (!packageId || !credits) {
-      logger.payment.warn('Missing packageId or credits in webhook params');
+    if (!packageId) {
+      logger.payment.warn('Missing packageId in webhook params');
       return;
     }
 
     const creditPackage = getCreditPackageById(packageId);
-    if (!creditPackage) {
-      logger.payment.warn('Credit package not found', { packageId });
+    const purchase = resolveCreditPurchaseFromWebhook({
+      params,
+      creditPackage,
+    });
+
+    if (!creditPackage || !purchase) {
+      logger.payment.warn('Unable to resolve credit purchase from webhook', {
+        packageId,
+      });
+      return;
+    }
+
+    if (paymentRecord.priceId !== creditPackage.price.priceId) {
+      logger.payment.warn('Credit package priceId mismatch', {
+        packageId,
+        paymentPriceId: paymentRecord.priceId,
+        packagePriceId: creditPackage.price.priceId,
+      });
+      return;
+    }
+
+    if (
+      params.money &&
+      Number.parseFloat(params.money) !== creditPackage.price.amount / 100
+    ) {
+      logger.payment.warn('Credit package amount mismatch', {
+        packageId,
+        webhookAmount: params.money,
+        expectedAmount: creditPackage.price.amount / 100,
+      });
       return;
     }
 
     await addCredits({
       userId: paymentRecord.userId,
-      amount: credits,
+      amount: purchase.amount,
       type: CREDIT_TRANSACTION_TYPE.PURCHASE_PACKAGE,
-      description: `+${credits} credits for package ${packageId} (¥${params.money})`,
+      description: purchase.description,
       paymentId: paymentRecord.invoiceId || undefined,
-      expireDays: creditPackage.expireDays,
+      expireDays: purchase.expireDays,
     });
 
     logger.payment.info('Process credit purchase success');
