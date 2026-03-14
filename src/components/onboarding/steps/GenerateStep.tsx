@@ -28,6 +28,13 @@ interface GenerateImageResponse {
   creditsUsed?: number;
 }
 
+function resolveImageSrc(image: string): string {
+  if (image.startsWith('http://') || image.startsWith('https://')) {
+    return image;
+  }
+  return `data:image/png;base64,${image}`;
+}
+
 // 对话消息类型
 interface ConversationMessage {
   role: 'user' | 'model';
@@ -92,7 +99,7 @@ export function GenerateStep() {
 
       if (data.image) {
         setCurrentImage(data.image);
-        setGeneratedImage(`data:image/png;base64,${data.image}`);
+        setGeneratedImage(resolveImageSrc(data.image));
         setHasGenerated(true);
 
         // 初始化对话历史
@@ -162,7 +169,7 @@ export function GenerateStep() {
 
       if (data.image) {
         setCurrentImage(data.image);
-        setGeneratedImage(`data:image/png;base64,${data.image}`);
+        setGeneratedImage(resolveImageSrc(data.image));
 
         // 更新对话历史
         setMessages([
@@ -293,7 +300,7 @@ export function GenerateStep() {
       <div className="relative aspect-video rounded-lg overflow-hidden bg-muted mb-4">
         {currentImage && (
           <Image
-            src={`data:image/png;base64,${currentImage}`}
+            src={resolveImageSrc(currentImage)}
             alt="Generated image"
             fill
             className="object-cover"

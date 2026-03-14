@@ -78,6 +78,18 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: '*.duomiapi.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.r2.dev',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.cloudfront.net',
+      },
+      {
+        protocol: 'https',
         hostname: '*.supabase.co',
       },
     ],
