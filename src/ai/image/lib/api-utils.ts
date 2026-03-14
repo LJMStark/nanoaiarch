@@ -112,7 +112,7 @@ export function validateBase64Image(
   if (typeof base64 !== 'string') {
     return {
       valid: false,
-      error: 'Invalid image data: expected base64 string',
+      error: '无效的图片数据',
     };
   }
 
@@ -125,7 +125,7 @@ export function validateBase64Image(
     } catch {
       return {
         valid: false,
-        error: 'Invalid URL format',
+        error: '无效的链接格式',
       };
     }
   }
@@ -139,7 +139,7 @@ export function validateBase64Image(
     const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
     return {
       valid: false,
-      error: `Image size (${sizeMB}MB) exceeds maximum allowed size of ${MAX_IMAGE_SIZE_MB}MB`,
+      error: `图片大小（${sizeMB}MB）超过最大限制 ${MAX_IMAGE_SIZE_MB}MB`,
       sizeBytes,
     };
   }
@@ -149,19 +149,19 @@ export function validateBase64Image(
 
 export function validatePrompt(prompt: string): PromptValidationResult {
   if (!prompt || prompt.trim().length === 0) {
-    return { valid: false, error: 'Prompt is required' };
+    return { valid: false, error: '请输入提示词' };
   }
 
   if (prompt.length > MAX_PROMPT_LENGTH) {
     return {
       valid: false,
-      error: `Prompt exceeds maximum length of ${MAX_PROMPT_LENGTH} characters`,
+      error: `提示词超过最大长度 ${MAX_PROMPT_LENGTH} 字符`,
     };
   }
 
   for (const pattern of BLOCKED_PATTERNS) {
     if (pattern.test(prompt)) {
-      return { valid: false, error: 'Invalid prompt content detected' };
+      return { valid: false, error: '提示词包含无效内容' };
     }
   }
 
@@ -209,7 +209,7 @@ export async function generateImage(
   if (params.signal) {
     if (params.signal.aborted) {
       clearTimeout(timeoutId);
-      return { success: false, error: 'Generation cancelled' };
+      return { success: false, error: '生成已取消' };
     }
     params.signal.addEventListener('abort', () => internalController.abort(), {
       once: true,
@@ -240,7 +240,7 @@ export async function generateImage(
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || 'Failed to generate image',
+        error: data.error || '图片生成失败',
       };
     }
 
@@ -255,25 +255,25 @@ export async function generateImage(
 
     return {
       success: false,
-      error: data.error || 'No image generated',
+      error: data.error || '未生成图片，请尝试其他描述',
     };
   } catch (error) {
     clearTimeout(timeoutId);
     if (error instanceof Error && error.name === 'AbortError') {
       const wasCancelled = params.signal?.aborted;
       if (wasCancelled) {
-        return { success: false, error: 'Generation cancelled' };
+        return { success: false, error: '生成已取消' };
       }
       logger.ai.error('Generate image timeout');
       return {
         success: false,
-        error: 'Request timed out. Please try again.',
+        error: '请求超时，请重试',
       };
     }
     logger.ai.error('Generate image error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : '未知错误',
     };
   }
 }

@@ -39,7 +39,10 @@ describe('executeImageGeneration', () => {
 
     const result = await executeImageGeneration({
       ctx: baseCtx,
-      generatePromise: Promise.resolve({ success: true, image: 'base64-image' }),
+      generatePromise: Promise.resolve({
+        success: true,
+        image: 'base64-image',
+      }),
       operationType: 'generation',
       startstamp: performance.now(),
     });
@@ -54,11 +57,17 @@ describe('executeImageGeneration', () => {
 
     it('confirms hold on successful generation', async () => {
       mocks.confirmHold.mockResolvedValue(undefined);
-      mocks.uploadGeneratedImage.mockResolvedValue('https://cdn.example.com/gen.png');
+      mocks.uploadGeneratedImage.mockResolvedValue(
+        'https://cdn.example.com/gen.png'
+      );
 
       const result = await executeImageGeneration({
         ctx,
-        generatePromise: Promise.resolve({ success: true, image: 'base64-image', text: 'ok' }),
+        generatePromise: Promise.resolve({
+          success: true,
+          image: 'base64-image',
+          text: 'ok',
+        }),
         operationType: 'generation',
         startstamp: performance.now(),
       });
@@ -75,7 +84,10 @@ describe('executeImageGeneration', () => {
 
       const result = await executeImageGeneration({
         ctx,
-        generatePromise: Promise.resolve({ success: false, error: 'API error' }),
+        generatePromise: Promise.resolve({
+          success: false,
+          error: 'API error',
+        }),
         operationType: 'generation',
         startstamp: performance.now(),
       });
@@ -90,7 +102,10 @@ describe('executeImageGeneration', () => {
 
       const result = await executeImageGeneration({
         ctx,
-        generatePromise: Promise.resolve({ success: true, image: 'base64-image' }),
+        generatePromise: Promise.resolve({
+          success: true,
+          image: 'base64-image',
+        }),
         operationType: 'generation',
         startstamp: performance.now(),
       });
@@ -102,7 +117,9 @@ describe('executeImageGeneration', () => {
 
   it('returns uploaded image URL when generation and billing succeed (legacy)', async () => {
     mocks.consumeCredits.mockResolvedValue(undefined);
-    mocks.uploadGeneratedImage.mockResolvedValue('https://cdn.example.com/gen.png');
+    mocks.uploadGeneratedImage.mockResolvedValue(
+      'https://cdn.example.com/gen.png'
+    );
 
     const result = await executeImageGeneration({
       ctx: baseCtx,

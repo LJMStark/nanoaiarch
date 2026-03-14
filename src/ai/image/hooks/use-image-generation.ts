@@ -196,16 +196,18 @@ export function useImageGeneration(): UseImageGenerationReturn {
 
           // In edit mode, add to edit history
           if (mode === 'edit' && referenceImage) {
-            setEditHistory((prev) => [
-              {
-                id: generateId(),
-                prompt,
-                beforeImage: referenceImage,
-                afterImage: data.image!,
-                timestamp: Date.now(),
-              },
-              ...prev,
-            ].slice(0, MAX_EDIT_HISTORY));
+            setEditHistory((prev) =>
+              [
+                {
+                  id: generateId(),
+                  prompt,
+                  beforeImage: referenceImage,
+                  afterImage: data.image!,
+                  timestamp: Date.now(),
+                },
+                ...prev,
+              ].slice(0, MAX_EDIT_HISTORY)
+            );
             // Update reference image to newly generated image
             setReferenceImage(data.image);
           }
@@ -353,16 +355,18 @@ export function useImageGeneration(): UseImageGenerationReturn {
           });
 
           // Add to edit history
-          setEditHistory((prev) => [
-            {
-              id: generateId(),
-              prompt,
-              beforeImage: referenceImage,
-              afterImage: data.image!,
-              timestamp: Date.now(),
-            },
-            ...prev,
-          ].slice(0, MAX_EDIT_HISTORY));
+          setEditHistory((prev) =>
+            [
+              {
+                id: generateId(),
+                prompt,
+                beforeImage: referenceImage,
+                afterImage: data.image!,
+                timestamp: Date.now(),
+              },
+              ...prev,
+            ].slice(0, MAX_EDIT_HISTORY)
+          );
 
           // Update reference image
           setReferenceImage(data.image);

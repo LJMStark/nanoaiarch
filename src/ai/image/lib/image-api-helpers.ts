@@ -55,7 +55,7 @@ export async function verifySession(
   if (!session?.user?.id) {
     logger.api.error(`Unauthorized request [requestId=${requestId}]`);
     return NextResponse.json(
-      { error: 'Please sign in to use this feature' },
+      { error: '请登录后使用此功能' },
       { status: 401 }
     );
   }
@@ -88,8 +88,7 @@ export async function verifyCredits(
     );
     return NextResponse.json(
       {
-        error:
-          'Insufficient credits. Please purchase more credits to continue.',
+        error: '积分不足，请购买更多积分后继续',
       },
       { status: 402 }
     );
@@ -113,7 +112,7 @@ export async function verifyRequestContext(
       `Invalid modelId [requestId=${requestId}, modelId=${modelId}]`
     );
     return NextResponse.json(
-      { error: 'Invalid model ID. Please select a valid model.' },
+      { error: '无效的模型 ID，请选择有效模型' },
       { status: 400 }
     );
   }
@@ -154,8 +153,7 @@ export async function verifyRequestContext(
     if (message.includes('Insufficient credits')) {
       return NextResponse.json(
         {
-          error:
-            'Insufficient credits. Please purchase more credits to continue.',
+          error: '积分不足，请购买更多积分后继续',
         },
         { status: 402 }
       );
@@ -165,7 +163,7 @@ export async function verifyRequestContext(
       holdError
     );
     return NextResponse.json(
-      { error: 'Failed to reserve credits. Please try again.' },
+      { error: '积分预扣失败，请重试' },
       { status: 500 }
     );
   }
@@ -238,7 +236,7 @@ export async function executeImageGeneration({
               creditError
             );
             return {
-              error: 'Failed to process credits. Please try again.',
+              error: '积分处理失败，请重试',
             };
           }
 
@@ -285,7 +283,7 @@ export async function executeImageGeneration({
         return {
           error:
             genResult.error ||
-            `Failed to ${operationType === 'edit' ? 'edit' : 'generate'} image`,
+            `${operationType === 'edit' ? '编辑' : '生成'}图片失败`,
         };
       }),
       TIMEOUT_MILLIS
@@ -321,7 +319,7 @@ export function createErrorResponse(
   );
   return NextResponse.json(
     {
-      error: `Failed to ${operationType === 'edit' ? 'edit' : 'generate'} image. Please try again later.`,
+      error: `${operationType === 'edit' ? '编辑' : '生成'}图片失败，请稍后重试`,
     },
     { status: 500 }
   );

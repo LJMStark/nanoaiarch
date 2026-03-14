@@ -32,8 +32,9 @@ export function useArchGeneration(): UseArchGenerationReturn {
   const [stylePreset, setStylePreset] = useState<StylePresetId | null>(null);
   const [aspectRatio, setAspectRatio] =
     useState<AspectRatioId>(DEFAULT_ASPECT_RATIO);
-  const [selectedTemplate, setSelectedTemplate] =
-    useState<ArchTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<ArchTemplate | null>(
+    null
+  );
   const [templateCategory, setTemplateCategory] = useState<
     TemplateCategoryId | 'all'
   >('all');

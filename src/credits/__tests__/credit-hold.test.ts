@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { holdCredits, confirmHold, releaseHold } from '../credits';
+import { confirmHold, holdCredits, releaseHold } from '../credits';
 import { HOLD_STATUS } from '../types';
 
 // Mock dependencies
@@ -46,21 +46,25 @@ describe('holdCredits', () => {
   });
 
   it('throws on invalid params', async () => {
-    await expect(holdCredits({
-      userId: '',
-      amount: 1,
-      idempotencyKey: 'key',
-      description: 'test',
-    })).rejects.toThrow('invalid params');
+    await expect(
+      holdCredits({
+        userId: '',
+        amount: 1,
+        idempotencyKey: 'key',
+        description: 'test',
+      })
+    ).rejects.toThrow('invalid params');
   });
 
   it('throws on invalid amount', async () => {
-    await expect(holdCredits({
-      userId: 'user-1',
-      amount: 0,
-      idempotencyKey: 'key',
-      description: 'test',
-    })).rejects.toThrow('invalid amount');
+    await expect(
+      holdCredits({
+        userId: 'user-1',
+        amount: 0,
+        idempotencyKey: 'key',
+        description: 'test',
+      })
+    ).rejects.toThrow('invalid amount');
   });
 
   it('bypasses hold for admin users', async () => {
@@ -81,7 +85,9 @@ describe('holdCredits', () => {
   it('returns existing pending hold for duplicate idempotency key', async () => {
     const db = createMockDb();
     // First query: check idempotency key - return existing pending hold
-    db.limit.mockResolvedValueOnce([{ id: 'existing-hold', holdStatus: HOLD_STATUS.PENDING }]);
+    db.limit.mockResolvedValueOnce([
+      { id: 'existing-hold', holdStatus: HOLD_STATUS.PENDING },
+    ]);
     mocks.getDb.mockResolvedValue(db);
 
     const result = await holdCredits({
@@ -96,15 +102,19 @@ describe('holdCredits', () => {
 
   it('throws when idempotency key already confirmed', async () => {
     const db = createMockDb();
-    db.limit.mockResolvedValueOnce([{ id: 'old-hold', holdStatus: HOLD_STATUS.CONFIRMED }]);
+    db.limit.mockResolvedValueOnce([
+      { id: 'old-hold', holdStatus: HOLD_STATUS.CONFIRMED },
+    ]);
     mocks.getDb.mockResolvedValue(db);
 
-    await expect(holdCredits({
-      userId: 'user-1',
-      amount: 1,
-      idempotencyKey: 'used-key',
-      description: 'test',
-    })).rejects.toThrow('idempotency key already used');
+    await expect(
+      holdCredits({
+        userId: 'user-1',
+        amount: 1,
+        idempotencyKey: 'used-key',
+        description: 'test',
+      })
+    ).rejects.toThrow('idempotency key already used');
   });
 });
 
@@ -127,12 +137,14 @@ describe('confirmHold', () => {
 
   it('is idempotent for already confirmed holds', async () => {
     const db = createMockDb();
-    db.limit.mockResolvedValueOnce([{
-      id: 'hold-1',
-      userId: 'user-1',
-      holdStatus: HOLD_STATUS.CONFIRMED,
-      amount: -1,
-    }]);
+    db.limit.mockResolvedValueOnce([
+      {
+        id: 'hold-1',
+        userId: 'user-1',
+        holdStatus: HOLD_STATUS.CONFIRMED,
+        amount: -1,
+      },
+    ]);
     mocks.getDb.mockResolvedValue(db);
 
     await expect(confirmHold('hold-1')).resolves.toBeUndefined();
@@ -140,12 +152,14 @@ describe('confirmHold', () => {
 
   it('throws when hold is already released', async () => {
     const db = createMockDb();
-    db.limit.mockResolvedValueOnce([{
-      id: 'hold-1',
-      userId: 'user-1',
-      holdStatus: HOLD_STATUS.RELEASED,
-      amount: -1,
-    }]);
+    db.limit.mockResolvedValueOnce([
+      {
+        id: 'hold-1',
+        userId: 'user-1',
+        holdStatus: HOLD_STATUS.RELEASED,
+        amount: -1,
+      },
+    ]);
     mocks.getDb.mockResolvedValue(db);
 
     await expect(confirmHold('hold-1')).rejects.toThrow('invalid hold status');
@@ -173,12 +187,14 @@ describe('releaseHold', () => {
   it('is idempotent for already released holds', async () => {
     const db = createMockDb();
     db.transaction.mockImplementation(async (fn: Function) => fn(db));
-    db.limit.mockResolvedValueOnce([{
-      id: 'hold-1',
-      userId: 'user-1',
-      holdStatus: HOLD_STATUS.RELEASED,
-      amount: -1,
-    }]);
+    db.limit.mockResolvedValueOnce([
+      {
+        id: 'hold-1',
+        userId: 'user-1',
+        holdStatus: HOLD_STATUS.RELEASED,
+        amount: -1,
+      },
+    ]);
     mocks.getDb.mockResolvedValue(db);
 
     await expect(releaseHold('hold-1')).resolves.toBeUndefined();
@@ -187,12 +203,14 @@ describe('releaseHold', () => {
   it('throws when hold is already confirmed', async () => {
     const db = createMockDb();
     db.transaction.mockImplementation(async (fn: Function) => fn(db));
-    db.limit.mockResolvedValueOnce([{
-      id: 'hold-1',
-      userId: 'user-1',
-      holdStatus: HOLD_STATUS.CONFIRMED,
-      amount: -1,
-    }]);
+    db.limit.mockResolvedValueOnce([
+      {
+        id: 'hold-1',
+        userId: 'user-1',
+        holdStatus: HOLD_STATUS.CONFIRMED,
+        amount: -1,
+      },
+    ]);
     mocks.getDb.mockResolvedValue(db);
 
     await expect(releaseHold('hold-1')).rejects.toThrow('invalid hold status');

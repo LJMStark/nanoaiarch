@@ -17,18 +17,18 @@ export function ConsumeCreditsCard() {
 
   const handleConsume = async () => {
     if (!hasEnoughCredits(CONSUME_CREDITS)) {
-      toast.error('Insufficient credits, please buy more credits.');
+      toast.error('积分不足，请购买更多积分');
       return;
     }
     setLoading(true);
     try {
       await consumeCreditsMutation.mutateAsync({
         amount: CONSUME_CREDITS,
-        description: `Test credit consumption (${CONSUME_CREDITS} credits)`,
+        description: `测试积分消耗（${CONSUME_CREDITS} 积分）`,
       });
-      toast.success(`${CONSUME_CREDITS} credits consumed successfully!`);
+      toast.success(`已成功消耗 ${CONSUME_CREDITS} 积分`);
     } catch (error) {
-      toast.error('Failed to consume credits');
+      toast.error('积分消耗失败');
     } finally {
       setLoading(false);
     }
@@ -36,11 +36,11 @@ export function ConsumeCreditsCard() {
 
   return (
     <div className="p-4 border rounded-lg space-y-4">
-      <h3 className="text-lg font-semibold">Credits Store Test</h3>
+      <h3 className="text-lg font-semibold">积分消耗测试</h3>
 
       <div className="space-y-2">
         <p>
-          <strong>Store Balance:</strong> {balance}
+          <strong>当前余额：</strong> {balance}
         </p>
       </div>
 
@@ -53,11 +53,11 @@ export function ConsumeCreditsCard() {
           size="sm"
         >
           <CoinsIcon className="w-4 h-4 mr-2" />
-          Consume {CONSUME_CREDITS} Credits
+          消耗 {CONSUME_CREDITS} 积分
         </Button>
       </div>
 
-      {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
+      {loading && <p className="text-sm text-muted-foreground">加载中...</p>}
     </div>
   );
 }

@@ -30,7 +30,7 @@ export function resolveRequestedImageSize(
   if (!VALID_IMAGE_SIZES.includes(requestedImageSize as ImageQuality)) {
     return {
       valid: false,
-      error: 'Invalid image size. Must be 1K, 2K, or 4K',
+      error: '无效的图片尺寸，必须为 1K、2K 或 4K',
     };
   }
 
@@ -52,7 +52,7 @@ export function validateReferenceImages(
   if (images.length > MAX_REFERENCE_IMAGES) {
     return {
       valid: false,
-      error: `Maximum ${MAX_REFERENCE_IMAGES} reference images allowed`,
+      error: `最多上传 ${MAX_REFERENCE_IMAGES} 张参考图`,
     };
   }
 
@@ -60,7 +60,7 @@ export function validateReferenceImages(
     if (typeof image !== 'string') {
       return {
         valid: false,
-        error: `Invalid reference image at index ${index}`,
+        error: `第 ${index + 1} 张参考图无效`,
       };
     }
 
@@ -68,7 +68,7 @@ export function validateReferenceImages(
     if (!validation.valid) {
       return {
         valid: false,
-        error: validation.error || `Invalid reference image at index ${index}`,
+        error: validation.error || `第 ${index + 1} 张参考图无效`,
       };
     }
   }
@@ -86,14 +86,14 @@ export function validateConversationMessages(
   if (!Array.isArray(messages)) {
     return {
       valid: false,
-      error: 'conversationHistory must be an array',
+      error: '对话历史格式错误',
     };
   }
 
   if (messages.length > MAX_CONVERSATION_MESSAGES) {
     return {
       valid: false,
-      error: `Maximum ${MAX_CONVERSATION_MESSAGES} conversation messages allowed`,
+      error: `对话消息最多 ${MAX_CONVERSATION_MESSAGES} 条`,
     };
   }
 
@@ -101,21 +101,21 @@ export function validateConversationMessages(
     if (message.role !== 'user' && message.role !== 'model') {
       return {
         valid: false,
-        error: `Invalid role at conversation message ${index}`,
+        error: `第 ${index + 1} 条对话消息角色无效`,
       };
     }
 
     if (typeof message.content !== 'string') {
       return {
         valid: false,
-        error: `Invalid content at conversation message ${index}`,
+        error: `第 ${index + 1} 条对话消息内容无效`,
       };
     }
 
     if (message.content.length > MAX_HISTORY_CONTENT_LENGTH) {
       return {
         valid: false,
-        error: `Conversation message ${index} content is too long`,
+        error: `第 ${index + 1} 条对话消息内容过长`,
       };
     }
 
@@ -123,7 +123,7 @@ export function validateConversationMessages(
       if (typeof message.image !== 'string') {
         return {
           valid: false,
-          error: `Invalid image payload at conversation message ${index}`,
+          error: `第 ${index + 1} 条对话消息图片无效`,
         };
       }
 
@@ -133,7 +133,7 @@ export function validateConversationMessages(
           valid: false,
           error:
             validation.error ||
-            `Invalid image payload at conversation message ${index}`,
+            `第 ${index + 1} 条对话消息图片无效`,
         };
       }
     }

@@ -28,9 +28,7 @@ export function LoadingMessage() {
     return () => clearInterval(timeInterval);
   }, []);
 
-  const currentStageIndex = STAGES.indexOf(
-    generationStage ?? 'submitting'
-  );
+  const currentStageIndex = STAGES.indexOf(generationStage ?? 'submitting');
 
   const stageTextMap = {
     submitting: t('loading.stage_submitting'),

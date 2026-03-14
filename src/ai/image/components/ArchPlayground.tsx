@@ -44,8 +44,9 @@ export function ArchPlayground() {
   const [templateCategory, setTemplateCategory] = useState<
     TemplateCategoryId | 'all'
   >('all');
-  const [selectedTemplate, setSelectedTemplate] =
-    useState<ArchTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<ArchTemplate | null>(
+    null
+  );
   const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   const featuredTemplate = useMemo(() => {

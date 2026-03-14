@@ -5,7 +5,12 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type MessageStatus = 'pending' | 'generating' | 'completed' | 'failed';
 
-export type GenerationStage = 'submitting' | 'queued' | 'generating' | 'finishing' | null;
+export type GenerationStage =
+  | 'submitting'
+  | 'queued'
+  | 'generating'
+  | 'finishing'
+  | null;
 
 interface ConversationState {
   // Messages
@@ -236,7 +241,9 @@ export const useConversationStore = create<ConversationState>()(
           {
             role: 'model' as const,
             content: pair.assistant.content || '',
-            ...(pair.assistant.outputImage && { image: pair.assistant.outputImage }),
+            ...(pair.assistant.outputImage && {
+              image: pair.assistant.outputImage,
+            }),
           },
         ]);
       },
