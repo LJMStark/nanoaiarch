@@ -7,6 +7,7 @@ interface OnboardingState {
   currentStep: OnboardingStep;
   selectedTemplateId: string | null;
   selectedTemplateName: string | null;
+  selectedTemplatePreview: string | null;
   generatedImageUrl: string | null;
   isGenerating: boolean;
 
@@ -16,7 +17,7 @@ interface OnboardingState {
   setStep: (step: OnboardingStep) => void;
   nextStep: () => void;
   prevStep: () => void;
-  selectTemplate: (id: string, name: string) => void;
+  selectTemplate: (id: string, name: string, previewImage: string) => void;
   setGeneratedImage: (url: string) => void;
   setIsGenerating: (isGenerating: boolean) => void;
   reset: () => void;
@@ -32,9 +33,10 @@ const STEP_ORDER: OnboardingStep[] = [
 const initialState = {
   isOpen: false,
   currentStep: 'welcome' as OnboardingStep,
-  selectedTemplateId: null,
-  selectedTemplateName: null,
-  generatedImageUrl: null,
+  selectedTemplateId: null as string | null,
+  selectedTemplateName: null as string | null,
+  selectedTemplatePreview: null as string | null,
+  generatedImageUrl: null as string | null,
   isGenerating: false,
 };
 
@@ -63,10 +65,11 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
     }
   },
 
-  selectTemplate: (id, name) =>
+  selectTemplate: (id, name, previewImage) =>
     set({
       selectedTemplateId: id,
       selectedTemplateName: name,
+      selectedTemplatePreview: previewImage,
     }),
 
   setGeneratedImage: (url) => set({ generatedImageUrl: url }),
