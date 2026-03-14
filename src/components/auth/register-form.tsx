@@ -250,9 +250,13 @@ export const RegisterForm = ({
               } else if (result.status === 'verified') {
                 // User is already verified - show login hint
                 setError(t('userExistsVerified'));
+              } else if (result.status === 'rate_limited') {
+                setError(t('rateLimited'));
+              } else if (result.status === 'unverified' && !result.success) {
+                // Failed to send verification email
+                setError(t('resendEmailError'));
               } else {
-                // Failed to resend verification email
-                setError(result.message || t('userExistsError'));
+                setError(t('userExistsError'));
               }
             } catch (error) {
               logger.auth.error('handleUnverifiedRegistration error', error);

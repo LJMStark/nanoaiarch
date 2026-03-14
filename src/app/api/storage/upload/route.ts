@@ -103,10 +103,6 @@ export async function POST(request: NextRequest) {
       return createUploadErrorResponse(validationError, 400);
     }
 
-    if (!file) {
-      return createUploadErrorResponse('No file provided', 400);
-    }
-
     const buffer = Buffer.from(await file.arrayBuffer());
     const scopedFolder = resolveScopedFolder(session.user.id, folder);
 
