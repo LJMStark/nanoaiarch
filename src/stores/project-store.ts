@@ -2,7 +2,7 @@ import type { ImageProjectItem } from '@/actions/image-project';
 import {
   DEFAULT_IMAGE_QUALITY,
   type ImageQuality,
-} from '@/ai/image/components/ImageQualitySelect';
+} from '@/ai/image/lib/image-constants';
 import type { AspectRatioId } from '@/ai/image/lib/arch-types';
 import type { GeminiModelId } from '@/ai/image/lib/provider-config';
 import { create } from 'zustand';

@@ -103,18 +103,20 @@ export async function POST(request: NextRequest) {
       return createUploadErrorResponse(validationError, 400);
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    // At this point file is guaranteed non-null by validateUploadedFile
+    const validFile = file as File;
+    const buffer = Buffer.from(await validFile.arrayBuffer());
     const scopedFolder = resolveScopedFolder(session.user.id, folder);
 
     if (!scopedFolder) {
       return createUploadErrorResponse('Invalid upload folder', 400);
     }
 
-    const safeFilename = resolveSafeUploadFilename(file.name, file.type);
+    const safeFilename = resolveSafeUploadFilename(validFile.name, validFile.type);
     const result = await uploadFile(
       buffer,
       safeFilename,
-      file.type,
+      validFile.type,
       scopedFolder
     );
 

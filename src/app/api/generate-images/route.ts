@@ -1,4 +1,4 @@
-import { DEFAULT_IMAGE_QUALITY } from '@/ai/image/components/ImageQualitySelect';
+import { DEFAULT_IMAGE_QUALITY } from '@/ai/image/lib/image-constants';
 import type { GenerateImageRequest } from '@/ai/image/lib/api-types';
 import {
   generateRequestId,

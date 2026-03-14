@@ -13,12 +13,13 @@ import {
 import { cn } from '@/lib/utils';
 import { ChevronDown, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import {
+  DEFAULT_IMAGE_QUALITY,
+  type ImageQuality,
+} from '@/ai/image/lib/image-constants';
 
-// 画质类型
-export type ImageQuality = '1K' | '2K' | '4K';
-
-// 默认画质
-export const DEFAULT_IMAGE_QUALITY: ImageQuality = '1K';
+export type { ImageQuality };
+export { DEFAULT_IMAGE_QUALITY };
 
 // 翻译键类型
 type QualityLabelKey = 'standard' | '2k' | '4k';

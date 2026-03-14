@@ -206,8 +206,12 @@ export const generateImageParamsSchema = z.object({
       '16:9',
       '21:9',
     ])
-    .optional(),
-  imageSize: z.enum(['1K', '2K', '4K']).optional(),
+    .nullish()
+    .transform((v) => v ?? undefined),
+  imageSize: z
+    .enum(['1K', '2K', '4K'])
+    .nullish()
+    .transform((v) => v ?? undefined),
 });
 
 /**
@@ -241,8 +245,12 @@ export const editImageParamsSchema = z.object({
       '16:9',
       '21:9',
     ])
-    .optional(),
-  imageSize: z.enum(['1K', '2K', '4K']).optional(),
+    .nullish()
+    .transform((v) => v ?? undefined),
+  imageSize: z
+    .enum(['1K', '2K', '4K'])
+    .nullish()
+    .transform((v) => v ?? undefined),
 });
 
 /**

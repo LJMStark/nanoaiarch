@@ -1,10 +1,9 @@
 import {
   DEFAULT_IMAGE_QUALITY,
   type ImageQuality,
-} from '@/ai/image/components/ImageQualitySelect';
+  VALID_IMAGE_SIZES,
+} from '@/ai/image/lib/image-constants';
 import { validateBase64Image } from './api-utils';
-
-const VALID_IMAGE_SIZES: readonly ImageQuality[] = ['1K', '2K', '4K'];
 const MAX_REFERENCE_IMAGES = 5;
 const MAX_CONVERSATION_MESSAGES = 10;
 const MAX_HISTORY_CONTENT_LENGTH = 4000;

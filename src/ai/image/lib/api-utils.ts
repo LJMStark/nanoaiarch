@@ -1,7 +1,7 @@
 import {
   DEFAULT_IMAGE_QUALITY,
   type ImageQuality,
-} from '@/ai/image/components/ImageQualitySelect';
+} from '@/ai/image/lib/image-constants';
 import { logger } from '@/lib/logger';
 import type { DuomiAspectRatio, DuomiModelId } from './duomi-client';
 
