@@ -96,7 +96,7 @@ export function TemplateCard({
               'text-xs font-medium'
             )}
           >
-            Featured
+            {t('ArchPage.featured.badge')}
           </div>
         )}
 

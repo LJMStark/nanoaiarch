@@ -34,7 +34,7 @@ export function HeroBentoCard({
   className,
 }: HeroBentoCardProps) {
   const t = useTranslations('ArchPage');
-  const tRoot = useTranslations(); // Root translator for full key paths
+  const tRoot = useTranslations();
   const [imageLoaded, setImageLoaded] = useState(false);
 
   return (
@@ -119,7 +119,7 @@ export function HeroBentoCard({
           </div>
           <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/10 text-xs">
             <Sparkles className="w-3 h-3 text-amber-400" />
-            <span>Featured</span>
+            <span>{t('featured.badge')}</span>
           </div>
         </div>
 
@@ -137,7 +137,7 @@ export function HeroBentoCard({
             {/* CTA */}
             <div className="flex items-center gap-2 text-primary font-medium group/cta">
               <span>
-                {featuredTemplate ? 'Try this template' : 'Start Creating'}
+                {featuredTemplate ? t('tryTemplate.cta') : tRoot('HomePage.hero.primary')}
               </span>
               <ArrowRight className="w-4 h-4 transition-transform group-hover/cta:translate-x-1" />
             </div>

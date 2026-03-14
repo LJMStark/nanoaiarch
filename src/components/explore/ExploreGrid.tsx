@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { PublicGeneration } from '@/actions/public-gallery';
 import { ExploreCard, ExploreCardSkeleton } from './ExploreCard';
 
@@ -14,6 +15,7 @@ export function ExploreGrid({
   isLoading,
   onCardClick,
 }: ExploreGridProps) {
+  const t = useTranslations('Explore');
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -42,10 +44,9 @@ export function ExploreGrid({
             />
           </svg>
         </div>
-        <h3 className="text-lg font-medium mb-1">No creations yet</h3>
+        <h3 className="text-lg font-medium mb-1">{t('empty.title')}</h3>
         <p className="text-sm text-muted-foreground max-w-sm">
-          Be the first to share your architectural visualizations with the
-          community
+          {t('empty.description')}
         </p>
       </div>
     );

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { History, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import type { EditHistoryItem } from '../lib/image-types';
 
@@ -20,13 +21,16 @@ export function EditHistory({
   onClearHistory,
   className,
 }: EditHistoryProps) {
+  const t = useTranslations();
+  const tAI = useTranslations('AIImagePage');
+
   if (history.length === 0) {
     return (
       <div className={cn('rounded-lg border bg-muted/30 p-4', className)}>
         <div className="flex flex-col items-center gap-2 text-center text-muted-foreground">
           <History className="h-8 w-8" />
-          <p className="text-sm">No edit history yet</p>
-          <p className="text-xs">Your edits will appear here</p>
+          <p className="text-sm">{tAI('emptyHistory.title')}</p>
+          <p className="text-xs">{tAI('emptyHistory.description')}</p>
         </div>
       </div>
     );
@@ -37,7 +41,7 @@ export function EditHistory({
       <div className="flex items-center justify-between border-b px-3 py-2">
         <div className="flex items-center gap-2">
           <History className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Edit History</span>
+          <span className="text-sm font-medium">{tAI('editHistory.title')}</span>
           <span className="text-xs text-muted-foreground">
             ({history.length})
           </span>

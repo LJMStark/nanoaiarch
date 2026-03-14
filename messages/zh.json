@@ -82,7 +82,11 @@
     "linkCopied": "链接已复制",
     "makePublic": "公开作品",
     "makePrivate": "设为私密",
-    "publicBadge": "公开"
+    "publicBadge": "公开",
+    "empty": {
+      "title": "暂无作品",
+      "description": "成为第一个与社区分享您的建筑可视化作品的人"
+    }
   },
   "UserProfile": {
     "joined": "加入于",
@@ -1036,6 +1040,9 @@
       "title": "升级",
       "description": "升级到Pro以获取所有功能",
       "button": "升级"
+    },
+    "buyCredits": {
+      "button": "购买积分"
     }
   },
   "Referral": {
@@ -1762,10 +1769,37 @@
       "generatedIn": "生成耗时 {seconds}s",
       "referenceImageAlt": "参考图",
       "generatedImageAlt": "生成图"
+    },
+    "featured": {
+      "badge": "精选"
+    },
+    "tryTemplate": {
+      "cta": "尝试这个模板"
+    },
+    "quickGenerate": {
+      "title": "快速生成"
     }
   },
   "AIImagePage": {
     "title": "Arch AI",
-    "description": "用 AI 将建筑草图转化为照片级写实可视化效果"
+    "description": "用 AI 将建筑草图转化为照片级写实可视化效果",
+    "emptyHistory": {
+      "title": "暂无编辑历史",
+      "description": "您的编辑将显示在这里"
+    },
+    "editHistory": {
+      "title": "编辑历史"
+    },
+    "editMode": {
+      "placeholder": "描述您想如何编辑图像..."
+    },
+    "generateMode": {
+      "placeholder": "描述您想创建的图像..."
+    },
+    "webPreview": {
+      "noOutput": "暂无输出"
+    },
+    "signIn": "登录",
+    "buyCredits": "购买积分"
   }
 }

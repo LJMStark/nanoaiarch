@@ -137,7 +137,7 @@ export function QuickActionCard({
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <Sparkles className="w-4 h-4 text-primary" />
-        <span className="text-sm font-medium">Quick Generate</span>
+        <span className="text-sm font-medium">{t('quickGenerate.title')}</span>
       </div>
 
       {/* Content area */}

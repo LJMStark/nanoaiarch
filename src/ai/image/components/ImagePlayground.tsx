@@ -11,6 +11,7 @@ import {
   LogIn,
   Sparkles,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -29,6 +30,8 @@ export function ImagePlayground({
 }: {
   suggestions: Suggestion[];
 }) {
+  const t = useTranslations('AIImagePage');
+  const tRoot = useTranslations();
   const {
     image,
     error,
@@ -123,8 +126,8 @@ export function ImagePlayground({
           suggestions={suggestions}
           placeholder={
             mode === 'edit'
-              ? 'Describe how you want to edit the image...'
-              : 'Describe the image you want to create...'
+              ? tRoot('AIImagePage.editMode.placeholder')
+              : tRoot('AIImagePage.generateMode.placeholder')
           }
           disabled={mode === 'edit' && !referenceImage}
         />
@@ -150,12 +153,12 @@ export function ImagePlayground({
               <span>{error.message}</span>
               {creditErrorType === 'unauthorized' && (
                 <Button asChild size="sm" variant="outline" className="ml-4">
-                  <Link href="/login">Sign In</Link>
+                  <Link href="/login">{t('signIn')}</Link>
                 </Button>
               )}
               {creditErrorType === 'insufficient_credits' && (
                 <Button asChild size="sm" variant="outline" className="ml-4">
-                  <Link href="/dashboard/billing">Buy Credits</Link>
+                  <Link href="/dashboard/billing">{t('buyCredits')}</Link>
                 </Button>
               )}
             </AlertDescription>

@@ -82,7 +82,11 @@
     "linkCopied": "Link copied to clipboard",
     "makePublic": "Make Public",
     "makePrivate": "Make Private",
-    "publicBadge": "Public"
+    "publicBadge": "Public",
+    "empty": {
+      "title": "No creations yet",
+      "description": "Be the first to share your architectural visualizations with the community"
+    }
   },
   "UserProfile": {
     "joined": "Joined",
@@ -1036,6 +1040,9 @@
       "title": "Upgrade",
       "description": "Upgrade to Pro to access all features",
       "button": "Upgrade"
+    },
+    "buyCredits": {
+      "button": "Buy Credits"
     }
   },
   "Referral": {
@@ -1762,10 +1769,37 @@
       "generatedIn": "Generated in {seconds}s",
       "referenceImageAlt": "Reference image",
       "generatedImageAlt": "Generated image"
+    },
+    "featured": {
+      "badge": "Featured"
+    },
+    "tryTemplate": {
+      "cta": "Try this template"
+    },
+    "quickGenerate": {
+      "title": "Quick Generate"
     }
   },
   "AIImagePage": {
     "title": "Arch AI",
-    "description": "Transform architectural sketches into photorealistic visualizations with AI"
+    "description": "Transform architectural sketches into photorealistic visualizations with AI",
+    "emptyHistory": {
+      "title": "No edit history yet",
+      "description": "Your edits will appear here"
+    },
+    "editHistory": {
+      "title": "Edit History"
+    },
+    "editMode": {
+      "placeholder": "Describe how you want to edit the image..."
+    },
+    "generateMode": {
+      "placeholder": "Describe the image you want to create..."
+    },
+    "webPreview": {
+      "noOutput": "No console output"
+    },
+    "signIn": "Sign In",
+    "buyCredits": "Buy Credits"
   }
 }

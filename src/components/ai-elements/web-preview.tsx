@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { ChevronDownIcon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { ComponentProps, ReactNode } from 'react';
 import { createContext, useContext, useState } from 'react';
 
@@ -195,6 +196,8 @@ export const WebPreviewConsole = ({
   ...props
 }: WebPreviewConsoleProps) => {
   const { consoleOpen, setConsoleOpen } = useWebPreview();
+  const t = useTranslations();
+  const tAI = useTranslations('AIImagePage');
 
   return (
     <Collapsible
@@ -225,7 +228,7 @@ export const WebPreviewConsole = ({
       >
         <div className="max-h-48 space-y-1 overflow-y-auto">
           {logs.length === 0 ? (
-            <p className="text-muted-foreground">No console output</p>
+            <p className="text-muted-foreground">{tAI('webPreview.noOutput')}</p>
           ) : (
             logs.map((log, index) => (
               <div
