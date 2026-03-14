@@ -75,6 +75,15 @@ export function getForgotPasswordErrorMessage<TTranslate extends TranslateFn>(
   message: string | null | undefined,
   t: TTranslate
 ): string {
+  const normalizedMessage = normalizeMessage(message);
+
+  if (
+    normalizedMessage.includes('user not found') ||
+    normalizedMessage.includes('no user found')
+  ) {
+    return t('emailNotFound' as Parameters<TTranslate>[0]);
+  }
+
   if (isRateLimited(status, message)) {
     return t('tooManyRequests' as Parameters<TTranslate>[0]);
   }

@@ -1,5 +1,6 @@
 'use client';
 
+import { checkEmailExists } from '@/actions/check-email-exists';
 import { AuthCard } from '@/components/auth/auth-card';
 import { FormError } from '@/components/shared/form-error';
 import { FormSuccess } from '@/components/shared/form-success';
@@ -55,17 +56,30 @@ export const ForgotPasswordForm = ({ className }: { className?: string }) => {
   }, [searchParams, form]);
 
   const onSubmit = async (values: z.infer<typeof ForgotPasswordSchema>) => {
+    setIsPending(true);
+    setError('');
+    setSuccess('');
+
+    // Check if email exists before calling forgetPassword
+    // Better Auth's forgetPassword always returns success regardless of user existence
+    try {
+      const { exists } = await checkEmailExists(values.email);
+      if (!exists) {
+        setIsPending(false);
+        setError(t('emailNotFound'));
+        return;
+      }
+    } catch (err) {
+      logger.auth.error('checkEmailExists error', err);
+      // If check fails, proceed with forgetPassword anyway
+    }
+
     await authClient.forgetPassword(
       {
         email: values.email,
         redirectTo: `${Routes.ResetPassword}`,
       },
       {
-        onRequest: (ctx) => {
-          setIsPending(true);
-          setError('');
-          setSuccess('');
-        },
         onResponse: (ctx) => {
           setIsPending(false);
         },

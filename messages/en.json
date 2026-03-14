@@ -477,6 +477,8 @@
       "backToLogin": "Back to login",
       "checkEmail": "Please check your email inbox",
       "emailRequired": "Please enter your email",
+      "emailNotRegistered": "This email address is not registered. Please sign up first.",
+      "emailNotFound": "This email is not registered. Please sign up first.",
       "requestFailed": "Unable to send the reset link right now. Please try again.",
       "tooManyRequests": "Too many requests. Please wait a moment and try again."
     },

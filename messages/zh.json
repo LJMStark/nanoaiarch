@@ -477,6 +477,8 @@
       "backToLogin": "返回登录",
       "checkEmail": "请检查您的邮箱",
       "emailRequired": "请输入邮箱",
+      "emailNotRegistered": "该邮箱未注册，请先注册账号。",
+      "emailNotFound": "该邮箱未注册，请先注册账号。",
       "requestFailed": "暂时无法发送重置链接，请稍后重试。",
       "tooManyRequests": "请求过于频繁，请稍后再试。"
     },

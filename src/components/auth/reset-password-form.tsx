@@ -37,15 +37,10 @@ export const ResetPasswordForm = () => {
     notFound();
   }
 
-  // If the token is valid, the user will be redirected to this URL with the token in the query string.
-  // If the token is invalid, the user will be redirected to this URL with an error message in the query string ?error=invalid_token.
-  // OPTIMIZE: check if the token is valid, show error message instead of redirecting to the 404 page
-  if (searchParams.get('error') === 'invalid_token') {
-    notFound();
-  }
-
   const router = useLocaleRouter();
-  const [error, setError] = useState<string | undefined>('');
+  const [error, setError] = useState<string | undefined>(
+    searchParams.get('error') === 'invalid_token' ? t('invalidToken') : ''
+  );
   const [success, setSuccess] = useState<string | undefined>('');
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
