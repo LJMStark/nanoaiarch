@@ -18,12 +18,16 @@ export type GeminiImageModelId =
 export type GeminiAspectRatio =
   | 'auto'
   | '1:1'
+  | '1:4'
+  | '1:8'
   | '2:3'
   | '3:2'
   | '3:4'
+  | '4:1'
   | '4:3'
   | '4:5'
   | '5:4'
+  | '8:1'
   | '9:16'
   | '16:9'
   | '21:9';
@@ -116,20 +120,27 @@ function getGeminiApiKey(): string {
   return apiKey;
 }
 
-type ImageConfig = { aspectRatio?: string; imageSize?: string };
+type ImageConfig = {
+  aspectRatio?: string;
+  imageSize?: string;
+  personGeneration?: string;
+};
 
 function buildImageConfig(
   aspectRatio?: GeminiAspectRatio,
   imageSize?: GeminiImageSize
-): ImageConfig | undefined {
-  const config: ImageConfig = {};
+): ImageConfig {
+  const config: ImageConfig = {
+    // Explicitly set person generation policy (official default: allow_adult)
+    personGeneration: 'allow_adult',
+  };
   if (aspectRatio && aspectRatio !== 'auto') {
     config.aspectRatio = aspectRatio;
   }
   if (imageSize) {
     config.imageSize = imageSize;
   }
-  return Object.keys(config).length > 0 ? config : undefined;
+  return config;
 }
 
 function extractImageFromResponse(data: unknown): GenerateImageResult {
@@ -280,7 +291,7 @@ export async function generateImageWithGemini(
     ],
     generationConfig: {
       responseModalities: ['TEXT', 'IMAGE'],
-      ...(imageConfig ? { imageConfig } : {}),
+      imageConfig,
     },
   };
 
@@ -301,23 +312,25 @@ export async function editImageWithGemini(
     `[Gemini] Image edit [model=${model}, imageCount=${params.referenceImages.length}]`
   );
 
-  // Build parts: text prompt + reference images as inline_data
-  const parts: Array<Record<string, unknown>> = [{ text: params.prompt }];
+  // Build parts: reference images first, then text prompt (per official API docs)
+  const parts: Array<Record<string, unknown>> = [];
 
   for (const imageBase64 of params.referenceImages) {
     parts.push({
       inline_data: {
-        mime_type: 'image/png',
+        mime_type: 'image/jpeg',
         data: imageBase64,
       },
     });
   }
 
+  parts.push({ text: params.prompt });
+
   const requestBody: Record<string, unknown> = {
     contents: [{ parts }],
     generationConfig: {
       responseModalities: ['TEXT', 'IMAGE'],
-      ...(imageConfig ? { imageConfig } : {}),
+      imageConfig,
     },
   };
 
@@ -354,7 +367,7 @@ export async function editImageWithConversationGemini(
         try {
           const base64 = await urlToBase64(msg.image);
           parts.push({
-            inline_data: { mime_type: 'image/png', data: base64 },
+            inline_data: { mime_type: 'image/jpeg', data: base64 },
           });
         } catch (error) {
           logger.ai.warn(
@@ -365,7 +378,7 @@ export async function editImageWithConversationGemini(
       } else {
         // Already base64
         parts.push({
-          inline_data: { mime_type: 'image/png', data: msg.image },
+          inline_data: { mime_type: 'image/jpeg', data: msg.image },
         });
       }
     }
@@ -388,7 +401,7 @@ export async function editImageWithConversationGemini(
     contents,
     generationConfig: {
       responseModalities: ['TEXT', 'IMAGE'],
-      ...(imageConfig ? { imageConfig } : {}),
+      imageConfig,
     },
   };
 
