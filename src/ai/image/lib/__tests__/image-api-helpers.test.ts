@@ -47,7 +47,7 @@ describe('executeImageGeneration', () => {
       startstamp: performance.now(),
     });
 
-    expect(result.error).toBe('Failed to process credits. Please try again.');
+    expect(result.error).toBe('积分处理失败，请重试');
     expect(mocks.uploadGeneratedImage).not.toHaveBeenCalled();
   });
 
@@ -110,7 +110,7 @@ describe('executeImageGeneration', () => {
         startstamp: performance.now(),
       });
 
-      expect(result.error).toBe('Failed to process credits. Please try again.');
+      expect(result.error).toBe('积分处理失败，请重试');
       expect(mocks.uploadGeneratedImage).not.toHaveBeenCalled();
     });
   });

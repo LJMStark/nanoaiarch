@@ -15,7 +15,7 @@ describe('resolveRequestedImageSize', () => {
   it('rejects unsupported image sizes', () => {
     expect(resolveRequestedImageSize('8K', '1K')).toEqual({
       valid: false,
-      error: 'Invalid image size. Must be 1K, 2K, or 4K',
+      error: '无效的图片尺寸，必须为 1K、2K 或 4K',
     });
   });
 
@@ -54,7 +54,7 @@ describe('validateConversationMessages', () => {
       ])
     ).toEqual({
       valid: false,
-      error: 'Invalid role at conversation message 0',
+      error: '第 1 条对话消息角色无效',
     });
   });
 });
