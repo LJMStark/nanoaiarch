@@ -1,20 +1,20 @@
-import { DEFAULT_IMAGE_QUALITY } from '@/ai/image/lib/image-constants';
 import type { EditImageRequest } from '@/ai/image/lib/api-types';
 import {
   generateRequestId,
-  mapModelIdToDuomiModel,
+  mapModelIdToGeminiModel,
   validatePrompt,
 } from '@/ai/image/lib/api-utils';
 import {
-  editImageWithDuomi,
-  generateImageWithDuomi,
-} from '@/ai/image/lib/duomi-client';
+  editImageWithConversationGemini,
+  generateImageWithGemini,
+} from '@/ai/image/lib/gemini-client';
 import {
   createErrorResponse,
   createImageResponse,
   executeImageGeneration,
   verifyRequestContext,
 } from '@/ai/image/lib/image-api-helpers';
+import { DEFAULT_IMAGE_QUALITY } from '@/ai/image/lib/image-constants';
 import {
   resolveRequestedImageSize,
   validateConversationMessages,
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   try {
     // Validate request parameters
     if (!messages || messages.length === 0 || !modelId) {
-      const error = 'Invalid request parameters';
+      const error = '请求参数无效';
       logger.api.error(`${error} [requestId=${requestId}]`);
       return NextResponse.json({ error }, { status: 400 });
     }
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     });
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        { error: 'Too many image edit requests. Please try again later.' },
+        { error: '请求过于频繁，请稍后再试' },
         {
           status: 429,
           headers: getRateLimitHeaders(rateLimitResult),
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     }
 
     const startstamp = performance.now();
-    const duomiModel = mapModelIdToDuomiModel(modelId);
+    const geminiModel = mapModelIdToGeminiModel(modelId);
     const selectedImageSize = imageSizeValidation.value;
 
     logger.api.info(
@@ -100,10 +100,7 @@ export async function POST(req: NextRequest) {
     // Extract latest user message as prompt
     const userMessages = messages.filter((m) => m.role === 'user');
     if (userMessages.length === 0) {
-      return NextResponse.json(
-        { error: 'No user message found' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '没有用户消息' }, { status: 400 });
     }
 
     const latestUserMessage = userMessages[userMessages.length - 1];
@@ -111,37 +108,33 @@ export async function POST(req: NextRequest) {
     const promptValidation = validatePrompt(prompt);
     if (!promptValidation.valid) {
       return NextResponse.json(
-        { error: promptValidation.error || 'Invalid prompt' },
+        { error: promptValidation.error || '无效的提示词' },
         { status: 400 }
       );
     }
 
-    // Collect image URLs from conversation history
-    const imageUrls: string[] = [];
-    for (const msg of messages) {
-      if (msg.image?.startsWith('http')) {
-        imageUrls.push(msg.image);
-      }
-    }
+    // Check if any messages contain images
+    const hasImages = messages.some((m) => m.image);
 
-    // Build generation promise
-    let editPromise: ReturnType<typeof editImageWithDuomi>;
+    let editPromise: ReturnType<typeof editImageWithConversationGemini>;
 
-    if (imageUrls.length > 0) {
-      // Use edit API with images (limit to 5 most recent)
-      const limitedImageUrls = imageUrls.slice(-5);
-      editPromise = editImageWithDuomi({
-        prompt,
-        imageUrls: limitedImageUrls,
-        model: duomiModel,
+    if (hasImages) {
+      // Use conversation mode with images - pass directly to Gemini API
+      editPromise = editImageWithConversationGemini({
+        messages: messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+          image: m.image,
+        })),
+        model: geminiModel,
         aspectRatio: 'auto',
         imageSize: selectedImageSize,
       });
     } else {
       // Fallback to text-to-image
-      editPromise = generateImageWithDuomi({
+      editPromise = generateImageWithGemini({
         prompt,
-        model: duomiModel,
+        model: geminiModel,
         aspectRatio: 'auto',
         imageSize: selectedImageSize,
       });

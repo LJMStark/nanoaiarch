@@ -2,11 +2,12 @@ import type { GeminiModelId } from './provider-config';
 
 /**
  * 每个模型生成一张图片所消耗的 Credits
- * nano-banana-pro API 成本 0.14/次，所有分辨率价格相同
  */
 export const CREDIT_COSTS: Record<GeminiModelId, number> = {
-  // Arch AI Pro (Gemini 3 Pro / nano-banana-pro) - 1 credit/张
+  // Arch AI Pro (Gemini 3 Pro / Nano Banana Pro) - 1 credit/张
   forma: 1,
+  // Arch AI Flash (Gemini 3.1 Flash / Nano Banana 2) - 1 credit/张
+  flash: 1,
 };
 
 /**

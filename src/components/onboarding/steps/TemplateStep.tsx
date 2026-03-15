@@ -27,7 +27,11 @@ export function TemplateStep() {
     FEATURED_TEMPLATE_IDS.includes(template.id)
   ).slice(0, 6);
 
-  const handleSelectTemplate = (templateId: string, templateName: string, previewImage: string) => {
+  const handleSelectTemplate = (
+    templateId: string,
+    templateName: string,
+    previewImage: string
+  ) => {
     selectTemplate(templateId, templateName, previewImage);
     nextStep();
   };
@@ -42,13 +46,21 @@ export function TemplateStep() {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         {featuredTemplates.map((template) => {
           const isSelected = selectedTemplateId === template.id;
-          const displayName = t(template.titleKey.replace('ArchPage.', '') as any);
+          const displayName = t(
+            template.titleKey.replace('ArchPage.', '') as any
+          );
 
           return (
             <button
               type="button"
               key={template.id}
-              onClick={() => handleSelectTemplate(template.id, displayName, template.previewImage)}
+              onClick={() =>
+                handleSelectTemplate(
+                  template.id,
+                  displayName,
+                  template.previewImage
+                )
+              }
               className={`
                 group relative overflow-hidden rounded-lg border-2 transition-all
                 ${isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/50'}

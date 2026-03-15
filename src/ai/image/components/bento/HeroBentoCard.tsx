@@ -137,7 +137,9 @@ export function HeroBentoCard({
             {/* CTA */}
             <div className="flex items-center gap-2 text-primary font-medium group/cta">
               <span>
-                {featuredTemplate ? t('tryTemplate.cta') : tRoot('HomePage.hero.primary')}
+                {featuredTemplate
+                  ? t('tryTemplate.cta')
+                  : tRoot('HomePage.hero.primary')}
               </span>
               <ArrowRight className="w-4 h-4 transition-transform group-hover/cta:translate-x-1" />
             </div>

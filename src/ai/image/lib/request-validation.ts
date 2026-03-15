@@ -131,9 +131,7 @@ export function validateConversationMessages(
       if (!validation.valid) {
         return {
           valid: false,
-          error:
-            validation.error ||
-            `第 ${index + 1} 条对话消息图片无效`,
+          error: validation.error || `第 ${index + 1} 条对话消息图片无效`,
         };
       }
     }

@@ -29,7 +29,7 @@ export async function generateProjectTitle(
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
 
     const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
       {
         method: 'POST',
         headers: {
@@ -42,7 +42,7 @@ export async function generateProjectTitle(
             {
               parts: [
                 {
-                  text: `将以下图片生成描述总结为一个10-30字的简短标题。只返回标题文本，不要引号或其他内容。\n\n描述：${userMessage}`,
+                  text: `请用中文将以下图片生成描述总结为一个10-30字的简短中文标题。无论输入是什么语言，标题必须是中文。只返回标题文本，不要引号或其他内容。\n\n描述：${userMessage}`,
                 },
               ],
             },

@@ -3,11 +3,11 @@ import {
   type ImageQuality,
 } from '@/ai/image/lib/image-constants';
 import { logger } from '@/lib/logger';
-import type { DuomiAspectRatio, DuomiModelId } from './duomi-client';
+import type { GeminiAspectRatio, GeminiImageModelId } from './gemini-client';
+import { GEMINI_MODEL_IDS, type GeminiModelId } from './provider-config';
 
 /**
  * Request timeout duration (120 seconds)
- * Duomi API is asynchronous task-based, requiring longer wait times
  */
 export const TIMEOUT_MILLIS = 120 * 1000;
 
@@ -34,23 +34,23 @@ export function generateRequestId(): string {
 }
 
 /**
- * Duomi model key type - only 'forma' (gemini-3-pro-image-preview)
+ * Map frontend model ID (forma/flash) to Gemini API model ID
  */
-export type DuomiModelKey = 'forma';
-
-/**
- * Map frontend model ID to Duomi API model ID
- * Currently only one model: gemini-3-pro-image-preview (nano-banana-pro)
- */
-export function mapModelIdToDuomiModel(_modelId: string): DuomiModelId {
-  return 'gemini-3-pro-image-preview';
+export function mapModelIdToGeminiModel(modelId: string): GeminiImageModelId {
+  const id = modelId as GeminiModelId;
+  if (id in GEMINI_MODEL_IDS) {
+    return GEMINI_MODEL_IDS[id];
+  }
+  return GEMINI_MODEL_IDS.forma;
 }
 
 /**
- * Map frontend aspect ratio to Duomi API format
+ * Map frontend aspect ratio to Gemini API format
  */
-export function mapAspectRatioToDuomi(aspectRatio?: string): DuomiAspectRatio {
-  const mapping: Record<string, DuomiAspectRatio> = {
+export function mapAspectRatioToGemini(
+  aspectRatio?: string
+): GeminiAspectRatio {
+  const mapping: Record<string, GeminiAspectRatio> = {
     '1:1': '1:1',
     '16:9': '16:9',
     '9:16': '9:16',
@@ -63,16 +63,8 @@ export function mapAspectRatioToDuomi(aspectRatio?: string): DuomiAspectRatio {
   return mapping[aspectRatio || ''] || 'auto';
 }
 
-// Backward compatibility: retain GeminiModelKey type alias
-export type GeminiModelKey = DuomiModelKey;
-
-/**
- * Backward compatibility: map to Gemini key (returns Duomi key)
- * Currently only one model: forma
- */
-export function mapModelIdToGeminiKey(_modelId: string): DuomiModelKey {
-  return 'forma';
-}
+// Keep backward-compatible type alias
+export type GeminiModelKey = GeminiModelId;
 
 /**
  * Prompt validation constants and utilities

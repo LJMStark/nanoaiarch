@@ -3,6 +3,10 @@
 // 画质选择器
 // Image quality selector for Duomi API
 
+import {
+  DEFAULT_IMAGE_QUALITY,
+  type ImageQuality,
+} from '@/ai/image/lib/image-constants';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,10 +17,6 @@ import {
 import { cn } from '@/lib/utils';
 import { ChevronDown, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import {
-  DEFAULT_IMAGE_QUALITY,
-  type ImageQuality,
-} from '@/ai/image/lib/image-constants';
 
 export type { ImageQuality };
 export { DEFAULT_IMAGE_QUALITY };

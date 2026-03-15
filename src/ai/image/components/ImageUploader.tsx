@@ -211,7 +211,7 @@ export function ImageUploader({
         <div className="relative aspect-square overflow-hidden rounded-lg border bg-muted">
           <Image
             src={`data:image/png;base64,${currentImage}`}
-            alt="Uploaded image"
+            alt={t('uploadedImageAlt')}
             fill
             className="object-cover"
           />

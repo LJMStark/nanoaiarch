@@ -1,7 +1,7 @@
 import { getCreditCost } from '@/ai/image/lib/credit-costs';
 import { uploadGeneratedImage } from '@/ai/image/lib/image-storage';
 import {
-  DUOMI_MODELS,
+  GEMINI_MODELS,
   type GeminiModelId,
 } from '@/ai/image/lib/provider-config';
 import {
@@ -17,7 +17,7 @@ import { NextResponse } from 'next/server';
 import { TIMEOUT_MILLIS, withTimeout } from './api-utils';
 
 // Valid model IDs for validation
-const VALID_MODEL_IDS: readonly string[] = DUOMI_MODELS;
+const VALID_MODEL_IDS: readonly string[] = GEMINI_MODELS;
 
 // ============================================================================
 // Types
@@ -54,10 +54,7 @@ export async function verifySession(
 
   if (!session?.user?.id) {
     logger.api.error(`Unauthorized request [requestId=${requestId}]`);
-    return NextResponse.json(
-      { error: '请登录后使用此功能' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: '请登录后使用此功能' }, { status: 401 });
   }
 
   return { userId: session.user.id };

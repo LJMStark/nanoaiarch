@@ -1,22 +1,22 @@
-import { DEFAULT_IMAGE_QUALITY } from '@/ai/image/lib/image-constants';
 import type { GenerateImageRequest } from '@/ai/image/lib/api-types';
 import {
   generateRequestId,
-  mapAspectRatioToDuomi,
-  mapModelIdToDuomiModel,
+  mapAspectRatioToGemini,
+  mapModelIdToGeminiModel,
   validatePrompt,
 } from '@/ai/image/lib/api-utils';
 import {
-  editImageWithConversationDuomi,
-  editImageWithDuomi,
-  generateImageWithDuomi,
-} from '@/ai/image/lib/duomi-client';
+  editImageWithConversationGemini,
+  editImageWithGemini,
+  generateImageWithGemini,
+} from '@/ai/image/lib/gemini-client';
 import {
   createErrorResponse,
   createImageResponse,
   executeImageGeneration,
   verifyRequestContext,
 } from '@/ai/image/lib/image-api-helpers';
+import { DEFAULT_IMAGE_QUALITY } from '@/ai/image/lib/image-constants';
 import {
   resolveRequestedImageSize,
   validateConversationMessages,
@@ -28,28 +28,10 @@ import {
   getRateLimitHeaders,
   getRateLimitIdentifier,
 } from '@/lib/rate-limit';
-import { uploadFile } from '@/storage';
 import { type NextRequest, NextResponse } from 'next/server';
 
 // Set maximum execution time for image generation (150 seconds)
-// This allows enough time for Duomi API polling (max 110s) plus buffer
 export const maxDuration = 150;
-/**
- * Uploads a base64 image to S3 and returns the URL
- */
-async function uploadBase64ToS3(
-  base64: string,
-  index: number
-): Promise<string> {
-  const buffer = Buffer.from(base64, 'base64');
-  const result = await uploadFile(
-    buffer,
-    `ref-${Date.now()}-${index}.jpg`,
-    'image/jpeg',
-    'reference-images'
-  );
-  return result.url;
-}
 
 export async function POST(req: NextRequest) {
   const requestId = generateRequestId();
@@ -74,7 +56,7 @@ export async function POST(req: NextRequest) {
   try {
     // Validate model ID
     if (!modelId) {
-      const error = 'Model ID is required';
+      const error = '缺少模型 ID';
       logger.api.error(`${error} [requestId=${requestId}]`);
       return NextResponse.json({ error }, { status: 400 });
     }
@@ -142,7 +124,7 @@ export async function POST(req: NextRequest) {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
-          error: 'Too many image generation requests. Please try again later.',
+          error: '请求过于频繁，请稍后再试',
         },
         {
           status: 429,
@@ -152,154 +134,76 @@ export async function POST(req: NextRequest) {
     }
 
     const startstamp = performance.now();
-    const duomiModel = mapModelIdToDuomiModel(modelId);
-    const duomiAspectRatio = mapAspectRatioToDuomi(aspectRatio);
+    const geminiModel = mapModelIdToGeminiModel(modelId);
+    const geminiAspectRatio = mapAspectRatioToGemini(aspectRatio);
     const selectedImageSize = imageSizeValidation.value;
 
     logger.api.info(
-      `Starting image generation [requestId=${requestId}, userId=${ctx.userId}, model=${modelId}, duomiModel=${duomiModel}, creditCost=${ctx.creditCost}]`
+      `Starting image generation [requestId=${requestId}, userId=${ctx.userId}, model=${modelId}, geminiModel=${geminiModel}, creditCost=${ctx.creditCost}]`
     );
 
-    // Collect all reference images
+    // Collect all reference images (base64)
     const allReferenceImages = referenceImages?.length
       ? referenceImages
       : referenceImage
         ? [referenceImage]
         : [];
 
-    // Build generation promise based on reference images
-    let generatePromise: ReturnType<typeof generateImageWithDuomi>;
+    // Build generation promise based on context
+    let generatePromise: ReturnType<typeof generateImageWithGemini>;
 
     if (
       conversationHistory &&
       conversationHistory.length > 0 &&
       conversationHistory.some((m) => m.image)
     ) {
-      // Multi-turn conversation mode: upload any base64 images in history to S3
-      const processedMessages = await Promise.all(
-        conversationHistory.map(async (msg, i) => {
-          if (!msg.image) return msg;
-          if (msg.image.startsWith('http')) return msg;
-          // Upload base64 image to S3
-          const url = await uploadBase64ToS3(msg.image, i);
-          return { ...msg, image: url };
-        })
-      );
+      // Multi-turn conversation mode with images
+      // Gemini API supports inline_data directly - no S3 upload needed
+      const messages = conversationHistory.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+        image: msg.image,
+      }));
 
-      // Also upload current reference images if any
+      // Add current reference images to the latest user message if any
       if (allReferenceImages.length > 0) {
-        const uploadedRefs = await Promise.all(
-          allReferenceImages.map(async (img, i) => {
-            if (img.startsWith('http')) return img;
-            return uploadBase64ToS3(img, i);
-          })
-        );
-        // Add current reference images as part of the latest user message context
-        const lastUserIdx = processedMessages.findLastIndex(
-          (m) => m.role === 'user'
-        );
-        if (lastUserIdx >= 0 && uploadedRefs[0]) {
-          processedMessages[lastUserIdx] = {
-            ...processedMessages[lastUserIdx],
-            image: uploadedRefs[0],
+        const lastUserIdx = messages.findLastIndex((m) => m.role === 'user');
+        if (lastUserIdx >= 0 && allReferenceImages[0]) {
+          messages[lastUserIdx] = {
+            ...messages[lastUserIdx],
+            image: allReferenceImages[0],
           };
         }
       }
 
       logger.api.info(
-        `[requestId=${requestId}] Using conversation mode with ${processedMessages.length} messages`
+        `[requestId=${requestId}] Using conversation mode with ${messages.length} messages`
       );
 
-      generatePromise = editImageWithConversationDuomi({
-        messages: processedMessages,
-        model: duomiModel,
-        aspectRatio: duomiAspectRatio,
+      generatePromise = editImageWithConversationGemini({
+        messages,
+        model: geminiModel,
+        aspectRatio: geminiAspectRatio,
         imageSize: selectedImageSize,
       });
     } else if (allReferenceImages.length > 0) {
-      // Upload base64 images to S3 in parallel for better performance
-      const uploadPromises = allReferenceImages.map((img, i) => {
-        if (img.startsWith('http')) {
-          return Promise.resolve({ success: true, url: img, index: i });
-        }
-
-        return uploadBase64ToS3(img, i)
-          .then((url) => ({ success: true, url, index: i }))
-          .catch((uploadError) => {
-            logger.api.error(
-              `[requestId=${requestId}] Failed to upload reference image ${i + 1}:`,
-              uploadError
-            );
-            return {
-              success: false,
-              error:
-                uploadError instanceof Error
-                  ? uploadError.message
-                  : 'Upload failed',
-              index: i,
-            };
-          });
-      });
-
-      const uploadResults = await Promise.all(uploadPromises);
-
-      // Separate successful and failed uploads
-      const successfulUploads = uploadResults.filter(
-        (result): result is { success: true; url: string; index: number } =>
-          result.success
-      );
-      const failedUploads = uploadResults.filter(
-        (result): result is { success: false; error: string; index: number } =>
-          !result.success
-      );
-
-      // Log upload summary
+      // Image editing mode - pass base64 directly to Gemini API
       logger.api.info(
-        `[requestId=${requestId}] Upload summary: ${successfulUploads.length}/${allReferenceImages.length} successful`
+        `[requestId=${requestId}] Using edit API with ${allReferenceImages.length} reference images`
       );
-
-      if (successfulUploads.length === 0) {
-        // All uploads failed
-        logger.api.error(
-          `[requestId=${requestId}] All reference images failed to upload`
-        );
-        return NextResponse.json(
-          {
-            error: 'Failed to upload reference images. Please try again.',
-            details: failedUploads.map(
-              (f) => `Image ${f.index + 1}: ${f.error}`
-            ),
-          },
-          { status: 500 }
-        );
-      }
-
-      // Warn about partial failures
-      if (failedUploads.length > 0) {
-        logger.api.warn(
-          `[requestId=${requestId}] Partial upload failure: ${failedUploads.length} images failed`,
-          { failedIndices: failedUploads.map((f) => f.index) }
-        );
-      }
-
-      const imageUrls = successfulUploads.map((r) => r.url);
-
-      logger.api.info(
-        `[requestId=${requestId}] Using edit API with ${imageUrls.length} reference images`
-      );
-      generatePromise = editImageWithDuomi({
+      generatePromise = editImageWithGemini({
         prompt,
-        imageUrls,
-        model: duomiModel,
-        aspectRatio: duomiAspectRatio,
+        referenceImages: allReferenceImages,
+        model: geminiModel,
+        aspectRatio: geminiAspectRatio,
         imageSize: selectedImageSize,
       });
     } else {
       // Text-to-image generation
-      generatePromise = generateImageWithDuomi({
+      generatePromise = generateImageWithGemini({
         prompt,
-        model: duomiModel,
-        aspectRatio: duomiAspectRatio,
+        model: geminiModel,
+        aspectRatio: geminiAspectRatio,
         imageSize: selectedImageSize,
       });
     }

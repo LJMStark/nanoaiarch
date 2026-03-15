@@ -2,12 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { useOnboardingStore } from '@/stores/onboarding-store';
-import {
-  ArrowLeft,
-  Check,
-  Loader2,
-  Sparkles,
-} from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
@@ -97,18 +92,11 @@ export function GenerateStep() {
 
       {/* 操作按钮 */}
       <div className="flex gap-3">
-        <Button
-          variant="outline"
-          onClick={prevStep}
-          className="gap-2"
-        >
+        <Button variant="outline" onClick={prevStep} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
           {t('generate.back')}
         </Button>
-        <Button
-          onClick={nextStep}
-          className="flex-1 gap-2"
-        >
+        <Button onClick={nextStep} className="flex-1 gap-2">
           <Check className="h-4 w-4" />
           {t('generate.complete')}
         </Button>

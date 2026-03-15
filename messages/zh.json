@@ -1520,7 +1520,9 @@
       "fileTooLarge": "文件大小不能超过 10MB",
       "readFailed": "读取文件失败",
       "compressing": "正在压缩图片...",
-      "compressFailed": "图片压缩失败"
+      "compressFailed": "图片压缩失败",
+      "referenceImageAlt": "参考图 {index}",
+      "uploadedImageAlt": "已上传图片"
     },
     "styles": {
       "modernMinimalist": "现代极简",
@@ -1703,7 +1705,8 @@
       "dayToNight": {
         "title": "白天转夜景",
         "description": "将白天场景转换为夜景效果"
-      }
+      },
+      "requiresInput": "需上传"
     },
     "modal": {
       "preview": "预览",
@@ -1800,6 +1803,22 @@
       "noOutput": "暂无输出"
     },
     "signIn": "登录",
-    "buyCredits": "购买积分"
+    "buyCredits": "购买积分",
+    "loading": {
+      "editing": "图像编辑中...",
+      "generating": "图像生成中..."
+    },
+    "image": {
+      "save": "保存",
+      "generatedAlt": "生成图像",
+      "uploadedAlt": "已上传图片",
+      "closeHint": "按 Esc 或点击任意处关闭"
+    },
+    "emptyState": {
+      "editTitle": "上传图片并描述编辑内容",
+      "generateTitle": "描述您想要的图像",
+      "editDescription": "上传图片后，描述您希望如何修改",
+      "generateDescription": "在上方输入提示词，让 AI 为您生成图像"
+    }
   }
 }

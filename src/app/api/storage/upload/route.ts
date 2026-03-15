@@ -112,7 +112,10 @@ export async function POST(request: NextRequest) {
       return createUploadErrorResponse('Invalid upload folder', 400);
     }
 
-    const safeFilename = resolveSafeUploadFilename(validFile.name, validFile.type);
+    const safeFilename = resolveSafeUploadFilename(
+      validFile.name,
+      validFile.type
+    );
     const result = await uploadFile(
       buffer,
       safeFilename,

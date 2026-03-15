@@ -1520,7 +1520,9 @@
       "fileTooLarge": "File size must be less than 10MB",
       "readFailed": "Failed to read file",
       "compressing": "Compressing image...",
-      "compressFailed": "Failed to compress image"
+      "compressFailed": "Failed to compress image",
+      "referenceImageAlt": "Reference {index}",
+      "uploadedImageAlt": "Uploaded image"
     },
     "styles": {
       "modernMinimalist": "Modern Minimalist",
@@ -1703,7 +1705,8 @@
       "dayToNight": {
         "title": "Day to Night",
         "description": "Transform daytime scenes into dramatic night views"
-      }
+      },
+      "requiresInput": "Input"
     },
     "modal": {
       "preview": "Preview",
@@ -1800,6 +1803,22 @@
       "noOutput": "No console output"
     },
     "signIn": "Sign In",
-    "buyCredits": "Buy Credits"
+    "buyCredits": "Buy Credits",
+    "loading": {
+      "editing": "Editing image...",
+      "generating": "Generating image..."
+    },
+    "image": {
+      "save": "Save",
+      "generatedAlt": "Generated image",
+      "uploadedAlt": "Uploaded image",
+      "closeHint": "Press Escape or click anywhere to close"
+    },
+    "emptyState": {
+      "editTitle": "Upload an image and describe your edit",
+      "generateTitle": "Describe your image",
+      "editDescription": "Upload an image above, then describe how you want to modify it",
+      "generateDescription": "Enter a prompt above to generate an image with AI"
+    }
   }
 }

@@ -41,7 +41,9 @@ export function EditHistory({
       <div className="flex items-center justify-between border-b px-3 py-2">
         <div className="flex items-center gap-2">
           <History className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">{tAI('editHistory.title')}</span>
+          <span className="text-sm font-medium">
+            {tAI('editHistory.title')}
+          </span>
           <span className="text-xs text-muted-foreground">
             ({history.length})
           </span>

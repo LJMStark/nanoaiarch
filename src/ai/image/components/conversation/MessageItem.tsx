@@ -15,7 +15,7 @@ import {
 } from '@/ai/image/lib/image-display-utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   Tooltip,
   TooltipContent,
@@ -461,6 +461,9 @@ function AssistantMessage({
 
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
               <DialogContent className="max-w-5xl p-0 overflow-hidden">
+                <DialogTitle className="sr-only">
+                  {t('canvas.generatedImageAlt')}
+                </DialogTitle>
                 <div className="relative w-full h-[80vh] bg-black">
                   <Image
                     src={getImageSrc(message.outputImage)}

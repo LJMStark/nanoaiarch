@@ -109,7 +109,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
   const selectHistoryItem = useCallback((item: EditHistoryItem) => {
     setReferenceImage(item.afterImage);
     setImage({
-      provider: 'duomi',
+      provider: 'gemini',
       image: item.afterImage,
     });
   }, []);
@@ -146,7 +146,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prompt,
-            provider: 'duomi',
+            provider: 'gemini',
             modelId: selectedModel,
             referenceImage: mode === 'edit' ? referenceImage : undefined,
           }),
@@ -188,7 +188,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           }
 
           setImage({
-            provider: 'duomi',
+            provider: 'gemini',
             image: data.image,
             modelId: selectedModel,
             text: data.text,
@@ -218,13 +218,13 @@ export function useImageGeneration(): UseImageGenerationReturn {
         clearTimeout(timeoutId);
         if (err instanceof Error && err.name === 'AbortError') {
           setError({
-            provider: 'duomi',
+            provider: 'gemini',
             message: 'Request timed out. Please try again.',
           });
         } else {
           logger.ai.error('Image generation error:', err);
           setError({
-            provider: 'duomi',
+            provider: 'gemini',
             message:
               err instanceof Error
                 ? err.message
@@ -245,7 +245,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
     async (prompt: string) => {
       if (!referenceImage) {
         setError({
-          provider: 'duomi',
+          provider: 'gemini',
           message: 'Please upload an image first',
         });
         return;
@@ -348,7 +348,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           setConversationHistory((prev) => [...prev, modelMessage]);
 
           setImage({
-            provider: 'duomi',
+            provider: 'gemini',
             image: data.image,
             modelId: selectedModel,
             text: data.text,
@@ -377,13 +377,13 @@ export function useImageGeneration(): UseImageGenerationReturn {
         clearTimeout(timeoutId);
         if (err instanceof Error && err.name === 'AbortError') {
           setError({
-            provider: 'duomi',
+            provider: 'gemini',
             message: 'Request timed out. Please try again.',
           });
         } else {
           logger.ai.error('Image edit error:', err);
           setError({
-            provider: 'duomi',
+            provider: 'gemini',
             message:
               err instanceof Error
                 ? err.message

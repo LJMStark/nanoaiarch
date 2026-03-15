@@ -1,7 +1,7 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
 import type { PublicGeneration } from '@/actions/public-gallery';
+import { useTranslations } from 'next-intl';
 import { ExploreCard, ExploreCardSkeleton } from './ExploreCard';
 
 interface ExploreGridProps {

@@ -28,6 +28,7 @@ interface ModelSelectorProps {
 // 模型图标映射
 const MODEL_ICONS: Record<GeminiModelId, React.ReactNode> = {
   forma: <Zap className="h-4 w-4 text-violet-500" />,
+  flash: <Zap className="h-4 w-4 text-blue-500" />,
 };
 
 export function ModelSelector({
@@ -43,14 +44,14 @@ export function ModelSelector({
 
   return (
     <div className={cn('space-y-2', className)}>
-      <span className="text-sm font-medium text-foreground">Model</span>
+      <span className="text-sm font-medium text-foreground">模型</span>
       <Select
         value={selectedModel}
         onValueChange={(value) => onModelChange(value as GeminiModelId)}
         disabled={disabled}
       >
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select a model">
+          <SelectValue placeholder="选择模型">
             <div className="flex items-center gap-2">
               {MODEL_ICONS[selectedModel]}
               <span>{MODEL_DISPLAY_NAMES[selectedModel]}</span>
@@ -68,7 +69,7 @@ export function ModelSelector({
                       {MODEL_DISPLAY_NAMES[modelId]}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {CREDIT_COSTS[modelId]} credits
+                      {CREDIT_COSTS[modelId]} 积分
                     </span>
                   </div>
                   <span className="text-xs text-muted-foreground">

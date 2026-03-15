@@ -238,7 +238,7 @@ export function MultiImageUploader({
             >
               <Image
                 src={`data:image/png;base64,${image}`}
-                alt={`Reference ${index + 1}`}
+                alt={t('referenceImageAlt', { index: index + 1 })}
                 fill
                 className="object-cover"
               />

@@ -18,7 +18,7 @@ export function PromptInput({
   suggestions: initSuggestions,
   isLoading,
   onSubmit,
-  placeholder = 'Enter your prompt here',
+  placeholder = '请输入提示词...',
   disabled = false,
 }: PromptInputProps) {
   const [input, setInput] = useState('');

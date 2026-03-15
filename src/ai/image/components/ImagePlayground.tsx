@@ -173,7 +173,7 @@ export function ImagePlayground({
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <Stopwatch startTime={timing?.startTime} />
               <p className="mt-2 text-sm text-muted-foreground">
-                {mode === 'edit' ? 'Editing image...' : 'Generating image...'}
+                {mode === 'edit' ? t('loading.editing') : t('loading.generating')}
               </p>
             </div>
           )}
@@ -192,7 +192,7 @@ export function ImagePlayground({
                 <div className="aspect-square relative">
                   <Image
                     src={getImageSrc(image.image)}
-                    alt={activePrompt || 'Generated image'}
+                    alt={activePrompt || t('image.generatedAlt')}
                     fill
                     className="object-contain"
                     priority
@@ -216,7 +216,7 @@ export function ImagePlayground({
                       }}
                     >
                       <Download className="mr-1 h-4 w-4" />
-                      Save
+                      {t('image.save')}
                     </Button>
                   </div>
 
@@ -259,13 +259,13 @@ export function ImagePlayground({
               <Sparkles className="h-12 w-12 text-muted-foreground/50" />
               <h3 className="mt-4 text-lg font-medium">
                 {mode === 'edit'
-                  ? 'Upload an image and describe your edit'
-                  : 'Describe your image'}
+                  ? t('emptyState.editTitle')
+                  : t('emptyState.generateTitle')}
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
                 {mode === 'edit'
-                  ? 'Upload an image above, then describe how you want to modify it'
-                  : 'Enter a prompt above to generate an image with AI'}
+                  ? t('emptyState.editDescription')
+                  : t('emptyState.generateDescription')}
               </p>
             </div>
           )}
@@ -291,14 +291,14 @@ export function ImagePlayground({
             <div className="relative max-h-[90vh] max-w-[90vw]">
               <Image
                 src={getImageSrc(image.image)}
-                alt={activePrompt || 'Generated image'}
+                alt={activePrompt || t('image.generatedAlt')}
                 width={1024}
                 height={1024}
                 className="max-h-[90vh] max-w-[90vw] object-contain"
               />
             </div>
             <p className="absolute bottom-4 text-sm text-muted-foreground">
-              Press Escape or click anywhere to close
+              {t('image.closeHint')}
             </p>
           </div>
         )}

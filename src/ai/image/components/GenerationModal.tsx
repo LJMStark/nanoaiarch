@@ -102,7 +102,7 @@ export function GenerationModal({
                 ? t('canvas.generating')
                 : error
                   ? t('canvas.error')
-                  : 'Generated Image'}
+                  : t('canvas.generatedImageAlt')}
             </DialogTitle>
             {/* Close button is handled by DialogContent */}
           </div>
@@ -226,7 +226,7 @@ function ErrorState({
       {onRetry && (
         <Button variant="outline" onClick={onRetry} className="mt-6 gap-2">
           <RefreshCw className="h-4 w-4" />
-          Try Again
+          {t('canvas.retry')}
         </Button>
       )}
     </motion.div>
@@ -340,7 +340,7 @@ function ResultState({
             className="gap-2 flex-shrink-0"
           >
             <RefreshCw className="h-4 w-4" />
-            Regenerate
+            {t('canvas.retry')}
           </Button>
         )}
       </div>

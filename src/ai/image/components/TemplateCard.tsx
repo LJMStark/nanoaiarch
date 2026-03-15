@@ -110,7 +110,7 @@ export function TemplateCard({
             )}
           >
             <ImageIcon className="h-3 w-3" />
-            <span>Input</span>
+            <span>{t('ArchPage.templates.requiresInput')}</span>
           </div>
         )}
 
