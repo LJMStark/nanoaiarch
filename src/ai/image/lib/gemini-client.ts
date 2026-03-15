@@ -3,7 +3,9 @@ import { z } from 'zod';
 
 // Official Google Gemini API configuration
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const DEFAULT_MODEL: GeminiImageModelId = 'gemini-3-pro-image-preview';
+const DEFAULT_MODEL: GeminiImageModelId =
+  (process.env.GEMINI_DEFAULT_MODEL as GeminiImageModelId) ||
+  'gemini-3-pro-image-preview';
 const REQUEST_TIMEOUT_MS = 120_000; // 120s - synchronous API, no polling
 
 // Model types
