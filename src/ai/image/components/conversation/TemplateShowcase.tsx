@@ -159,7 +159,8 @@ export function TemplateShowcase({
       return;
     }
     setIsModalOpen(false);
-    await applyTemplateWithProject({ template, prompt, ratio });
+    const title = t(template.titleKey.replace('ArchPage.', '') as any);
+    await applyTemplateWithProject({ template, prompt, ratio, title });
   };
 
   // 快速提示词

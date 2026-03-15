@@ -11,6 +11,7 @@ interface ApplyTemplateParams {
   template: ArchTemplate;
   prompt: string;
   ratio: AspectRatioId;
+  title?: string;
 }
 
 interface UseTemplateApplyReturn {
@@ -43,6 +44,7 @@ export function useTemplateApply(): UseTemplateApplyReturn {
       template,
       prompt,
       ratio,
+      title,
     }: ApplyTemplateParams): Promise<boolean> => {
       setIsApplying(true);
 
@@ -58,15 +60,15 @@ export function useTemplateApply(): UseTemplateApplyReturn {
 
         // Create new project with template
         const result = await createImageProject({
-          title: template.id,
+          title: title || template.id,
           templateId: template.id,
           aspectRatio: ratio,
         });
 
         if (!result.success || !result.data) {
           toast({
-            title: 'Failed to create project',
-            description: result.error || 'Please try again',
+            title: '创建项目失败',
+            description: result.error || '请重试',
             variant: 'destructive',
           });
           return false;
@@ -83,8 +85,8 @@ export function useTemplateApply(): UseTemplateApplyReturn {
       } catch (error) {
         logger.ai.error('Failed to apply template:', error);
         toast({
-          title: 'Error',
-          description: 'An unexpected error occurred',
+          title: '出错了',
+          description: '发生了意外错误',
           variant: 'destructive',
         });
         return false;
@@ -118,13 +120,13 @@ export function useTemplateApply(): UseTemplateApplyReturn {
 
       try {
         const result = await createImageProject({
-          title: 'New Project',
+          title: '新项目',
         });
 
         if (!result.success || !result.data) {
           toast({
-            title: 'Failed to create project',
-            description: result.error || 'Please try again',
+            title: '创建项目失败',
+            description: result.error || '请重试',
             variant: 'destructive',
           });
           return false;
@@ -140,8 +142,8 @@ export function useTemplateApply(): UseTemplateApplyReturn {
       } catch (error) {
         logger.ai.error('Failed to create project:', error);
         toast({
-          title: 'Error',
-          description: 'An unexpected error occurred',
+          title: '出错了',
+          description: '发生了意外错误',
           variant: 'destructive',
         });
         return false;

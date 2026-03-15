@@ -10,6 +10,7 @@ import { ARCH_TEMPLATES } from '@/ai/image/lib/templates';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
+import { useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ConversationArea } from './ConversationArea';
@@ -18,6 +19,7 @@ import { ConversationInput } from './ConversationInput';
 import { ProjectSidebar } from './ProjectSidebar';
 
 export function ConversationLayout() {
+  const t = useTranslations();
   const searchParams = useSearchParams();
   const router = useRouter();
   const templateId = searchParams.get('template');
@@ -65,7 +67,8 @@ export function ConversationLayout() {
   ) => {
     setIsTemplateModalOpen(false);
     setUrlTemplate(null);
-    await applyTemplateWithProject({ template, prompt, ratio });
+    const title = t(template.titleKey as any);
+    await applyTemplateWithProject({ template, prompt, ratio, title });
   };
 
   // Load messages when project changes (after initial load)
