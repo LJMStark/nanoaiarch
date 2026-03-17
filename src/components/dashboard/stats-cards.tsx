@@ -36,7 +36,10 @@ export function StatsCards() {
     return (
       <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="@container/card">
+          <Card
+            key={i}
+            className="@container/card border-white/40 bg-background/55"
+          >
             <CardHeader>
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-8 w-16 mt-2" />
@@ -75,18 +78,25 @@ export function StatsCards() {
   ];
 
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       {cards.map((card) => (
-        <Card key={card.title} className="@container/card">
+        <Card
+          key={card.title}
+          className="@container/card overflow-hidden border-white/40 bg-background/55"
+        >
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardDescription>{card.title}</CardDescription>
-              <card.icon className="size-5 text-muted-foreground" />
+              <CardDescription className="text-xs tracking-[0.12em] uppercase">
+                {card.title}
+              </CardDescription>
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <card.icon className="size-5" />
+              </div>
             </div>
-            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            <CardTitle className="font-mono text-3xl font-semibold tabular-nums tracking-[-0.05em] @[250px]/card:text-4xl">
               {card.value.toLocaleString()}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
               {card.description}
             </p>
           </CardHeader>

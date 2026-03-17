@@ -25,13 +25,13 @@ export function SubscriptionStylePricing({
     <div className={className}>
       <Tabs defaultValue="plans" className="w-full">
         {/* Tab Switcher */}
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-12">
+        <TabsList className="mx-auto mb-12 grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="plans" className="text-base">
             {t('tabs.plans')}
           </TabsTrigger>
           <TabsTrigger value="topup" className="text-base relative">
             {t('tabs.topup')}
-            <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+            <span className="absolute -right-2 -top-2 rounded-full bg-primary/15 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-primary">
               {t('tabs.new')}
             </span>
           </TabsTrigger>

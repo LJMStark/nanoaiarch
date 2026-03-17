@@ -63,8 +63,8 @@ export function CreditPricingCard({
   return (
     <Card
       className={cn(
-        'flex flex-col h-full relative',
-        isPopular && 'border-primary border-2 shadow-lg',
+        'relative flex h-full flex-col overflow-hidden',
+        isPopular && 'border-primary/30 bg-primary/6',
         className
       )}
     >
@@ -73,28 +73,32 @@ export function CreditPricingCard({
         <div className="absolute -top-3.5 left-1/2 transform -translate-x-1/2">
           <Badge
             variant="default"
-            className="bg-primary text-primary-foreground"
+            className="border-primary/20 bg-primary text-primary-foreground"
           >
             {t('recommended')}
           </Badge>
         </div>
       )}
 
-      <CardHeader>
+      <CardHeader className="gap-4">
         <CardTitle>
-          <h3 className="font-semibold text-xl">{tierName}</h3>
+          <h3 className="font-bricolage-grotesque text-2xl font-semibold tracking-[-0.04em]">
+            {tierName}
+          </h3>
         </CardTitle>
 
         {/* Price display */}
-        <div className="mt-4">
+        <div>
           <div className="flex items-baseline gap-2">
-            <span className="text-4xl font-bold">{formattedPrice}</span>
+            <span className="font-mono text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
+              {formattedPrice}
+            </span>
             <span className="text-muted-foreground">/ {intervalLabel}</span>
           </div>
 
           {/* Monthly equivalent for quarter/year */}
           {monthlyEquivalent && (
-            <div className="mt-2 text-sm text-muted-foreground">
+            <div className="mt-2 text-sm leading-6 text-muted-foreground">
               {t('monthlyEquivalent', { price: monthlyEquivalent })}
             </div>
           )}
@@ -104,7 +108,7 @@ export function CreditPricingCard({
             <div className="mt-3">
               <Badge
                 variant="secondary"
-                className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
+                className="border-primary/10 bg-primary/10 text-primary"
               >
                 {t('save')} {pkg.savings}%
               </Badge>
@@ -142,30 +146,30 @@ export function CreditPricingCard({
       </CardHeader>
 
       <CardContent className="space-y-4 flex-1">
-        <hr className="border-dashed" />
+        <hr className="border-dashed border-border/70" />
 
         {/* Features list */}
         <ul className="space-y-3 text-sm">
           <li className="flex items-start gap-2">
-            <CheckCircleIcon className="size-4 text-green-500 dark:text-green-400 mt-0.5 flex-shrink-0" />
+            <CheckCircleIcon className="mt-0.5 size-4 flex-shrink-0 text-primary" />
             <span>{t('features.credits', { amount: pkg.amount })}</span>
           </li>
           <li className="flex items-start gap-2">
-            <CheckCircleIcon className="size-4 text-green-500 dark:text-green-400 mt-0.5 flex-shrink-0" />
+            <CheckCircleIcon className="mt-0.5 size-4 flex-shrink-0 text-primary" />
             <span>{t('features.images', { count: pkg.amount })}</span>
           </li>
           {pkg.expireDays && (
             <li className="flex items-start gap-2">
-              <CheckCircleIcon className="size-4 text-green-500 dark:text-green-400 mt-0.5 flex-shrink-0" />
+              <CheckCircleIcon className="mt-0.5 size-4 flex-shrink-0 text-primary" />
               <span>{t('features.expiry', { days: pkg.expireDays })}</span>
             </li>
           )}
           <li className="flex items-start gap-2">
-            <CheckCircleIcon className="size-4 text-green-500 dark:text-green-400 mt-0.5 flex-shrink-0" />
+            <CheckCircleIcon className="mt-0.5 size-4 flex-shrink-0 text-primary" />
             <span>{t('features.allModels')}</span>
           </li>
           <li className="flex items-start gap-2">
-            <CheckCircleIcon className="size-4 text-green-500 dark:text-green-400 mt-0.5 flex-shrink-0" />
+            <CheckCircleIcon className="mt-0.5 size-4 flex-shrink-0 text-primary" />
             <span>{t('features.priority')}</span>
           </li>
         </ul>

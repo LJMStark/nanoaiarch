@@ -93,7 +93,7 @@ export function RecentGenerations() {
 
   if (loading) {
     return (
-      <Card className="mx-4 lg:mx-6">
+      <Card className="mx-4 border-white/40 bg-background/55 lg:mx-6">
         <CardHeader>
           <CardTitle>{t('title')}</CardTitle>
         </CardHeader>
@@ -114,18 +114,22 @@ export function RecentGenerations() {
 
   if (generations.length === 0) {
     return (
-      <Card className="mx-4 lg:mx-6">
+      <Card className="mx-4 border-white/40 bg-background/55 lg:mx-6">
         <CardHeader>
           <CardTitle>{t('title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Sparkles className="size-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-medium">{t('empty.title')}</h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-md">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Sparkles className="size-8" />
+            </div>
+            <h3 className="text-xl font-medium tracking-[-0.03em]">
+              {t('empty.title')}
+            </h3>
+            <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
               {t('empty.description')}
             </p>
-            <Button className="mt-4" asChild>
+            <Button className="mt-5" asChild>
               <a href="/ai/image">{t('empty.cta')}</a>
             </Button>
           </div>
@@ -135,7 +139,7 @@ export function RecentGenerations() {
   }
 
   return (
-    <Card className="mx-4 lg:mx-6">
+    <Card className="mx-4 border-white/40 bg-background/55 lg:mx-6">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>{t('title')}</CardTitle>
         <Button variant="outline" size="sm" asChild>
@@ -147,7 +151,7 @@ export function RecentGenerations() {
           {generations.map((generation) => (
             <div
               key={generation.id}
-              className="group relative overflow-hidden rounded-lg border bg-card"
+              className="group relative overflow-hidden rounded-[1.5rem] border border-border/60 bg-background/50"
             >
               {/* Image */}
               <div className="relative aspect-square overflow-hidden bg-muted">
@@ -165,7 +169,7 @@ export function RecentGenerations() {
                 )}
 
                 {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute inset-0 bg-black/55 opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
                   <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
                     <Button
                       variant="ghost"
@@ -236,8 +240,8 @@ export function RecentGenerations() {
               </div>
 
               {/* Info */}
-              <div className="p-3">
-                <p className="line-clamp-2 text-sm font-medium">
+              <div className="p-4">
+                <p className="line-clamp-2 text-sm font-medium leading-6 tracking-[-0.01em]">
                   {generation.prompt}
                 </p>
                 <div className="mt-2 flex items-center justify-between">

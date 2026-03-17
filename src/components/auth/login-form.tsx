@@ -193,14 +193,16 @@ export const LoginForm = ({
     >
       {credentialLoginEnabled && (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-4 rounded-[1.5rem] border border-border/60 bg-background/45 p-4 sm:p-5">
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('email')}</FormLabel>
+                    <FormLabel className="text-sm font-medium tracking-[-0.01em]">
+                      {t('email')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -219,16 +221,18 @@ export const LoginForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex justify-between items-center">
-                      <FormLabel>{t('password')}</FormLabel>
+                      <FormLabel className="text-sm font-medium tracking-[-0.01em]">
+                        {t('password')}
+                      </FormLabel>
                       <Button
                         size="sm"
                         variant="link"
                         asChild
-                        className="px-0 font-normal text-muted-foreground"
+                        className="h-auto px-0 font-normal text-muted-foreground"
                       >
                         <LocaleLink
                           href={`${Routes.ForgotPassword}`}
-                          className="text-xs hover:underline hover:underline-offset-4 hover:text-primary"
+                          className="text-xs hover:text-primary"
                         >
                           {t('forgotPassword')}
                         </LocaleLink>
@@ -282,7 +286,7 @@ export const LoginForm = ({
               disabled={isPending || (captchaConfigured && !captchaToken)}
               size="lg"
               type="submit"
-              className="w-full flex items-center justify-center gap-2 cursor-pointer"
+              className="flex w-full cursor-pointer items-center justify-center gap-2"
             >
               {isPending && (
                 <Loader2Icon className="mr-2 size-4 animate-spin" />
@@ -292,7 +296,7 @@ export const LoginForm = ({
           </form>
         </Form>
       )}
-      <div className="mt-4">
+      <div className="mt-3">
         <SocialLoginButton
           callbackUrl={callbackUrl}
           showDivider={credentialLoginEnabled}

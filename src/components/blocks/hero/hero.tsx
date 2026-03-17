@@ -35,115 +35,96 @@ export default function HeroSection() {
   const linkSecondary = '/#pricing';
 
   return (
-    <>
-      <main id="hero" className="overflow-hidden">
-        {/* background, light shadows on top of the hero section */}
-        <div
-          aria-hidden
-          className="absolute inset-0 isolate hidden opacity-65 contain-strict lg:block"
-        >
-          <div className="w-140 h-320 -translate-y-87.5 absolute left-0 top-0 -rotate-45 rounded-full bg-[radial-gradient(68.54%_68.72%_at_55.02%_31.46%,hsla(0,0%,85%,.08)_0,hsla(0,0%,55%,.02)_50%,hsla(0,0%,45%,0)_80%)]" />
-          <div className="h-320 absolute left-0 top-0 w-60 -rotate-45 rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.06)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)] [translate:5%_-50%]" />
-          <div className="h-320 -translate-y-87.5 absolute left-0 top-0 w-60 -rotate-45 bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.04)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)]" />
-        </div>
+    <main id="hero" className="overflow-hidden px-4 pt-4 sm:pt-8">
+      <section className="mx-auto max-w-[88rem] pb-10 sm:pb-14">
+        <div className="relative overflow-hidden rounded-[2.25rem] px-6 py-10 sm:px-8 lg:px-10 lg:py-14">
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(104,130,88,0.18),transparent_30%),radial-gradient(circle_at_85%_20%,rgba(251,247,240,0.78),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(169,138,100,0.14),transparent_28%)]"
+          />
+          <div
+            aria-hidden
+            className="absolute -left-20 top-16 hidden h-72 w-72 rounded-full bg-primary/12 blur-3xl lg:block"
+          />
+          <div
+            aria-hidden
+            className="absolute -right-16 bottom-0 hidden h-80 w-80 rounded-full bg-[rgba(161,132,96,0.14)] blur-3xl lg:block"
+          />
 
-        <section>
-          <div className="relative pt-12">
-            <div className="mx-auto max-w-7xl px-6">
-              <Ripple />
+          <Ripple />
 
-              <div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
-                {/* introduction */}
-                <AnimatedGroup variants={transitionVariants}>
-                  <LocaleLink
-                    href={linkIntroduction}
-                    className="hover:bg-accent group mx-auto flex w-fit items-center gap-2 rounded-full border p-1 pl-4"
-                  >
-                    <span className="text-foreground text-sm">
-                      {t('introduction')}
-                    </span>
+          <div className="relative z-10 grid gap-12 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:items-end">
+            <div className="max-w-3xl">
+              <AnimatedGroup variants={transitionVariants}>
+                <LocaleLink
+                  href={linkIntroduction}
+                  className="surface-panel group inline-flex w-fit items-center gap-3 rounded-full px-4 py-2"
+                >
+                  <span className="text-sm font-medium text-foreground">
+                    {t('introduction')}
+                  </span>
 
-                    <div className="size-6 overflow-hidden rounded-full duration-500">
-                      <div className="flex w-12 -translate-x-1/2 duration-500 ease-in-out group-hover:translate-x-0">
-                        <span className="flex size-6">
-                          <ArrowRight className="m-auto size-3" />
-                        </span>
-                        <span className="flex size-6">
-                          <ArrowRight className="m-auto size-3" />
-                        </span>
-                      </div>
+                  <div className="flex size-7 items-center justify-center overflow-hidden rounded-full bg-primary/12 text-primary">
+                    <div className="flex w-14 -translate-x-1/2 duration-500 ease-in-out group-hover:translate-x-0">
+                      <span className="flex size-7">
+                        <ArrowRight className="m-auto size-3.5" />
+                      </span>
+                      <span className="flex size-7">
+                        <ArrowRight className="m-auto size-3.5" />
+                      </span>
                     </div>
-                  </LocaleLink>
-                </AnimatedGroup>
+                  </div>
+                </LocaleLink>
+              </AnimatedGroup>
 
-                {/* title */}
-                <TextEffect
-                  per="line"
-                  preset="fade-in-blur"
-                  speedSegment={0.3}
-                  as="h1"
-                  className="mt-8 text-balance text-5xl font-bricolage-grotesque lg:mt-16 xl:text-[5rem]"
-                >
-                  {t('title')}
-                </TextEffect>
+              <TextEffect
+                per="line"
+                preset="fade-in-blur"
+                speedSegment={0.3}
+                as="h1"
+                className="mt-8 max-w-4xl text-left font-bricolage-grotesque text-5xl leading-[0.92] tracking-[-0.07em] text-balance sm:text-6xl xl:text-[6.35rem]"
+              >
+                {t('title')}
+              </TextEffect>
 
-                {/* description */}
-                <TextEffect
-                  per="line"
-                  preset="fade-in-blur"
-                  speedSegment={0.3}
-                  delay={0.5}
-                  as="p"
-                  className="mx-auto mt-8 max-w-4xl text-balance text-lg text-muted-foreground"
-                >
-                  {t('description')}
-                </TextEffect>
+              <TextEffect
+                per="line"
+                preset="fade-in-blur"
+                speedSegment={0.3}
+                delay={0.5}
+                as="p"
+                className="mt-6 max-w-xl text-left text-base leading-8 text-muted-foreground sm:text-lg"
+              >
+                {t('description')}
+              </TextEffect>
 
-                {/* action buttons */}
-                <AnimatedGroup
-                  variants={{
-                    container: {
-                      visible: {
-                        transition: {
-                          staggerChildren: 0.05,
-                          delayChildren: 0.75,
-                        },
+              <AnimatedGroup
+                variants={{
+                  container: {
+                    visible: {
+                      transition: {
+                        staggerChildren: 0.05,
+                        delayChildren: 0.75,
                       },
                     },
-                    ...transitionVariants,
-                  }}
-                  className="mt-12 flex flex-row items-center justify-center gap-4"
-                >
-                  <div
-                    key={1}
-                    className="bg-foreground/10 rounded-[calc(var(--radius-xl)+0.125rem)] border p-0.5"
-                  >
-                    <Button
-                      asChild
-                      size="lg"
-                      className="rounded-xl px-5 text-base"
-                    >
-                      <LocaleLink href={linkPrimary}>
-                        <span className="text-nowrap">{t('primary')}</span>
-                      </LocaleLink>
-                    </Button>
-                  </div>
-                  <Button
-                    key={2}
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="h-10.5 rounded-xl px-5"
-                  >
-                    <LocaleLink href={linkSecondary}>
-                      <span className="text-nowrap">{t('secondary')}</span>
-                    </LocaleLink>
-                  </Button>
-                </AnimatedGroup>
-              </div>
+                  },
+                  ...transitionVariants,
+                }}
+                className="mt-10 flex flex-wrap items-center gap-4"
+              >
+                <Button key={1} asChild size="lg" className="px-6 text-base">
+                  <LocaleLink href={linkPrimary}>
+                    <span className="text-nowrap">{t('primary')}</span>
+                  </LocaleLink>
+                </Button>
+                <Button key={2} asChild size="lg" variant="outline">
+                  <LocaleLink href={linkSecondary}>
+                    <span className="text-nowrap">{t('secondary')}</span>
+                  </LocaleLink>
+                </Button>
+              </AnimatedGroup>
             </div>
 
-            {/* images */}
             <AnimatedGroup
               variants={{
                 container: {
@@ -156,35 +137,36 @@ export default function HeroSection() {
                 },
                 ...transitionVariants,
               }}
+              className="relative lg:pl-8"
             >
-              <div className="relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20">
+              <div className="surface-panel relative mx-auto max-w-3xl overflow-hidden rounded-[2rem] p-3 sm:p-4">
                 <div
                   aria-hidden
-                  className="bg-linear-to-b to-muted/50 absolute inset-0 z-10 from-transparent from-35%"
+                  className="absolute inset-x-10 top-0 h-16 rounded-full bg-primary/12 blur-3xl"
                 />
-                <div className="inset-shadow-2xs ring-muted/50 dark:inset-shadow-white/20 bg-muted/50 relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-4 shadow-lg shadow-zinc-950/15 ring-1">
+                <div className="relative overflow-hidden rounded-[1.5rem] border border-white/30 bg-muted/40">
                   <Image
-                    className="bg-muted/50 relative hidden rounded-2xl dark:block"
+                    className="hidden w-full rounded-[1.5rem] object-cover dark:block"
                     src={heroDashboardImage}
-                    alt="Arch AI Dashboard"
+                    alt="Arch AI Dashboard preview"
                     priority
                     placeholder="blur"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1152px"
+                    sizes="(max-width: 1024px) 100vw, 52vw"
                   />
                   <Image
-                    className="z-2 border-border/25 relative rounded-2xl border dark:hidden"
+                    className="w-full rounded-[1.5rem] border border-border/30 object-cover dark:hidden"
                     src={heroDashboardImage}
-                    alt="Arch AI Dashboard"
+                    alt="Arch AI Dashboard preview"
                     priority
                     placeholder="blur"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1152px"
+                    sizes="(max-width: 1024px) 100vw, 52vw"
                   />
                 </div>
               </div>
             </AnimatedGroup>
           </div>
-        </section>
-      </main>
-    </>
+        </div>
+      </section>
+    </main>
   );
 }

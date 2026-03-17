@@ -4,9 +4,11 @@ import type { ReactNode } from 'react';
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="relative flex min-h-screen flex-col">
       <Navbar scroll={true} />
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="relative z-10 flex-1">
+        {children}
+      </main>
       <Footer />
     </div>
   );

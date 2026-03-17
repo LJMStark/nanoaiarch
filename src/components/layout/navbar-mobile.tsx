@@ -85,7 +85,9 @@ export function NavbarMobile({
         {/* navbar left shows logo */}
         <LocaleLink href={Routes.Root} className="flex items-center gap-2">
           <Logo />
-          <span className="text-xl font-semibold">{t('Metadata.name')}</span>
+          <span className="font-bricolage-grotesque text-xl font-semibold tracking-[-0.04em]">
+            {t('Metadata.name')}
+          </span>
         </LocaleLink>
 
         {/* navbar right shows menu icon and user button */}
@@ -106,8 +108,7 @@ export function NavbarMobile({
             aria-expanded={open}
             aria-label="Toggle Mobile Menu"
             onClick={handleToggleMobileMenu}
-            className="size-8 flex aspect-square h-fit select-none items-center
-              justify-center rounded-md border cursor-pointer"
+            className="size-10 cursor-pointer border border-border/70 bg-background/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] backdrop-blur-sm"
           >
             {open ? (
               <XIcon className="size-4" />
@@ -150,11 +151,8 @@ function MainMobileMenu({ userLoggedIn, onLinkClicked }: MainMobileMenuProps) {
   const localePathname = useLocalePathname();
 
   return (
-    <div
-      className="fixed w-full inset-0 z-50 mt-[64px] overflow-y-auto
-      bg-background backdrop-blur-md animate-in fade-in-0"
-    >
-      <div className="size-full flex flex-col items-start space-y-4">
+    <div className="fixed inset-0 z-50 mt-[76px] w-full overflow-y-auto bg-background/94 px-4 pb-8 backdrop-blur-xl animate-in fade-in-0">
+      <div className="surface-panel mx-auto flex size-full max-w-xl flex-col items-start space-y-4 rounded-[2rem] p-4">
         {/* action buttons */}
         {userLoggedIn ? null : (
           <div className="w-full flex flex-col gap-4 px-4">
@@ -188,7 +186,7 @@ function MainMobileMenu({ userLoggedIn, onLinkClicked }: MainMobileMenuProps) {
         )}
 
         {/* main menu */}
-        <ul className="w-full px-4">
+        <ul className="w-full px-4 pb-4">
           {menuLinks?.map((item) => {
             const isActive = item.href
               ? item.href === '/'
@@ -219,12 +217,12 @@ function MainMobileMenu({ userLoggedIn, onLinkClicked }: MainMobileMenuProps) {
                         type="button"
                         variant="ghost"
                         className={cn(
-                          'flex w-full !pl-2 items-center justify-between text-left',
+                          'flex w-full items-center justify-between rounded-[1rem] px-3 py-3 text-left',
                           'bg-transparent text-muted-foreground cursor-pointer',
-                          'hover:bg-transparent hover:text-foreground',
-                          'focus:bg-transparent focus:text-foreground',
+                          'hover:bg-accent/65 hover:text-foreground',
+                          'focus:bg-accent/65 focus:text-foreground',
                           isActive &&
-                            'font-semibold bg-transparent text-foreground'
+                            'font-semibold bg-secondary/80 text-foreground'
                         )}
                       >
                         <span className="text-base">{item.title}</span>
@@ -254,12 +252,12 @@ function MainMobileMenu({ userLoggedIn, onLinkClicked }: MainMobileMenuProps) {
                                 }
                                 className={cn(
                                   buttonVariants({ variant: 'ghost' }),
-                                  'group h-auto w-full justify-start gap-4 p-1 !pl-0 !pr-3',
+                                  'group h-auto w-full justify-start gap-4 rounded-[1rem] p-3',
                                   'bg-transparent text-muted-foreground cursor-pointer',
-                                  'hover:bg-transparent hover:text-foreground',
-                                  'focus:bg-transparent focus:text-foreground',
+                                  'hover:bg-accent/65 hover:text-foreground',
+                                  'focus:bg-accent/65 focus:text-foreground',
                                   isSubItemActive &&
-                                    'font-semibold bg-transparent text-foreground'
+                                    'font-semibold bg-secondary/80 text-foreground'
                                 )}
                                 onClick={onLinkClicked}
                               >

@@ -56,31 +56,28 @@ export default function FaqSection() {
 
   return (
     <section id="faqs" className="px-4 py-16">
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
         <HeaderSection
+          className="max-w-xl"
           title={t('title')}
           titleAs="h2"
           subtitle={t('subtitle')}
           subtitleAs="p"
         />
 
-        <div className="mx-auto max-w-4xl mt-12">
-          <Accordion
-            type="single"
-            collapsible
-            className="ring-muted w-full rounded-2xl border px-8 py-3 shadow-sm ring-4 dark:ring-0"
-          >
+        <div className="surface-panel mx-auto w-full rounded-[2rem] p-4 sm:p-6">
+          <Accordion type="single" collapsible className="w-full">
             {faqItems.map((item) => (
               <AccordionItem
                 key={item.id}
                 value={item.id}
-                className="border-dashed"
+                className="rounded-[1.25rem] border-b border-dashed border-border/70 px-3 last:border-b-0"
               >
-                <AccordionTrigger className="cursor-pointer text-base hover:no-underline">
+                <AccordionTrigger className="cursor-pointer rounded-[1.1rem] py-5 text-base hover:text-foreground hover:no-underline">
                   {item.question}
                 </AccordionTrigger>
                 <AccordionContent>
-                  <p className="text-base text-muted-foreground">
+                  <p className="pb-5 text-base leading-7 text-muted-foreground">
                     {item.answer}
                   </p>
                 </AccordionContent>

@@ -46,7 +46,7 @@ export function UpgradeCard() {
   }
 
   return (
-    <Card className="shadow-none">
+    <Card className="border-white/30 bg-background/45 shadow-none">
       <CardHeader className="gap-2">
         <CardTitle className="flex items-center gap-2">
           <SparklesIcon className="size-4" />

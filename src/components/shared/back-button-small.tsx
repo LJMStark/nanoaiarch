@@ -23,8 +23,11 @@ export default function BackButtonSmall({
   return (
     <Button
       size="sm"
-      variant="outline"
-      className={cn('size-8 px-0', className)}
+      variant="ghost"
+      className={cn(
+        'surface-panel size-10 rounded-full px-0 text-foreground hover:bg-accent/65',
+        className
+      )}
       asChild
     >
       {/* if href is provided, use it, otherwise use the router.back() */}

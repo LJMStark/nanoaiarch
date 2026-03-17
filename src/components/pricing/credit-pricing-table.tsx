@@ -52,13 +52,13 @@ export function CreditPricingTable({
             onValueChange={(value) =>
               value && setInterval(value as CreditPackageInterval)
             }
-            className="border rounded-lg p-1 bg-muted/30"
+            className="rounded-full border border-border/70 bg-background/55 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]"
           >
             {hasYearly && (
               <ToggleGroupItem
                 value="year"
                 className={cn(
-                  'px-6 py-2 cursor-pointer text-sm font-medium rounded-md relative',
+                  'relative rounded-full px-6 py-2 text-sm font-medium cursor-pointer',
                   'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground',
                   'data-[state=off]:hover:bg-muted'
                 )}
@@ -75,7 +75,7 @@ export function CreditPricingTable({
               <ToggleGroupItem
                 value="quarter"
                 className={cn(
-                  'px-6 py-2 cursor-pointer text-sm font-medium rounded-md',
+                  'rounded-full px-6 py-2 text-sm font-medium cursor-pointer',
                   'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground',
                   'data-[state=off]:hover:bg-muted'
                 )}
@@ -87,7 +87,7 @@ export function CreditPricingTable({
               <ToggleGroupItem
                 value="month"
                 className={cn(
-                  'px-6 py-2 cursor-pointer text-sm font-medium rounded-md',
+                  'rounded-full px-6 py-2 text-sm font-medium cursor-pointer',
                   'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground',
                   'data-[state=off]:hover:bg-muted'
                 )}
@@ -100,7 +100,7 @@ export function CreditPricingTable({
       )}
 
       {/* Pricing Cards Grid - 3 columns for tiers */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto w-full">
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
         {tiers.map((tier) => {
           // Find package for this tier and interval
           const pkg = Object.values(packages).find(
@@ -121,7 +121,7 @@ export function CreditPricingTable({
       </div>
 
       {/* Free Plan Info */}
-      <div className="text-center text-sm text-muted-foreground max-w-2xl mx-auto">
+      <div className="mx-auto max-w-2xl text-center text-sm leading-7 text-muted-foreground">
         <p>
           {t('freeInfo', {
             credits: websiteConfig.credits.registerGiftCredits.amount,

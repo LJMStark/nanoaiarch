@@ -34,7 +34,7 @@ export function DashboardHeader({
   const isDemo = isDemoWebsite();
 
   return (
-    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
+    <header className="surface-subtle sticky top-4 z-20 mx-4 flex h-(--header-height) shrink-0 items-center gap-2 rounded-[1.4rem] border border-border/60 transition-[width,height] ease-linear lg:mx-6 group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
         <SidebarTrigger className="-ml-1 cursor-pointer" />
         <Separator
@@ -43,7 +43,7 @@ export function DashboardHeader({
         />
 
         <Breadcrumb>
-          <BreadcrumbList className="text-base font-medium">
+          <BreadcrumbList className="text-base font-medium tracking-[-0.02em]">
             {breadcrumbs.map((item, index) => (
               <React.Fragment key={`breadcrumb-${index}`}>
                 {index > 0 && (
@@ -70,7 +70,7 @@ export function DashboardHeader({
         </Breadcrumb>
 
         {/* dashboard header actions on the right side */}
-        <div className="ml-auto flex items-center gap-3 pl-4">
+        <div className="ml-auto flex items-center gap-2 pl-4">
           {actions}
 
           <CreditsBalanceButton />

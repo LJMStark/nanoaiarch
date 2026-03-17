@@ -43,7 +43,7 @@ export default async function DashboardLayout({
     >
       <DashboardSidebar variant="inset" />
 
-      <SidebarInset>
+      <SidebarInset id="main-content" className="overflow-hidden">
         <PendingReferralRecovery />
         {children}
       </SidebarInset>

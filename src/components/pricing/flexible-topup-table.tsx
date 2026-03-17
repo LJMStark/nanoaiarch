@@ -64,7 +64,7 @@ export function FlexibleTopupTable({
         </div>
       ) : (
         /* Packages Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto w-full">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {displayPackages.map((pkg) => {
             const formattedPrice = formatPrice(
               pkg.price.amount,
@@ -76,14 +76,14 @@ export function FlexibleTopupTable({
               <Card
                 key={pkg.id}
                 className={cn(
-                  'flex flex-col relative',
-                  pkg.popular && 'border-primary border-2'
+                  'relative flex flex-col overflow-hidden',
+                  pkg.popular && 'border-primary/30 bg-primary/6'
                 )}
               >
                 {/* New User badge */}
                 {isNewUser && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-orange-500 text-white">
+                    <Badge className="border-primary/20 bg-primary text-primary-foreground">
                       {t('newUser')}
                     </Badge>
                   </div>
@@ -95,7 +95,9 @@ export function FlexibleTopupTable({
                   </div>
 
                   {/* Price */}
-                  <div className="text-4xl font-bold">{formattedPrice}</div>
+                  <div className="font-mono text-4xl font-semibold tracking-[-0.04em]">
+                    {formattedPrice}
+                  </div>
 
                   {/* Original price with strikethrough if newUser */}
                   {isNewUser && (
@@ -103,7 +105,7 @@ export function FlexibleTopupTable({
                       <span className="line-through">
                         {formatPrice(pkg.price.amount * 5, pkg.price.currency)}
                       </span>
-                      <span className="ml-2 text-orange-500">
+                      <span className="ml-2 text-primary">
                         {t('limitedOffer')}
                       </span>
                     </div>
@@ -112,7 +114,7 @@ export function FlexibleTopupTable({
 
                 <CardContent className="flex flex-col gap-4 flex-1">
                   {/* Credits info */}
-                  <div className="bg-primary/5 dark:bg-primary/10 rounded-lg p-4 text-center">
+                  <div className="rounded-[1.25rem] border border-border/60 bg-background/45 p-4 text-center">
                     <div className="text-2xl font-semibold text-primary">
                       {pkg.amount}
                     </div>
@@ -123,7 +125,7 @@ export function FlexibleTopupTable({
 
                   {/* Bonus info */}
                   {pkg.bonus && (
-                    <div className="text-sm text-green-600 dark:text-green-400 text-center">
+                    <div className="text-center text-sm text-primary">
                       + {pkg.bonus} {t('bonusCredits')}
                     </div>
                   )}

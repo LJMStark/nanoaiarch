@@ -59,9 +59,10 @@ export default function ShowcaseSection() {
   const t = useTranslations('HomePage.showcase');
 
   return (
-    <section id="showcase" className="px-4 py-16 bg-muted/30">
+    <section id="showcase" className="px-4 py-16">
       <div className="mx-auto max-w-6xl space-y-12">
         <HeaderSection
+          className="mx-auto items-center text-center"
           title={t('title')}
           subtitle={t('subtitle')}
           subtitleAs="h2"
@@ -70,7 +71,7 @@ export default function ShowcaseSection() {
         />
 
         {/* Template grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 xl:grid-cols-12">
           {SHOWCASE_ITEMS.map((item) => {
             const Icon = item.icon;
             // Use generated image if available, otherwise fall back to original path or logic
@@ -82,15 +83,23 @@ export default function ShowcaseSection() {
               <div
                 key={item.id}
                 className={cn(
-                  'group relative overflow-hidden rounded-2xl',
-                  'bg-card border border-border/50',
-                  'transition-all duration-300',
-                  'hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5',
-                  'hover:-translate-y-1'
+                  'surface-panel group relative overflow-hidden rounded-[1.75rem] p-2 transition-all duration-300 hover:-translate-y-1',
+                  item.id === 'style-transfer'
+                    ? 'xl:col-span-7'
+                    : item.id === 'model-render'
+                      ? 'xl:col-span-5'
+                      : 'xl:col-span-3'
                 )}
               >
                 {/* Image Area */}
-                <div className="aspect-[4/3] relative bg-gradient-to-br from-muted to-muted/50 overflow-hidden">
+                <div
+                  className={cn(
+                    'relative overflow-hidden rounded-[1.35rem] bg-gradient-to-br from-muted to-muted/50',
+                    item.id === 'style-transfer' || item.id === 'model-render'
+                      ? 'aspect-[16/11]'
+                      : 'aspect-[4/5]'
+                  )}
+                >
                   {/* Image or Placeholder */}
                   {isGenerated ? (
                     <Image
@@ -114,14 +123,8 @@ export default function ShowcaseSection() {
                   {/* Content overlay */}
                   <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
                     <div className="flex items-center gap-2 mb-2">
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center backdrop-blur-sm"
-                        style={{ backgroundColor: `${item.color}20` }}
-                      >
-                        <Icon
-                          className="h-4 w-4"
-                          style={{ color: isGenerated ? 'white' : item.color }}
-                        />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-black/25 backdrop-blur-sm">
+                        <Icon className="h-4 w-4 text-white" />
                       </div>
                       <h3 className="font-semibold text-white drop-shadow-md">
                         {t(`items.${item.id}.title` as any)}

@@ -26,8 +26,8 @@ import '@/styles/globals.css';
  */
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+    { media: '(prefers-color-scheme: light)', color: '#f6f1e8' },
+    { media: '(prefers-color-scheme: dark)', color: '#1f241f' },
   ],
   width: 'device-width',
   initialScale: 1,
@@ -86,13 +86,16 @@ export default async function LocaleLayout({
       <body
         suppressHydrationWarning
         className={cn(
-          'size-full antialiased',
+          'size-full bg-background text-foreground antialiased',
           fontNotoSans.className,
           fontNotoSerif.variable,
           fontNotoSansMono.variable,
           fontBricolageGrotesque.variable
         )}
       >
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <NuqsAdapter>
           <NextIntlClientProvider>
             <Providers locale={locale}>
