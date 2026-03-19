@@ -2,7 +2,8 @@
   "Metadata": {
     "name": "Arch AI",
     "title": "Arch AI - AI 建筑可视化平台",
-    "description": "将建筑草图、白模和平面图转化为照片级写实可视化效果。基于先进 AI 技术，提供专业风格和模版。"
+    "description": "将建筑草图、白模和平面图转化为照片级写实可视化效果。基于先进 AI 技术，提供专业风格和模版。",
+    "skipToContent": "跳转到正文"
   },
   "Gallery": {
     "title": "我的作品",

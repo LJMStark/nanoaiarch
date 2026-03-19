@@ -12,6 +12,7 @@ import { routing } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 import type { Viewport } from 'next';
 import { type Locale, NextIntlClientProvider, hasLocale } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import type { ReactNode } from 'react';
@@ -59,6 +60,8 @@ export default async function LocaleLayout({
     notFound();
   }
 
+  const t = await getTranslations({ locale, namespace: 'Metadata' });
+
   return (
     <html suppressHydrationWarning lang={locale}>
       <head>
@@ -94,7 +97,7 @@ export default async function LocaleLayout({
         )}
       >
         <a href="#main-content" className="skip-link">
-          Skip to content
+          {t('skipToContent')}
         </a>
         <NuqsAdapter>
           <NextIntlClientProvider>
