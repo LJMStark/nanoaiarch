@@ -13,6 +13,7 @@ import { Loader2Icon } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { isHandledAuthClientError } from './auth-error-messages';
 
 interface SocialLoginButtonProps {
   callbackUrl?: string;
@@ -81,10 +82,24 @@ export const SocialLoginButton = ({
           setIsLoading(null);
         },
         onError: (ctx) => {
-          logger.auth.error('social login error', ctx.error, {
+          const logData = {
             provider,
+            status: ctx.error.status,
+            code: ctx.error.code,
             message: ctx.error.message,
-          });
+          };
+
+          if (
+            isHandledAuthClientError(
+              ctx.error.status,
+              ctx.error.message,
+              ctx.error.code
+            )
+          ) {
+            logger.auth.warn('social login rejected', logData);
+          } else {
+            logger.auth.error('social login error', ctx.error, logData);
+          }
           setIsLoading(null);
         },
       }

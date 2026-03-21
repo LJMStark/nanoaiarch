@@ -28,6 +28,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import * as z from 'zod';
 import { Captcha } from '../shared/captcha';
+import { isHandledAuthClientError } from './auth-error-messages';
 import { persistPendingReferralCode } from './pending-referral-code';
 import { SocialLoginButton } from './social-login-button';
 
@@ -159,7 +160,7 @@ export const RegisterForm = ({
       });
 
       if (!captchaResult?.data?.success || !captchaResult?.data?.valid) {
-        logger.auth.error('register, captcha invalid', undefined, {
+        logger.auth.warn('register, captcha invalid', {
           captchaToken: values.captchaToken,
         });
         const errorMessage =
@@ -215,15 +216,29 @@ export const RegisterForm = ({
         },
         onError: async (ctx) => {
           // sign up fail, display the error message
-          logger.auth.error('register error', ctx.error, {
+          const logData = {
             status: ctx.error.status,
+            code: ctx.error.code,
             message: ctx.error.message,
-          });
+          };
+
+          if (
+            isHandledAuthClientError(
+              ctx.error.status,
+              ctx.error.message,
+              ctx.error.code
+            )
+          ) {
+            logger.auth.warn('register rejected', logData);
+          } else {
+            logger.auth.error('register error', ctx.error, logData);
+          }
 
           // Check if error is "user already exists"
           const isUserExistsError =
             ctx.error.message?.toLowerCase().includes('already exists') ||
             ctx.error.message?.toLowerCase().includes('already registered') ||
+            ctx.error.code?.toLowerCase().includes('user_already_exists') ||
             ctx.error.status === 409;
 
           if (isUserExistsError) {

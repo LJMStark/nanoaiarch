@@ -24,7 +24,10 @@ import { notFound, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { getResetPasswordErrorMessage } from './auth-error-messages';
+import {
+  getResetPasswordErrorMessage,
+  isHandledAuthClientError,
+} from './auth-error-messages';
 
 /**
  * https://www.better-auth.com/docs/authentication/email-password#forget-password
@@ -81,12 +84,30 @@ export const ResetPasswordForm = () => {
           router.push(`${Routes.Login}`);
         },
         onError: (ctx) => {
-          logger.auth.error('resetPassword error', ctx.error, {
+          const logData = {
             status: ctx.error.status,
+            code: ctx.error.code,
             message: ctx.error.message,
-          });
+          };
+
+          if (
+            isHandledAuthClientError(
+              ctx.error.status,
+              ctx.error.message,
+              ctx.error.code
+            )
+          ) {
+            logger.auth.warn('reset password rejected', logData);
+          } else {
+            logger.auth.error('resetPassword error', ctx.error, logData);
+          }
           setError(
-            getResetPasswordErrorMessage(ctx.error.status, ctx.error.message, t)
+            getResetPasswordErrorMessage(
+              ctx.error.status,
+              ctx.error.message,
+              t,
+              ctx.error.code
+            )
           );
         },
       }

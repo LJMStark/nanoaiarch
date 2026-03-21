@@ -25,7 +25,10 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { getForgotPasswordErrorMessage } from './auth-error-messages';
+import {
+  getForgotPasswordErrorMessage,
+  isHandledAuthClientError,
+} from './auth-error-messages';
 
 export const ForgotPasswordForm = ({ className }: { className?: string }) => {
   const t = useTranslations('AuthPage.forgotPassword');
@@ -87,15 +90,29 @@ export const ForgotPasswordForm = ({ className }: { className?: string }) => {
           setSuccess(t('checkEmail'));
         },
         onError: (ctx) => {
-          logger.auth.error('forgotPassword error', ctx.error, {
+          const logData = {
             status: ctx.error.status,
+            code: ctx.error.code,
             message: ctx.error.message,
-          });
+          };
+
+          if (
+            isHandledAuthClientError(
+              ctx.error.status,
+              ctx.error.message,
+              ctx.error.code
+            )
+          ) {
+            logger.auth.warn('forgot password rejected', logData);
+          } else {
+            logger.auth.error('forgotPassword error', ctx.error, logData);
+          }
           setError(
             getForgotPasswordErrorMessage(
               ctx.error.status,
               ctx.error.message,
-              t
+              t,
+              ctx.error.code
             )
           );
         },

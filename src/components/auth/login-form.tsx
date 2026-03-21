@@ -32,6 +32,7 @@ import { Captcha } from '../shared/captcha';
 import {
   getLoginCallbackErrorMessage,
   getLoginErrorMessage,
+  isHandledAuthClientError,
 } from './auth-error-messages';
 import { SocialLoginButton } from './social-login-button';
 
@@ -128,7 +129,7 @@ export const LoginForm = ({
       });
 
       if (!captchaResult?.data?.success || !captchaResult?.data?.valid) {
-        logger.auth.error('login, captcha invalid', undefined, {
+        logger.auth.warn('login, captcha invalid', {
           captchaToken: values.captchaToken,
         });
         const errorMessage =
@@ -164,12 +165,30 @@ export const LoginForm = ({
           // Login successful, user will be redirected
         },
         onError: (ctx) => {
-          logger.auth.error('login error', ctx.error, {
+          const logData = {
             status: ctx.error.status,
+            code: ctx.error.code,
             message: ctx.error.message,
-          });
+          };
+
+          if (
+            isHandledAuthClientError(
+              ctx.error.status,
+              ctx.error.message,
+              ctx.error.code
+            )
+          ) {
+            logger.auth.warn('login rejected', logData);
+          } else {
+            logger.auth.error('login error', ctx.error, logData);
+          }
           setError(
-            getLoginErrorMessage(ctx.error.status, ctx.error.message, t)
+            getLoginErrorMessage(
+              ctx.error.status,
+              ctx.error.message,
+              t,
+              ctx.error.code
+            )
           );
           // Reset captcha on login error
           if (captchaConfigured) {
