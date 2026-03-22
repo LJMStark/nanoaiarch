@@ -123,17 +123,13 @@ function getGeminiApiKey(): string {
 type ImageConfig = {
   aspectRatio?: string;
   imageSize?: string;
-  personGeneration?: string;
 };
 
 function buildImageConfig(
   aspectRatio?: GeminiAspectRatio,
   imageSize?: GeminiImageSize
 ): ImageConfig {
-  const config: ImageConfig = {
-    // Explicitly set person generation policy (official default: allow_adult)
-    personGeneration: 'allow_adult',
-  };
+  const config: ImageConfig = {};
   if (aspectRatio && aspectRatio !== 'auto') {
     config.aspectRatio = aspectRatio;
   }
