@@ -54,6 +54,8 @@ export enum Routes {
   Help = '/help',
 }
 
+export const AI_IMAGE_NEW_PROJECT_ROUTE = `${Routes.AIImage}?new=1`;
+
 /**
  * The routes that can not be accessed by logged in users
  */

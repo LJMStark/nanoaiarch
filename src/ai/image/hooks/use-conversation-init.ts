@@ -1,4 +1,7 @@
-import { getConversationInitData } from '@/actions/conversation-data';
+import {
+  type ConversationInitMode,
+  getConversationInitData,
+} from '@/actions/conversation-data';
 import { getProjectMessages } from '@/actions/project-message';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
@@ -8,11 +11,11 @@ import { useCallback, useEffect, useRef } from 'react';
  * Hook to handle conversation data initialization
  * Optimizes initial load by fetching projects and messages in a single request
  */
-export function useConversationInit() {
+export function useConversationInit(options?: { mode?: ConversationInitMode }) {
   const initRef = useRef(false);
+  const mode = options?.mode ?? 'resume';
 
-  const { currentProjectId, setProjects, setLoadingProjects, selectProject } =
-    useProjectStore();
+  const { setProjects, setLoadingProjects, selectProject } = useProjectStore();
 
   const { setMessages, setLoadingMessages, setCurrentProject, setGenerating } =
     useConversationStore();
@@ -27,9 +30,12 @@ export function useConversationInit() {
       setLoadingMessages(true);
 
       // Get persisted project ID from store
-      const persistedProjectId = useProjectStore.getState().currentProjectId;
+      const persistedProjectId =
+        mode === 'resume' ? useProjectStore.getState().currentProjectId : null;
 
-      const result = await getConversationInitData(persistedProjectId);
+      const result = await getConversationInitData(persistedProjectId, {
+        mode,
+      });
 
       if (result.success) {
         const {
@@ -40,6 +46,16 @@ export function useConversationInit() {
 
         // Update projects
         setProjects(projects);
+
+        if (!resolvedProjectId) {
+          selectProject(null);
+          setCurrentProject(null);
+          setMessages([]);
+          setGenerating(false);
+          setLoadingProjects(false);
+          setLoadingMessages(false);
+          return;
+        }
 
         // Update current project if different
         if (resolvedProjectId && resolvedProjectId !== persistedProjectId) {
@@ -74,6 +90,7 @@ export function useConversationInit() {
     setCurrentProject,
     setGenerating,
     selectProject,
+    mode,
   ]);
 
   // Load messages when project changes (after initial load)

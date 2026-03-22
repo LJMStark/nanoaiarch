@@ -58,17 +58,44 @@ function getLocaleHref(locale: Locale, route: string): string {
   return locale === routing.defaultLocale ? route : `/${locale}${route}`;
 }
 
+function getCallbackUrl(
+  locale: Locale,
+  searchParams: Record<string, string | string[] | undefined>
+): string {
+  const pathname = getLocaleHref(locale, Routes.AIImage);
+  const callbackSearchParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        callbackSearchParams.append(key, item);
+      }
+      continue;
+    }
+
+    if (typeof value === 'string') {
+      callbackSearchParams.set(key, value);
+    }
+  }
+
+  const query = callbackSearchParams.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
 export default async function AIImagePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: Locale }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale } = await params;
+  const resolvedSearchParams = await searchParams;
   const session = await getSession();
 
   if (!session?.user) {
     const loginSearchParams = new URLSearchParams({
-      callbackUrl: getLocaleHref(locale, Routes.AIImage),
+      callbackUrl: getCallbackUrl(locale, resolvedSearchParams),
     });
     redirect(
       `${getLocaleHref(locale, Routes.Login)}?${loginSearchParams.toString()}`

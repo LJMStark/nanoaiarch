@@ -33,6 +33,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { AI_IMAGE_NEW_PROJECT_ROUTE } from '@/routes';
 import { format, formatDistanceToNow } from 'date-fns';
 import { enUS, zhCN } from 'date-fns/locale';
 import {
@@ -275,7 +276,7 @@ export default function GalleryPage() {
             </p>
             {!searchQuery && activeTab !== 'favorites' && (
               <Button className="mt-6" asChild>
-                <a href="/ai/image">{t('empty.cta')}</a>
+                <a href={AI_IMAGE_NEW_PROJECT_ROUTE}>{t('empty.cta')}</a>
               </Button>
             )}
           </div>

@@ -3,6 +3,7 @@ import { AnimatedGroup } from '@/components/tailark/motion/animated-group';
 import { TextEffect } from '@/components/tailark/motion/text-effect';
 import { Button } from '@/components/ui/button';
 import { LocaleLink } from '@/i18n/navigation';
+import { AI_IMAGE_NEW_PROJECT_ROUTE } from '@/routes';
 import { ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
@@ -31,7 +32,7 @@ const transitionVariants = {
 export default function HeroSection() {
   const t = useTranslations('HomePage.hero');
   const linkIntroduction = '/ai/image';
-  const linkPrimary = '/ai/image';
+  const linkPrimary = AI_IMAGE_NEW_PROJECT_ROUTE;
   const linkSecondary = '/#pricing';
 
   return (

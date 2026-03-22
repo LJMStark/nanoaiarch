@@ -2,7 +2,7 @@
 
 import { completeOnboarding } from '@/actions/onboarding';
 import { Button } from '@/components/ui/button';
-import { Routes } from '@/routes';
+import { AI_IMAGE_NEW_PROJECT_ROUTE, Routes } from '@/routes';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import {
   Check,
@@ -33,7 +33,7 @@ export function CompleteStep() {
 
     // Navigate to destination
     if (destination === 'create') {
-      router.push(Routes.AIImage);
+      router.push(AI_IMAGE_NEW_PROJECT_ROUTE);
     } else {
       router.push(Routes.Dashboard);
     }

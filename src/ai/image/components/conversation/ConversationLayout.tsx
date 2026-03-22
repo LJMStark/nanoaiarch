@@ -8,6 +8,7 @@ import { useTemplateApply } from '@/ai/image/hooks/use-template-apply';
 import type { ArchTemplate, AspectRatioId } from '@/ai/image/lib/arch-types';
 import { ARCH_TEMPLATES } from '@/ai/image/lib/templates';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { Routes } from '@/routes';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
 import { useTranslations } from 'next-intl';
@@ -23,6 +24,7 @@ export function ConversationLayout() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const templateId = searchParams.get('template');
+  const startNewProject = searchParams.get('new') === '1';
 
   // Modal state for template from URL
   const [urlTemplate, setUrlTemplate] = useState<ArchTemplate | null>(null);
@@ -32,7 +34,9 @@ export function ConversationLayout() {
   const { applyTemplateWithProject } = useTemplateApply();
 
   // Use optimized conversation init hook (single request for projects + messages)
-  useConversationInit();
+  useConversationInit({
+    mode: startNewProject ? 'new-project' : templateId ? 'blank' : 'resume',
+  });
 
   const { currentProjectId } = useProjectStore();
   const prevProjectIdRef = useRef<string | null>(null);
@@ -56,7 +60,7 @@ export function ConversationLayout() {
     setIsTemplateModalOpen(true);
 
     // Clear the URL parameter to prevent re-triggering
-    router.replace('/ai/image', { scroll: false });
+    router.replace(Routes.AIImage, { scroll: false });
   }, [templateId, router]);
 
   // Handle applying template from modal

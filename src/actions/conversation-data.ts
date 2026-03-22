@@ -6,7 +6,10 @@ import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
-import type { ImageProjectItem } from './image-project';
+import {
+  type ImageProjectItem,
+  createImageProjectRecord,
+} from './image-project';
 import type { ProjectMessageItem } from './project-message';
 
 export interface ConversationInitData {
@@ -15,12 +18,17 @@ export interface ConversationInitData {
   currentProjectId: string | null;
 }
 
+export type ConversationInitMode = 'resume' | 'blank' | 'new-project';
+
 /**
  * Load initial conversation data in a single request
  * Combines projects and messages loading to avoid waterfall requests
  */
 export async function getConversationInitData(
-  requestedProjectId?: string | null
+  requestedProjectId?: string | null,
+  options?: {
+    mode?: ConversationInitMode;
+  }
 ): Promise<{
   success: boolean;
   data: ConversationInitData;
@@ -38,9 +46,9 @@ export async function getConversationInitData(
   try {
     const db = await getDb();
     const userId = session.user.id;
+    const mode = options?.mode ?? 'resume';
 
-    // Fetch projects and determine current project in parallel
-    const projectsPromise = db
+    const existingProjects = (await db
       .select()
       .from(imageProject)
       .where(
@@ -51,24 +59,51 @@ export async function getConversationInitData(
         )
       )
       .orderBy(desc(imageProject.isPinned), desc(imageProject.lastActiveAt))
-      .limit(50);
+      .limit(50)) as ImageProjectItem[];
 
-    const projects = await projectsPromise;
+    if (mode === 'blank') {
+      return {
+        success: true,
+        data: {
+          projects: existingProjects,
+          messages: [],
+          currentProjectId: null,
+        },
+      };
+    }
+
+    if (mode === 'new-project') {
+      const newProject = await createImageProjectRecord({
+        db,
+        userId,
+      });
+
+      return {
+        success: true,
+        data: {
+          projects: [newProject, ...existingProjects],
+          messages: [],
+          currentProjectId: newProject.id,
+        },
+      };
+    }
 
     // Determine which project to load messages for
     let currentProjectId: string | null = null;
 
     if (requestedProjectId) {
       // Verify the requested project belongs to the user
-      const validProject = projects.find((p) => p.id === requestedProjectId);
+      const validProject = existingProjects.find(
+        (p) => p.id === requestedProjectId
+      );
       if (validProject) {
         currentProjectId = requestedProjectId;
       }
     }
 
     // If no valid requested project, use the first project
-    if (!currentProjectId && projects.length > 0) {
-      currentProjectId = projects[0].id;
+    if (!currentProjectId && existingProjects.length > 0) {
+      currentProjectId = existingProjects[0].id;
     }
 
     // Fetch messages for the current project
@@ -86,7 +121,7 @@ export async function getConversationInitData(
     return {
       success: true,
       data: {
-        projects: projects as ImageProjectItem[],
+        projects: existingProjects,
         messages,
         currentProjectId,
       },

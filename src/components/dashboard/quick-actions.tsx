@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { AI_IMAGE_NEW_PROJECT_ROUTE } from '@/routes';
 import { Heart, History, Image, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -10,7 +11,7 @@ const actions = [
   {
     titleKey: 'newGeneration',
     descriptionKey: 'newGenerationDesc',
-    href: '/ai/image',
+    href: AI_IMAGE_NEW_PROJECT_ROUTE,
     icon: Sparkles,
   },
   {

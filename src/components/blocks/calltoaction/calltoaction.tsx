@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { LocaleLink } from '@/i18n/navigation';
+import { AI_IMAGE_NEW_PROJECT_ROUTE } from '@/routes';
 import { useTranslations } from 'next-intl';
 
 export default function CallToActionSection() {
@@ -18,7 +19,7 @@ export default function CallToActionSection() {
 
           <div className="mt-12 flex flex-wrap justify-center gap-4">
             <Button asChild size="lg">
-              <LocaleLink href="/ai/image">
+              <LocaleLink href={AI_IMAGE_NEW_PROJECT_ROUTE}>
                 <span>{t('primaryButton')}</span>
               </LocaleLink>
             </Button>

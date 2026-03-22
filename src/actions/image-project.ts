@@ -26,53 +26,67 @@ export type ImageProjectItem = {
   createdAt: Date;
 };
 
-/**
- * Create a new image project
- */
-export async function createImageProject(data?: {
+export type CreateImageProjectInput = {
   title?: string;
   templateId?: string;
   stylePreset?: string;
   aspectRatio?: string;
-}) {
+};
+
+export async function createImageProjectRecord(params: {
+  db: Awaited<ReturnType<typeof getDb>>;
+  userId: string;
+  data?: CreateImageProjectInput;
+}): Promise<ImageProjectItem> {
+  const id = generateId();
+  const now = new Date();
+
+  await params.db.insert(imageProject).values({
+    id,
+    userId: params.userId,
+    title: params.data?.title ?? 'Untitled',
+    templateId: params.data?.templateId ?? null,
+    stylePreset: params.data?.stylePreset ?? null,
+    aspectRatio: params.data?.aspectRatio ?? '1:1',
+    lastActiveAt: now,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return {
+    id,
+    title: params.data?.title ?? 'Untitled',
+    coverImage: null,
+    templateId: params.data?.templateId ?? null,
+    stylePreset: params.data?.stylePreset ?? null,
+    aspectRatio: params.data?.aspectRatio ?? '1:1',
+    model: 'gemini-2.0-flash-exp',
+    messageCount: 0,
+    generationCount: 0,
+    totalCreditsUsed: 0,
+    status: 'active',
+    isPinned: false,
+    lastActiveAt: now,
+    createdAt: now,
+  };
+}
+
+/**
+ * Create a new image project
+ */
+export async function createImageProject(data?: CreateImageProjectInput) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
     return { success: false, error: 'Unauthorized' };
   }
 
   try {
-    const id = generateId();
     const db = await getDb();
-
-    const now = new Date();
-    await db.insert(imageProject).values({
-      id,
+    const project = await createImageProjectRecord({
+      db,
       userId: session.user.id,
-      title: data?.title ?? 'Untitled',
-      templateId: data?.templateId ?? null,
-      stylePreset: data?.stylePreset ?? null,
-      aspectRatio: data?.aspectRatio ?? '1:1',
-      lastActiveAt: now,
-      createdAt: now,
-      updatedAt: now,
+      data,
     });
-
-    const project: ImageProjectItem = {
-      id,
-      title: data?.title ?? 'Untitled',
-      coverImage: null,
-      templateId: data?.templateId ?? null,
-      stylePreset: data?.stylePreset ?? null,
-      aspectRatio: data?.aspectRatio ?? '1:1',
-      model: 'gemini-2.0-flash-exp',
-      messageCount: 0,
-      generationCount: 0,
-      totalCreditsUsed: 0,
-      status: 'active',
-      isPinned: false,
-      lastActiveAt: now,
-      createdAt: now,
-    };
 
     return { success: true, data: project };
   } catch (error) {

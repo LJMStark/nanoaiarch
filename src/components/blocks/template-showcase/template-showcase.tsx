@@ -7,6 +7,7 @@ import Container from '@/components/layout/container';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { AI_IMAGE_NEW_PROJECT_ROUTE } from '@/routes';
 import { ArrowRight, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { motion, useInView } from 'motion/react';
 import { useTranslations } from 'next-intl';
@@ -131,7 +132,7 @@ export default function TemplateShowcaseSection() {
         >
           <Button
             size="lg"
-            onClick={() => router.push('/ai/image')}
+            onClick={() => router.push(AI_IMAGE_NEW_PROJECT_ROUTE)}
             className="gap-2"
           >
             Try It Free

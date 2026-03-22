@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { AI_IMAGE_NEW_PROJECT_ROUTE } from '@/routes';
 import { formatDistanceToNow } from 'date-fns';
 import { enUS, zhCN } from 'date-fns/locale';
 import { Download, Heart, Sparkles, Trash2 } from 'lucide-react';
@@ -130,7 +131,7 @@ export function RecentGenerations() {
               {t('empty.description')}
             </p>
             <Button className="mt-5" asChild>
-              <a href="/ai/image">{t('empty.cta')}</a>
+              <a href={AI_IMAGE_NEW_PROJECT_ROUTE}>{t('empty.cta')}</a>
             </Button>
           </div>
         </CardContent>
