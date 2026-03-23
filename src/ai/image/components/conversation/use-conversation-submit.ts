@@ -60,6 +60,7 @@ interface UseConversationSubmitParams {
   setGenerationStage: (
     stage: 'submitting' | 'queued' | 'generating' | 'finishing' | null
   ) => void;
+  onError?: (error: { title: string; description: string }) => void;
 }
 
 function getInputImages(
@@ -126,6 +127,10 @@ function getFailureState(
   };
 }
 
+function isGenerationCancelled(error?: string): boolean {
+  return error === 'Generation cancelled' || error === '生成已取消';
+}
+
 export function useConversationSubmit({
   t,
   currentProjectId,
@@ -145,15 +150,34 @@ export function useConversationSubmit({
   getConversationHistory,
   setAbortController,
   setGenerationStage,
+  onError,
 }: UseConversationSubmitParams): () => Promise<void> {
   const updateMessageState = useCallback(
     async (messageId: string, data: MessageUpdateData): Promise<void> => {
       const updateResult = await updateAssistantMessage(messageId, data);
-      if (updateResult.success) {
-        updateMessage(messageId, data);
+
+      // Keep the UI responsive even if persisting the final state fails.
+      updateMessage(messageId, data);
+
+      if (!updateResult.success) {
+        logger.ai.error('Failed to persist assistant message update', {
+          messageId,
+          error: updateResult.error,
+          status: data.status,
+        });
+
+        onError?.({
+          title:
+            data.status === 'completed' ? '保存结果失败' : '更新生成状态失败',
+          description:
+            updateResult.error ||
+            (data.status === 'completed'
+              ? '图片已生成，但保存失败，请重试'
+              : '生成状态更新失败，请重试'),
+        });
       }
     },
-    [updateMessage]
+    [onError, updateMessage]
   );
 
   return useCallback(async () => {
@@ -179,7 +203,14 @@ export function useConversationSubmit({
     });
 
     if (!userResult.success || !userResult.data) {
-      logger.ai.error('Failed to add user message');
+      logger.ai.error('Failed to add user message', {
+        projectId: currentProjectId,
+        error: userResult.error,
+      });
+      onError?.({
+        title: '发送失败',
+        description: userResult.error || '添加用户消息失败，请重试',
+      });
       resetPendingGeneration(controller, {
         setAbortController,
         setGenerationStage,
@@ -201,7 +232,14 @@ export function useConversationSubmit({
     });
 
     if (!generatingResult.success || !generatingResult.data) {
-      logger.ai.error('Failed to create generating message');
+      logger.ai.error('Failed to create generating message', {
+        projectId: currentProjectId,
+        error: generatingResult.error,
+      });
+      onError?.({
+        title: '生成失败',
+        description: generatingResult.error || '创建生成任务失败，请重试',
+      });
       resetPendingGeneration(controller, {
         setAbortController,
         setGenerationStage,
@@ -233,7 +271,7 @@ export function useConversationSubmit({
 
       const generationTime = Date.now() - startTime;
 
-      if (result.error === 'Generation cancelled') {
+      if (isGenerationCancelled(result.error)) {
         await updateMessageState(generatingMessage.id, {
           content: t('loading.cancelled'),
           status: 'failed',
@@ -294,6 +332,7 @@ export function useConversationSubmit({
     setReferenceImages,
     setShowImageUpload,
     t,
+    onError,
     updateMessageState,
   ]);
 }

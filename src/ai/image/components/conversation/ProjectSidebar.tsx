@@ -32,6 +32,8 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
@@ -53,6 +55,7 @@ import { ProjectRenameDialog } from './ProjectRenameDialog';
 
 export function ProjectSidebar() {
   const t = useTranslations('ArchPage');
+  const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
   const [renameProject, setRenameProject] = useState<ImageProjectItem | null>(
     null
@@ -90,7 +93,21 @@ export function ProjectSidebar() {
         addProject(result.data);
         selectProject(result.data.id);
         clearMessages();
+        return;
       }
+
+      toast({
+        title: '创建项目失败',
+        description: result.error || '请稍后重试',
+        variant: 'destructive',
+      });
+    } catch (error) {
+      logger.ai.error('Failed to create a new project from sidebar', error);
+      toast({
+        title: '创建项目失败',
+        description: '发生了意外错误，请稍后重试',
+        variant: 'destructive',
+      });
     } finally {
       setIsCreating(false);
     }

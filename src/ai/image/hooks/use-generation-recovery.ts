@@ -1,4 +1,7 @@
-import { getMessageStatus } from '@/actions/project-message';
+import {
+  getMessageStatus,
+  updateAssistantMessage,
+} from '@/actions/project-message';
 import { GENERATION_RECOVERY_CONFIG } from '@/ai/image/config/generation-recovery';
 import { logger } from '@/lib/logger';
 import { useConversationStore } from '@/stores/conversation-store';
@@ -29,6 +32,32 @@ export function useGenerationRecovery(projectId: string | null): void {
     }
   }, []);
 
+  const markGenerationFailed = useCallback(
+    async (messageId: string, errorMessage: string) => {
+      updateMessage(messageId, {
+        status: 'failed',
+        content: errorMessage,
+        errorMessage,
+      });
+      setGenerating(false);
+      stopPolling();
+
+      const result = await updateAssistantMessage(messageId, {
+        status: 'failed',
+        content: errorMessage,
+        errorMessage,
+      });
+
+      if (!result.success) {
+        logger.ai.error(
+          `Failed to persist recovered generation failure [messageId=${messageId}]`,
+          result.error
+        );
+      }
+    },
+    [setGenerating, stopPolling, updateMessage]
+  );
+
   useEffect(() => {
     // Only start polling when there's a generating message
     if (!projectId || !generatingMessageId) {
@@ -56,8 +85,7 @@ export function useGenerationRecovery(projectId: string | null): void {
         logger.ai.warn(
           `Generation polling timeout [retries=${retryCountRef.current}, elapsed=${elapsed}ms]`
         );
-        setGenerating(false);
-        stopPolling();
+        await markGenerationFailed(generatingMessageId, '生成超时，请重试');
         return;
       }
 
@@ -77,8 +105,10 @@ export function useGenerationRecovery(projectId: string | null): void {
           logger.ai.warn(
             `Generating message not found [messageId=${generatingMessageId}]`
           );
-          setGenerating(false);
-          stopPolling();
+          await markGenerationFailed(
+            generatingMessageId,
+            '生成任务状态已丢失，请重试'
+          );
           return;
         }
 
@@ -120,6 +150,7 @@ export function useGenerationRecovery(projectId: string | null): void {
   }, [
     projectId,
     generatingMessageId,
+    markGenerationFailed,
     setGenerating,
     updateMessage,
     stopPolling,

@@ -6,6 +6,7 @@ import { ReferenceImagesPreview } from '@/ai/image/components/conversation/Refer
 import { validateBase64Image } from '@/ai/image/lib/api-utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
@@ -17,6 +18,7 @@ import { useConversationSubmit } from './use-conversation-submit';
 
 export function ConversationInput() {
   const t = useTranslations('ArchPage');
+  const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
@@ -129,6 +131,12 @@ export function ConversationInput() {
     getConversationHistory,
     setAbortController,
     setGenerationStage,
+    onError: ({ title, description }) =>
+      toast({
+        title,
+        description,
+        variant: 'destructive',
+      }),
   });
 
   const handleKeyDown = useCallback(
