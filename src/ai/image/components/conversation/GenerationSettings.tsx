@@ -31,7 +31,12 @@ export function GenerationSettings({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 flex-shrink-0"
+          aria-label={t('sidebar.settings')}
+        >
           <Settings2 className="h-5 w-5" />
         </Button>
       </PopoverTrigger>

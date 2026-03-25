@@ -40,6 +40,59 @@ export type GenerationParams = {
   imageQuality?: string;
 };
 
+type DbClient = Awaited<ReturnType<typeof getDb>>;
+type DbTransaction = Parameters<Parameters<DbClient['transaction']>[0]>[0];
+
+async function getLockedNextOrderIndex(
+  tx: DbTransaction,
+  projectId: string,
+  userId: string
+): Promise<number | null> {
+  const project = await tx
+    .select({ id: imageProject.id })
+    .from(imageProject)
+    .where(and(eq(imageProject.id, projectId), eq(imageProject.userId, userId)))
+    .for('update')
+    .limit(1);
+
+  if (!project.length) {
+    return null;
+  }
+
+  const lastMessage = await tx
+    .select({ orderIndex: projectMessage.orderIndex })
+    .from(projectMessage)
+    .where(eq(projectMessage.projectId, projectId))
+    .orderBy(sql`${projectMessage.orderIndex} DESC`)
+    .limit(1);
+
+  return (lastMessage[0]?.orderIndex ?? -1) + 1;
+}
+
+function scheduleProjectTitleGeneration(
+  projectId: string,
+  prompt: string
+): void {
+  generateProjectTitle(prompt)
+    .then(async (title) => {
+      try {
+        const db = await getDb();
+        await db
+          .update(imageProject)
+          .set({ title, updatedAt: new Date() })
+          .where(eq(imageProject.id, projectId));
+        logger.ai.info(
+          `[Auto Title] Updated project ${projectId} with title: "${title}"`
+        );
+      } catch (error) {
+        logger.ai.error('[Auto Title] Failed to update project title:', error);
+      }
+    })
+    .catch((error) => {
+      logger.ai.error('[Auto Title] Failed to generate title:', error);
+    });
+}
+
 /**
  * Get all messages for a project
  */
@@ -150,38 +203,21 @@ export async function addUserMessage(
 
   try {
     const db = await getDb();
-
-    // Verify project ownership
-    const project = await db
-      .select({ id: imageProject.id })
-      .from(imageProject)
-      .where(
-        and(
-          eq(imageProject.id, projectId),
-          eq(imageProject.userId, session.user.id)
-        )
-      )
-      .limit(1);
-
-    if (!project.length) {
-      return { success: false, error: 'Project not found' };
-    }
-
-    // Get the next order index
-    const lastMessage = await db
-      .select({ orderIndex: projectMessage.orderIndex })
-      .from(projectMessage)
-      .where(eq(projectMessage.projectId, projectId))
-      .orderBy(sql`${projectMessage.orderIndex} DESC`)
-      .limit(1);
-
-    const nextOrderIndex = (lastMessage[0]?.orderIndex ?? -1) + 1;
-
     const id = generateId();
     const now = new Date();
+    let nextOrderIndex: number | null = null;
 
-    // Use transaction to ensure message insert and project update are atomic
     await db.transaction(async (tx) => {
+      nextOrderIndex = await getLockedNextOrderIndex(
+        tx,
+        projectId,
+        session.user.id
+      );
+
+      if (nextOrderIndex === null) {
+        return;
+      }
+
       await tx.insert(projectMessage).values({
         id,
         projectId,
@@ -206,30 +242,12 @@ export async function addUserMessage(
         .where(eq(imageProject.id, projectId));
     });
 
-    // Auto-generate project title if this is the first user message
+    if (nextOrderIndex === null) {
+      return { success: false, error: 'Project not found' };
+    }
+
     if (nextOrderIndex === 0) {
-      // Run async without blocking (fire and forget)
-      generateProjectTitle(data.content)
-        .then(async (title) => {
-          try {
-            const db = await getDb();
-            await db
-              .update(imageProject)
-              .set({ title, updatedAt: new Date() })
-              .where(eq(imageProject.id, projectId));
-            logger.ai.info(
-              `[Auto Title] Updated project ${projectId} with title: "${title}"`
-            );
-          } catch (error) {
-            logger.ai.error(
-              '[Auto Title] Failed to update project title:',
-              error
-            );
-          }
-        })
-        .catch((error) => {
-          logger.ai.error('[Auto Title] Failed to generate title:', error);
-        });
+      scheduleProjectTitleGeneration(projectId, data.content);
     }
 
     const message: ProjectMessageItem = {
@@ -286,36 +304,10 @@ export async function addAssistantMessage(
 
   try {
     const db = await getDb();
-
-    // Verify project ownership
-    const project = await db
-      .select({ id: imageProject.id })
-      .from(imageProject)
-      .where(
-        and(
-          eq(imageProject.id, projectId),
-          eq(imageProject.userId, session.user.id)
-        )
-      )
-      .limit(1);
-
-    if (!project.length) {
-      return { success: false, error: 'Project not found' };
-    }
-
-    // Get the next order index
-    const lastMessage = await db
-      .select({ orderIndex: projectMessage.orderIndex })
-      .from(projectMessage)
-      .where(eq(projectMessage.projectId, projectId))
-      .orderBy(sql`${projectMessage.orderIndex} DESC`)
-      .limit(1);
-
-    const nextOrderIndex = (lastMessage[0]?.orderIndex ?? -1) + 1;
-
     const id = generateId();
     const now = new Date();
     const status = data.status ?? 'completed';
+    let nextOrderIndex: number | null = null;
 
     // Update project stats
     const projectUpdates: Record<string, unknown> = {
@@ -333,8 +325,17 @@ export async function addAssistantMessage(
       projectUpdates.totalCreditsUsed = sql`${imageProject.totalCreditsUsed} + ${data.creditsUsed}`;
     }
 
-    // Use transaction to ensure message insert and project update are atomic
     await db.transaction(async (tx) => {
+      nextOrderIndex = await getLockedNextOrderIndex(
+        tx,
+        projectId,
+        session.user.id
+      );
+
+      if (nextOrderIndex === null) {
+        return;
+      }
+
       await tx.insert(projectMessage).values({
         id,
         projectId,
@@ -359,6 +360,10 @@ export async function addAssistantMessage(
         .set(projectUpdates)
         .where(eq(imageProject.id, projectId));
     });
+
+    if (nextOrderIndex === null) {
+      return { success: false, error: 'Project not found' };
+    }
 
     const message: ProjectMessageItem = {
       id,
@@ -386,6 +391,153 @@ export async function addAssistantMessage(
   }
 }
 
+export async function createPendingGeneration(
+  projectId: string,
+  data: {
+    content: string;
+    inputImage?: string;
+    generationParams: GenerationParams;
+  }
+) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  if (data.inputImage) {
+    const imageValidation = validateBase64Image(data.inputImage);
+    if (!imageValidation.valid) {
+      return { success: false, error: imageValidation.error };
+    }
+  }
+
+  try {
+    const db = await getDb();
+    const now = new Date();
+    const userMessageId = generateId();
+    const assistantMessageId = generateId();
+
+    const result = await db.transaction(async (tx) => {
+      const nextOrderIndex = await getLockedNextOrderIndex(
+        tx,
+        projectId,
+        session.user.id
+      );
+
+      if (nextOrderIndex === null) {
+        return null;
+      }
+
+      const userMessage: ProjectMessageItem = {
+        id: userMessageId,
+        projectId,
+        role: 'user',
+        content: data.content,
+        inputImage: data.inputImage ?? null,
+        outputImage: null,
+        maskImage: null,
+        generationParams: null,
+        creditsUsed: null,
+        generationTime: null,
+        status: 'completed',
+        errorMessage: null,
+        orderIndex: nextOrderIndex,
+        createdAt: now,
+      };
+
+      const assistantMessage: ProjectMessageItem = {
+        id: assistantMessageId,
+        projectId,
+        role: 'assistant',
+        content: '',
+        inputImage: null,
+        outputImage: null,
+        maskImage: null,
+        generationParams: JSON.stringify(data.generationParams),
+        creditsUsed: null,
+        generationTime: null,
+        status: 'generating',
+        errorMessage: null,
+        orderIndex: nextOrderIndex + 1,
+        createdAt: now,
+      };
+
+      await tx.insert(projectMessage).values([
+        {
+          id: userMessage.id,
+          projectId,
+          userId: session.user.id,
+          role: userMessage.role,
+          content: userMessage.content,
+          inputImage: userMessage.inputImage,
+          outputImage: null,
+          maskImage: null,
+          generationParams: null,
+          creditsUsed: 0,
+          generationTime: null,
+          status: userMessage.status,
+          errorMessage: null,
+          orderIndex: userMessage.orderIndex,
+          createdAt: now,
+          updatedAt: now,
+        },
+        {
+          id: assistantMessage.id,
+          projectId,
+          userId: session.user.id,
+          role: assistantMessage.role,
+          content: assistantMessage.content,
+          inputImage: null,
+          outputImage: null,
+          maskImage: null,
+          generationParams: assistantMessage.generationParams,
+          creditsUsed: 0,
+          generationTime: null,
+          status: assistantMessage.status,
+          errorMessage: null,
+          orderIndex: assistantMessage.orderIndex,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ]);
+
+      await tx
+        .update(imageProject)
+        .set({
+          messageCount: sql`${imageProject.messageCount} + 2`,
+          lastActiveAt: now,
+          updatedAt: now,
+        })
+        .where(eq(imageProject.id, projectId));
+
+      return {
+        userMessage,
+        assistantMessage,
+        shouldGenerateTitle: nextOrderIndex === 0,
+      };
+    });
+
+    if (!result) {
+      return { success: false, error: 'Project not found' };
+    }
+
+    if (result.shouldGenerateTitle) {
+      scheduleProjectTitleGeneration(projectId, data.content);
+    }
+
+    return {
+      success: true,
+      data: {
+        userMessage: result.userMessage,
+        assistantMessage: result.assistantMessage,
+      },
+    };
+  } catch (error) {
+    logger.actions.error('Failed to create pending generation', error);
+    return { success: false, error: 'Failed to create pending generation' };
+  }
+}
+
 /**
  * Update an assistant message (e.g., when generation completes)
  */
@@ -393,12 +545,12 @@ export async function updateAssistantMessage(
   messageId: string,
   data: {
     content?: string;
-    outputImage?: string;
+    outputImage?: string | null;
     generationParams?: GenerationParams;
-    creditsUsed?: number;
-    generationTime?: number;
-    status?: 'completed' | 'failed';
-    errorMessage?: string;
+    creditsUsed?: number | null;
+    generationTime?: number | null;
+    status?: 'generating' | 'completed' | 'failed';
+    errorMessage?: string | null;
   }
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -414,6 +566,7 @@ export async function updateAssistantMessage(
       .select({
         id: projectMessage.id,
         projectId: projectMessage.projectId,
+        role: projectMessage.role,
         status: projectMessage.status,
       })
       .from(projectMessage)
@@ -427,6 +580,13 @@ export async function updateAssistantMessage(
 
     if (!message.length) {
       return { success: false, error: 'Message not found' };
+    }
+
+    if (message[0].role !== 'assistant') {
+      return {
+        success: false,
+        error: 'Only assistant messages can be updated',
+      };
     }
 
     if (data.outputImage) {
@@ -454,10 +614,9 @@ export async function updateAssistantMessage(
 
     const isTransitionToCompleted =
       data.status === 'completed' && message[0].status !== 'completed';
+    let updatedMessage: ProjectMessageItem | null = null;
 
     if (isTransitionToCompleted) {
-      // Use transaction with conditional update to prevent race conditions
-      // The WHERE clause ensures only one concurrent request can transition the status
       await db.transaction(async (tx) => {
         const result = await tx
           .update(projectMessage)
@@ -468,10 +627,10 @@ export async function updateAssistantMessage(
               sql`${projectMessage.status} != 'completed'`
             )
           )
-          .returning({ id: projectMessage.id });
+          .returning();
 
-        // Only update project stats if the message was actually transitioned
         if (result.length > 0) {
+          updatedMessage = result[0] as ProjectMessageItem;
           const projectUpdates: Record<string, unknown> = {
             generationCount: sql`${imageProject.generationCount} + 1`,
             lastActiveAt: new Date(),
@@ -490,17 +649,26 @@ export async function updateAssistantMessage(
             .update(imageProject)
             .set(projectUpdates)
             .where(eq(imageProject.id, message[0].projectId));
+        } else {
+          const existingMessage = await tx
+            .select()
+            .from(projectMessage)
+            .where(eq(projectMessage.id, messageId))
+            .limit(1);
+
+          updatedMessage = (existingMessage[0] as ProjectMessageItem) ?? null;
         }
       });
     } else {
-      // Non-completion updates don't need transaction protection
-      await db
+      const result = await db
         .update(projectMessage)
         .set(updates)
-        .where(eq(projectMessage.id, messageId));
+        .where(eq(projectMessage.id, messageId))
+        .returning();
+      updatedMessage = (result[0] as ProjectMessageItem) ?? null;
     }
 
-    return { success: true };
+    return { success: true, data: updatedMessage };
   } catch (error) {
     logger.actions.error('Failed to update message', error);
     return { success: false, error: 'Failed to update message' };

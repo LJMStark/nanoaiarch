@@ -20,6 +20,7 @@ export function ConversationInput() {
   const t = useTranslations('ArchPage');
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isComposingRef = useRef(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -32,6 +33,9 @@ export function ConversationInput() {
       const normalized = error.toLowerCase();
 
       if (normalized.includes('invalid url')) {
+        return t('errors.invalidUrl');
+      }
+      if (normalized.includes('来源未被允许')) {
         return t('errors.invalidUrl');
       }
       if (normalized.includes('invalid image data')) {
@@ -89,6 +93,7 @@ export function ConversationInput() {
     getLastOutputImage,
     getConversationHistory,
     setAbortController,
+    setGenerationRequestToken,
     setGenerationStage,
   } = useConversationStore();
 
@@ -130,6 +135,7 @@ export function ConversationInput() {
     getLastOutputImage,
     getConversationHistory,
     setAbortController,
+    setGenerationRequestToken,
     setGenerationStage,
     onError: ({ title, description }) =>
       toast({
@@ -141,6 +147,10 @@ export function ConversationInput() {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (e.nativeEvent.isComposing || isComposingRef.current) {
+        return;
+      }
+
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         handleSubmit();
@@ -185,53 +195,67 @@ export function ConversationInput() {
         )}
 
         {/* Main input area */}
-        <div className="flex items-end gap-2 bg-muted rounded-xl p-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowImageUpload(!showImageUpload)}
-            className={cn(
-              'h-9 w-9 flex-shrink-0',
-              showImageUpload && 'bg-accent'
-            )}
-          >
-            <ImageIcon className="h-5 w-5" />
-          </Button>
-
+        <div className="rounded-2xl border bg-muted/70 p-3">
           <Textarea
             ref={textareaRef}
             value={draftPrompt}
             onChange={(e) => setDraftPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
+            onCompositionStart={() => {
+              isComposingRef.current = true;
+            }}
+            onCompositionEnd={() => {
+              isComposingRef.current = false;
+            }}
             placeholder={
               currentProjectId
                 ? t('controls.prompt')
                 : t('controls.promptNoProject')
             }
             disabled={!currentProjectId}
-            className="flex-1 resize-none bg-transparent border-0 focus-visible:ring-0 min-h-[36px] max-h-[200px] py-2"
+            className="min-h-[72px] max-h-[200px] resize-none border-0 bg-transparent px-0 py-1 text-sm focus-visible:ring-0"
             rows={1}
           />
 
-          <GenerationSettings
-            imageQuality={imageQuality}
-            aspectRatio={aspectRatio}
-            onImageQualityChange={setImageQuality}
-            onAspectRatioChange={setAspectRatio}
-          />
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/60 pt-3 sm:mt-2">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowImageUpload(!showImageUpload)}
+                className={cn(
+                  'h-9 w-9 flex-shrink-0',
+                  showImageUpload && 'bg-accent'
+                )}
+                aria-label={t('upload.uploadToEdit')}
+              >
+                <ImageIcon className="h-5 w-5" />
+              </Button>
 
-          <Button
-            onClick={handleSubmit}
-            disabled={isDisabled}
-            size="icon"
-            className="rounded-full h-9 w-9 flex-shrink-0"
-          >
-            {isGenerating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ArrowUp className="h-4 w-4" />
-            )}
-          </Button>
+              <GenerationSettings
+                imageQuality={imageQuality}
+                aspectRatio={aspectRatio}
+                onImageQualityChange={setImageQuality}
+                onAspectRatioChange={setAspectRatio}
+              />
+            </div>
+
+            <Button
+              onClick={handleSubmit}
+              disabled={isDisabled}
+              size="icon"
+              className="h-10 w-10 flex-shrink-0 rounded-full"
+              aria-label={
+                isGenerating ? t('controls.generating') : t('controls.generate')
+              }
+            >
+              {isGenerating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowUp className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Quick settings chips */}

@@ -2,11 +2,10 @@
 
 import { useConversationStore } from '@/stores/conversation-store';
 import { AnimatePresence, motion } from 'motion/react';
-import { LoadingMessage } from './LoadingMessage';
 import { MessageItem } from './MessageItem';
 
 export function MessageList() {
-  const { messages, isGenerating } = useConversationStore();
+  const { messages } = useConversationStore();
 
   return (
     <div className="space-y-6">
@@ -26,15 +25,6 @@ export function MessageList() {
           </motion.div>
         ))}
       </AnimatePresence>
-
-      {isGenerating && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <LoadingMessage />
-        </motion.div>
-      )}
     </div>
   );
 }

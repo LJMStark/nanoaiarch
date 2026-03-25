@@ -1,0 +1,1 @@
+ALTER TABLE "project_message" ADD CONSTRAINT "project_message_project_order_unique" UNIQUE("project_id","order_index");

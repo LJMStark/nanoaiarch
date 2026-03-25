@@ -1,3 +1,4 @@
+import { updateAssistantMessage } from '@/actions/project-message';
 import type { GenerateImageRequest } from '@/ai/image/lib/api-types';
 import {
   generateRequestId,
@@ -23,11 +24,7 @@ import {
   validateReferenceImages,
 } from '@/ai/image/lib/request-validation';
 import { logger } from '@/lib/logger';
-import {
-  applyRateLimit,
-  getRateLimitHeaders,
-  getRateLimitIdentifier,
-} from '@/lib/rate-limit';
+import { applyRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { type NextRequest, NextResponse } from 'next/server';
 
 // Set maximum execution time for image generation (150 seconds)
@@ -35,15 +32,8 @@ export const maxDuration = 150;
 
 export async function POST(req: NextRequest) {
   const requestId = generateRequestId();
-  const {
-    prompt,
-    modelId,
-    referenceImage,
-    referenceImages,
-    aspectRatio,
-    imageSize,
-    conversationHistory,
-  } = (await req.json()) as GenerateImageRequest & {
+  let resolvedModelId = 'unknown';
+  let payload: GenerateImageRequest & {
     aspectRatio?: string;
     imageSize?: '1K' | '2K' | '4K';
     conversationHistory?: Array<{
@@ -54,6 +44,37 @@ export async function POST(req: NextRequest) {
   };
 
   try {
+    try {
+      payload = (await req.json()) as GenerateImageRequest & {
+        aspectRatio?: string;
+        imageSize?: '1K' | '2K' | '4K';
+        conversationHistory?: Array<{
+          role: 'user' | 'model';
+          content: string;
+          image?: string;
+        }>;
+      };
+    } catch (error) {
+      logger.api.error(
+        `Malformed JSON payload [requestId=${requestId}]`,
+        error
+      );
+      return NextResponse.json({ error: '请求体格式错误' }, { status: 400 });
+    }
+
+    const {
+      prompt,
+      modelId,
+      referenceImage,
+      referenceImages,
+      aspectRatio,
+      imageSize,
+      conversationHistory,
+      projectId,
+      assistantMessageId,
+    } = payload;
+    resolvedModelId = modelId;
+
     // Validate model ID
     if (!modelId) {
       const error = '缺少模型 ID';
@@ -117,7 +138,7 @@ export async function POST(req: NextRequest) {
     }
 
     const rateLimitResult = applyRateLimit({
-      key: `generate-images:${ctx.userId}:${getRateLimitIdentifier(req.headers, ctx.userId)}`,
+      key: `generate-images:${ctx.userId}`,
       limit: 10,
       windowMs: 60 * 1000,
     });
@@ -185,6 +206,7 @@ export async function POST(req: NextRequest) {
         model: geminiModel,
         aspectRatio: geminiAspectRatio,
         imageSize: selectedImageSize,
+        signal: req.signal,
       });
     } else if (allReferenceImages.length > 0) {
       // Image editing mode - pass base64 directly to Gemini API
@@ -197,6 +219,7 @@ export async function POST(req: NextRequest) {
         model: geminiModel,
         aspectRatio: geminiAspectRatio,
         imageSize: selectedImageSize,
+        signal: req.signal,
       });
     } else {
       // Text-to-image generation
@@ -205,25 +228,89 @@ export async function POST(req: NextRequest) {
         model: geminiModel,
         aspectRatio: geminiAspectRatio,
         imageSize: selectedImageSize,
+        signal: req.signal,
       });
     }
 
     // Execute with timeout and credit consumption
     const result = await executeImageGeneration({
-      ctx,
+      ctx: {
+        ...ctx,
+        messageId: assistantMessageId,
+      },
       generatePromise,
       operationType: 'generation',
       startstamp,
     });
 
-    const response = createImageResponse(result);
     const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
+
+    if (projectId && assistantMessageId) {
+      if (req.signal.aborted) {
+        return NextResponse.json(
+          { error: '生成已取消' },
+          { status: 499, headers: rateLimitHeaders }
+        );
+      }
+
+      const generationTime = Math.round(performance.now() - startstamp);
+      const persistedMessage = result.image
+        ? await updateAssistantMessage(assistantMessageId, {
+            content: result.text ?? '',
+            outputImage: result.image,
+            creditsUsed: result.creditsUsed,
+            generationTime,
+            status: 'completed',
+            errorMessage: null,
+          })
+        : await updateAssistantMessage(assistantMessageId, {
+            content: result.error || '生成失败',
+            status: 'failed',
+            errorMessage: result.error || '生成失败',
+          });
+
+      if (!persistedMessage.success || !persistedMessage.data) {
+        logger.api.error(
+          `Failed to persist assistant message from route [requestId=${requestId}, projectId=${projectId}, assistantMessageId=${assistantMessageId}]`,
+          persistedMessage.error
+        );
+        return NextResponse.json(
+          {
+            error: persistedMessage.error || '保存生成结果失败',
+          },
+          {
+            status: 500,
+            headers: rateLimitHeaders,
+          }
+        );
+      }
+
+      return NextResponse.json(
+        {
+          message: {
+            ...persistedMessage.data,
+            createdAt:
+              persistedMessage.data.createdAt instanceof Date
+                ? persistedMessage.data.createdAt.toISOString()
+                : new Date(persistedMessage.data.createdAt).toISOString(),
+          },
+          error: result.error,
+          creditsUsed: result.creditsUsed,
+        },
+        {
+          status: 200,
+          headers: rateLimitHeaders,
+        }
+      );
+    }
+
+    const response = createImageResponse(result);
     for (const [header, value] of Object.entries(rateLimitHeaders)) {
       response.headers.set(header, value);
     }
 
     return response;
   } catch (error) {
-    return createErrorResponse(error, requestId, modelId, 'generation');
+    return createErrorResponse(error, requestId, resolvedModelId, 'generation');
   }
 }

@@ -1,10 +1,27 @@
 import type { AspectRatioId, StylePresetId } from './arch-types';
 import type { GeminiModelId, ProviderKey } from './provider-config';
 
+export interface PersistedAssistantMessagePayload {
+  id: string;
+  projectId: string;
+  role: 'assistant';
+  content: string;
+  inputImage: string | null;
+  outputImage: string | null;
+  maskImage: string | null;
+  generationParams: string | null;
+  creditsUsed: number | null;
+  generationTime: number | null;
+  status: string;
+  errorMessage: string | null;
+  orderIndex: number;
+  createdAt: string;
+}
+
 // 图像生成请求
 export interface GenerateImageRequest {
   prompt: string;
-  provider: ProviderKey;
+  provider?: ProviderKey;
   modelId: GeminiModelId;
   // 用于编辑模式的参考图像 (base64)
   referenceImage?: string;
@@ -16,6 +33,8 @@ export interface GenerateImageRequest {
   aspectRatio?: AspectRatioId;
   useSystemPrompt?: boolean;
   templateId?: string;
+  projectId?: string;
+  assistantMessageId?: string;
 }
 
 // 图像生成响应
@@ -23,6 +42,8 @@ export interface GenerateImageResponse {
   image?: string; // base64 编码的图像
   text?: string; // 模型返回的文本描述（如果有）
   error?: string;
+  message?: PersistedAssistantMessagePayload;
+  creditsUsed?: number;
 }
 
 // 对话式编辑请求

@@ -78,6 +78,7 @@ export interface GenerateImageParams {
   model?: GeminiImageModelId;
   aspectRatio?: GeminiAspectRatio;
   imageSize?: GeminiImageSize;
+  signal?: AbortSignal;
 }
 
 export interface EditImageParams {
@@ -86,6 +87,7 @@ export interface EditImageParams {
   model?: GeminiImageModelId;
   aspectRatio?: GeminiAspectRatio;
   imageSize?: GeminiImageSize;
+  signal?: AbortSignal;
 }
 
 export interface ConversationMessage {
@@ -99,6 +101,7 @@ export interface ConversationEditParams {
   model?: GeminiImageModelId;
   aspectRatio?: GeminiAspectRatio;
   imageSize?: GeminiImageSize;
+  signal?: AbortSignal;
 }
 
 export interface GenerateImageResult {
@@ -203,8 +206,8 @@ function extractImageFromResponse(data: unknown): GenerateImageResult {
 /**
  * Convert URL image to base64 for Gemini API inline_data
  */
-async function urlToBase64(url: string): Promise<string> {
-  const response = await fetch(url);
+async function urlToBase64(url: string, signal?: AbortSignal): Promise<string> {
+  const response = await fetch(url, { signal });
   if (!response.ok) {
     throw new Error(`Failed to fetch image: ${response.status}`);
   }
@@ -217,12 +220,22 @@ async function urlToBase64(url: string): Promise<string> {
  */
 async function callGeminiApi(
   model: string,
-  requestBody: Record<string, unknown>
+  requestBody: Record<string, unknown>,
+  signal?: AbortSignal
 ): Promise<GenerateImageResult> {
   const apiKey = getGeminiApiKey();
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const handleAbort = () => controller.abort();
+
+  if (signal) {
+    if (signal.aborted) {
+      controller.abort();
+    } else {
+      signal.addEventListener('abort', handleAbort, { once: true });
+    }
+  }
 
   try {
     logger.ai.debug(`[Gemini] Calling API [model=${model}]`);
@@ -241,6 +254,7 @@ async function callGeminiApi(
     );
 
     clearTimeout(timeoutId);
+    signal?.removeEventListener('abort', handleAbort);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -255,7 +269,13 @@ async function callGeminiApi(
     return extractImageFromResponse(data);
   } catch (error) {
     clearTimeout(timeoutId);
+    signal?.removeEventListener('abort', handleAbort);
     if (error instanceof Error && error.name === 'AbortError') {
+      if (signal?.aborted) {
+        logger.ai.info('[Gemini] Request aborted by caller');
+        return { success: false, error: '生成已取消' };
+      }
+
       logger.ai.error('[Gemini] Request timeout');
       return { success: false, error: '请求超时，请重试' };
     }
@@ -291,7 +311,7 @@ export async function generateImageWithGemini(
     },
   };
 
-  return callGeminiApi(model, requestBody);
+  return callGeminiApi(model, requestBody, params.signal);
 }
 
 // ============================================
@@ -330,7 +350,7 @@ export async function editImageWithGemini(
     },
   };
 
-  return callGeminiApi(model, requestBody);
+  return callGeminiApi(model, requestBody, params.signal);
 }
 
 // ============================================
@@ -361,7 +381,7 @@ export async function editImageWithConversationGemini(
       if (msg.image.startsWith('http')) {
         // URL image: fetch and convert to base64
         try {
-          const base64 = await urlToBase64(msg.image);
+          const base64 = await urlToBase64(msg.image, params.signal);
           parts.push({
             inline_data: { mime_type: 'image/jpeg', data: base64 },
           });
@@ -401,5 +421,5 @@ export async function editImageWithConversationGemini(
     },
   };
 
-  return callGeminiApi(model, requestBody);
+  return callGeminiApi(model, requestBody, params.signal);
 }

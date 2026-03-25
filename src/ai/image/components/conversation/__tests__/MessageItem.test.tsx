@@ -3,7 +3,27 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MessageItem } from '../MessageItem';
 
-const mockSetDraftImage = vi.fn();
+const { mockSetDraftImage, useConversationStoreMock } = vi.hoisted(() => ({
+  mockSetDraftImage: vi.fn(),
+  useConversationStoreMock: Object.assign(
+    () => ({
+      messages: [],
+      updateMessage: vi.fn(),
+      setGenerating: vi.fn(),
+      isGenerating: false,
+      getConversationHistory: () => [],
+      setAbortController: vi.fn(),
+      setGenerationRequestToken: vi.fn(),
+      setGenerationStage: vi.fn(),
+    }),
+    {
+      getState: () => ({
+        generationRequestToken: null,
+        generatingMessageId: null,
+      }),
+    }
+  ),
+}));
 
 vi.mock('@/stores/project-store', () => ({
   useProjectStore: () => ({
@@ -12,13 +32,15 @@ vi.mock('@/stores/project-store', () => ({
 }));
 
 vi.mock('@/stores/conversation-store', () => ({
-  useConversationStore: () => ({
-    messages: [],
-    addMessage: vi.fn(),
-    removeMessage: vi.fn(),
-    setGenerating: vi.fn(),
-    isGenerating: false,
-  }),
+  useConversationStore: useConversationStoreMock,
+}));
+
+vi.mock('@/actions/project-message', () => ({
+  updateAssistantMessage: vi.fn(),
+}));
+
+vi.mock('@/ai/image/lib/api-utils', () => ({
+  generateImage: vi.fn(),
 }));
 
 vi.mock('next-intl', () => ({
@@ -27,29 +49,33 @@ vi.mock('next-intl', () => ({
 
 vi.mock('next/image', () => ({
   __esModule: true,
-  default: (props: any) => <img {...props} />,
+  default: ({ alt = 'mock image', ...props }: any) => (
+    <div data-alt={alt} data-testid="mock-image" {...props} />
+  ),
 }));
+
+function createAssistantMessage(): ProjectMessageItem {
+  return {
+    id: 'msg-1',
+    projectId: 'proj-1',
+    role: 'assistant',
+    content: '',
+    inputImage: null,
+    outputImage: 'https://example.com/image.png',
+    maskImage: null,
+    generationParams: null,
+    creditsUsed: 1,
+    generationTime: 1000,
+    status: 'completed',
+    errorMessage: null,
+    orderIndex: 0,
+    createdAt: new Date(),
+  };
+}
 
 describe('MessageItem', () => {
   it('triggers edit by setting draft image', () => {
-    const message: ProjectMessageItem = {
-      id: 'msg-1',
-      projectId: 'proj-1',
-      role: 'assistant',
-      content: '',
-      inputImage: null,
-      outputImage: 'https://example.com/image.png',
-      maskImage: null,
-      generationParams: null,
-      creditsUsed: 1,
-      generationTime: 1000,
-      status: 'completed',
-      errorMessage: null,
-      orderIndex: 0,
-      createdAt: new Date(),
-    };
-
-    render(<MessageItem message={message} isLast={true} />);
+    render(<MessageItem message={createAssistantMessage()} isLast={true} />);
 
     const editButton = screen.getByLabelText('canvas.edit');
     fireEvent.click(editButton);
@@ -57,5 +83,15 @@ describe('MessageItem', () => {
     expect(mockSetDraftImage).toHaveBeenCalledWith(
       'https://example.com/image.png'
     );
+  });
+
+  it('shows toolbar actions inside the preview dialog', () => {
+    render(<MessageItem message={createAssistantMessage()} isLast={true} />);
+
+    fireEvent.click(screen.getByLabelText('canvas.openPreview'));
+
+    expect(screen.getAllByText('canvas.download').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('canvas.share').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('canvas.edit').length).toBeGreaterThan(0);
   });
 });

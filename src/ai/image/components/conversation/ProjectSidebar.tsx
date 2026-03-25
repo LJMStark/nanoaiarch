@@ -57,6 +57,7 @@ export function ProjectSidebar() {
   const t = useTranslations('ArchPage');
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
+  const [busyProjectId, setBusyProjectId] = useState<string | null>(null);
   const [renameProject, setRenameProject] = useState<ImageProjectItem | null>(
     null
   );
@@ -118,9 +119,18 @@ export function ProjectSidebar() {
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    const result = await toggleProjectPin(project.id);
-    if (result.success) {
-      updateProject(project.id, { isPinned: result.isPinned });
+    if (busyProjectId === project.id) {
+      return;
+    }
+
+    setBusyProjectId(project.id);
+    try {
+      const result = await toggleProjectPin(project.id);
+      if (result.success) {
+        updateProject(project.id, { isPinned: result.isPinned });
+      }
+    } finally {
+      setBusyProjectId((current) => (current === project.id ? null : current));
     }
   };
 
@@ -129,9 +139,18 @@ export function ProjectSidebar() {
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    const result = await archiveProject(project.id);
-    if (result.success) {
-      removeProject(project.id);
+    if (busyProjectId === project.id) {
+      return;
+    }
+
+    setBusyProjectId(project.id);
+    try {
+      const result = await archiveProject(project.id);
+      if (result.success) {
+        removeProject(project.id);
+      }
+    } finally {
+      setBusyProjectId((current) => (current === project.id ? null : current));
     }
   };
 
@@ -140,9 +159,18 @@ export function ProjectSidebar() {
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    const result = await deleteImageProject(project.id);
-    if (result.success) {
-      removeProject(project.id);
+    if (busyProjectId === project.id) {
+      return;
+    }
+
+    setBusyProjectId(project.id);
+    try {
+      const result = await deleteImageProject(project.id);
+      if (result.success) {
+        removeProject(project.id);
+      }
+    } finally {
+      setBusyProjectId((current) => (current === project.id ? null : current));
     }
   };
 
@@ -199,6 +227,7 @@ export function ProjectSidebar() {
                     searchInputRef.current?.focus();
                   }}
                   className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded-sm hover:bg-accent text-muted-foreground"
+                  aria-label="清空搜索"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -232,6 +261,7 @@ export function ProjectSidebar() {
                         onRename={(e) => handleRename(project, e)}
                         onArchive={(e) => handleArchive(project, e)}
                         onDelete={(e) => handleDelete(project, e)}
+                        isBusy={busyProjectId === project.id}
                       />
                     ))
                   )}
@@ -258,6 +288,7 @@ export function ProjectSidebar() {
                           onRename={(e) => handleRename(project, e)}
                           onArchive={(e) => handleArchive(project, e)}
                           onDelete={(e) => handleDelete(project, e)}
+                          isBusy={busyProjectId === project.id}
                         />
                       ))}
                     </SidebarMenu>
@@ -288,6 +319,7 @@ export function ProjectSidebar() {
                           onRename={(e) => handleRename(project, e)}
                           onArchive={(e) => handleArchive(project, e)}
                           onDelete={(e) => handleDelete(project, e)}
+                          isBusy={busyProjectId === project.id}
                         />
                       ))
                     )}
@@ -325,6 +357,7 @@ interface ProjectListItemProps {
   onRename: (e: React.MouseEvent) => void;
   onArchive: (e: React.MouseEvent) => void;
   onDelete: (e: React.MouseEvent) => void;
+  isBusy: boolean;
 }
 
 function ProjectListItem({
@@ -335,6 +368,7 @@ function ProjectListItem({
   onRename,
   onArchive,
   onDelete,
+  isBusy,
 }: ProjectListItemProps) {
   const t = useTranslations('ArchPage');
   const formatDate = (date: Date) => {
@@ -381,12 +415,12 @@ function ProjectListItem({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <SidebarMenuAction>
+          <SidebarMenuAction aria-label="项目操作" disabled={isBusy}>
             <MoreHorizontal className="h-4 w-4" />
           </SidebarMenuAction>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="right" align="start">
-          <DropdownMenuItem onClick={onTogglePin}>
+          <DropdownMenuItem onClick={onTogglePin} disabled={isBusy}>
             <Pin className="h-4 w-4 mr-2" />
             {project.isPinned ? t('projects.unpin') : t('projects.pin')}
           </DropdownMenuItem>
@@ -394,12 +428,16 @@ function ProjectListItem({
             <Pencil className="h-4 w-4 mr-2" />
             {t('projects.rename')}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onArchive}>
+          <DropdownMenuItem onClick={onArchive} disabled={isBusy}>
             <Archive className="h-4 w-4 mr-2" />
             {t('projects.archive')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onDelete} className="text-destructive">
+          <DropdownMenuItem
+            onClick={onDelete}
+            className="text-destructive"
+            disabled={isBusy}
+          >
             <Trash2 className="h-4 w-4 mr-2" />
             {t('projects.delete')}
           </DropdownMenuItem>

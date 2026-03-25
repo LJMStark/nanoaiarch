@@ -3,8 +3,7 @@
 import {
   type GenerationParams,
   type ProjectMessageItem,
-  addAssistantMessage,
-  deleteMessage,
+  updateAssistantMessage,
 } from '@/actions/project-message';
 import { generateImage } from '@/ai/image/lib/api-utils';
 import { parseErrorMessage } from '@/ai/image/lib/error-utils';
@@ -41,7 +40,6 @@ import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 
-// Zod schema for generation parameters validation
 const GenerationParamsSchema = z.object({
   prompt: z.string(),
   aspectRatio: z.string().default('1:1'),
@@ -58,11 +56,67 @@ export function MessageItem({ message, isLast }: MessageItemProps) {
   if (message.role === 'user') {
     return <UserMessage message={message} />;
   }
+
   return <AssistantMessage message={message} isLast={isLast} />;
+}
+
+function normalizePersistedAssistantMessage(
+  message: PersistedAssistantMessageLike
+): Partial<ProjectMessageItem> {
+  return {
+    content: message.content,
+    outputImage: message.outputImage,
+    generationParams: message.generationParams,
+    creditsUsed: message.creditsUsed,
+    generationTime: message.generationTime,
+    status: message.status,
+    errorMessage: message.errorMessage,
+    orderIndex: message.orderIndex,
+    createdAt: new Date(message.createdAt),
+  };
+}
+
+function isGenerationCancelled(error?: string): boolean {
+  return error === 'Generation cancelled' || error === '生成已取消';
+}
+
+function isActiveGenerationRequest(
+  requestToken: string,
+  generatingMessageId: string
+): boolean {
+  const state = useConversationStore.getState();
+  return (
+    state.generationRequestToken === requestToken &&
+    state.generatingMessageId === generatingMessageId
+  );
+}
+
+function clearFinishedGeneration(
+  requestToken: string,
+  generatingMessageId: string,
+  setAbortController: (controller: AbortController | null) => void,
+  setGenerationRequestToken: (token: string | null) => void,
+  setGenerating: (generating: boolean, messageId?: string | null) => void,
+  setGenerationStage: (
+    stage: 'submitting' | 'queued' | 'generating' | 'finishing' | null
+  ) => void
+): void {
+  const state = useConversationStore.getState();
+
+  if (state.generationRequestToken === requestToken) {
+    setAbortController(null);
+    setGenerationRequestToken(null);
+  }
+
+  if (state.generatingMessageId === generatingMessageId) {
+    setGenerating(false);
+    setGenerationStage(null);
+  }
 }
 
 function UserMessage({ message }: { message: ProjectMessageItem }) {
   const t = useTranslations('ArchPage');
+
   return (
     <div className="flex gap-3">
       <Avatar className="h-8 w-8 flex-shrink-0">
@@ -70,12 +124,12 @@ function UserMessage({ message }: { message: ProjectMessageItem }) {
           <User className="h-4 w-4" />
         </AvatarFallback>
       </Avatar>
-      <div className="flex-1 space-y-2 min-w-0">
-        <p className="text-sm whitespace-pre-wrap break-words">
+      <div className="min-w-0 flex-1 space-y-2">
+        <p className="break-words whitespace-pre-wrap text-sm">
           {message.content}
         </p>
         {message.inputImage && (
-          <div className="relative w-48 aspect-square rounded-lg overflow-hidden border">
+          <div className="relative aspect-square w-48 overflow-hidden rounded-lg border">
             <Image
               src={getImageSrc(message.inputImage)}
               alt={t('canvas.referenceImageAlt')}
@@ -100,68 +154,79 @@ function AssistantMessage({
   const [isHovered, setIsHovered] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const isMountedRef = useRef(true);
   const isFailed = message.status === 'failed';
   const isGeneratingNow = message.status === 'generating';
   const t = useTranslations('ArchPage');
   const { setDraftImage } = useProjectStore();
+  const {
+    messages,
+    updateMessage,
+    setGenerating,
+    isGenerating,
+    getConversationHistory,
+    setAbortController,
+    setGenerationRequestToken,
+    setGenerationStage,
+  } = useConversationStore();
 
-  // Prevent state updates after component unmount
-  const isMountedRef = useRef(true);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const { messages, addMessage, removeMessage, setGenerating, isGenerating } =
-    useConversationStore();
-
-  // Cleanup on component unmount
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      // Abort any ongoing requests
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
     };
   }, []);
 
-  // Get the previous user message corresponding to a failed message
   const getPreviousUserMessage = () => {
-    const messageIndex = messages.findIndex((m) => m.id === message.id);
-    if (messageIndex <= 0) return null;
-    const prevMessage = messages[messageIndex - 1];
-    return prevMessage?.role === 'user' ? prevMessage : null;
+    const messageIndex = messages.findIndex(
+      (candidate) => candidate.id === message.id
+    );
+    if (messageIndex <= 0) {
+      return null;
+    }
+
+    const previousMessage = messages[messageIndex - 1];
+    return previousMessage?.role === 'user' ? previousMessage : null;
   };
 
-  // Helper function to create assistant message
-  const createAssistantMessage = async (
-    success: boolean,
-    result: { image?: string; error?: string; creditsUsed?: number },
-    generationTime: number,
-    params: {
-      prompt: string;
-      aspectRatio: string;
-      model: string;
-      imageQuality: string;
-    }
-  ) => {
-    const assistantResult = await addAssistantMessage(message.projectId, {
-      content: success ? '' : result.error || t('errors.generationFailed'),
-      outputImage: success ? result.image : undefined,
-      generationParams: params,
-      creditsUsed: success ? result.creditsUsed || 1 : undefined,
-      generationTime: success ? generationTime : undefined,
-      status: success ? 'completed' : 'failed',
-      errorMessage: success ? undefined : result.error,
-    });
+  const persistFailureState = useCallback(
+    async (data: {
+      content: string;
+      errorMessage: string;
+    }) => {
+      const result = await updateAssistantMessage(message.id, {
+        content: data.content,
+        status: 'failed',
+        errorMessage: data.errorMessage,
+      });
 
-    if (assistantResult.success && assistantResult.data) {
-      addMessage(assistantResult.data);
-    }
-  };
+      if (result.success && result.data) {
+        updateMessage(
+          message.id,
+          normalizePersistedAssistantMessage({
+            ...result.data,
+            createdAt:
+              result.data.createdAt instanceof Date
+                ? result.data.createdAt.toISOString()
+                : new Date(result.data.createdAt).toISOString(),
+          })
+        );
+        return;
+      }
 
-  // Retry generation
+      updateMessage(message.id, {
+        content: data.content,
+        status: 'failed',
+        errorMessage: data.errorMessage,
+      });
+    },
+    [message.id, updateMessage]
+  );
+
   const handleRetry = async () => {
-    if (isRetrying || isGenerating) return;
+    if (isRetrying || isGenerating) {
+      return;
+    }
 
     const userMessage = getPreviousUserMessage();
     if (!userMessage) {
@@ -169,7 +234,6 @@ function AssistantMessage({
       return;
     }
 
-    // Parse original generation parameters with Zod validation
     let params: GenerationParams = {
       prompt: userMessage.content,
       aspectRatio: '1:1',
@@ -180,8 +244,6 @@ function AssistantMessage({
     if (message.generationParams) {
       try {
         const parsed = JSON.parse(message.generationParams);
-
-        // Validate with Zod schema
         const validationResult = GenerationParamsSchema.safeParse(parsed);
 
         if (validationResult.success) {
@@ -193,13 +255,11 @@ function AssistantMessage({
               error: validationResult.error.message,
             }
           );
-          // Use default params already set above
         }
       } catch (error) {
         logger.ai.warn('Failed to parse generation params, using defaults', {
           error: error instanceof Error ? error.message : String(error),
         });
-        // Use default params already set above
       }
     }
 
@@ -207,106 +267,145 @@ function AssistantMessage({
     const aspectRatio = params.aspectRatio || '1:1';
     const model = params.model || 'forma';
     const imageQuality = (params.imageQuality as '1K' | '2K' | '4K') || '2K';
-    const genParams = { prompt, aspectRatio, model, imageQuality };
-
-    logger.ai.info(
-      `Starting retry [messageId=${message.id}, projectId=${message.projectId}]`
-    );
 
     setIsRetrying(true);
-    setGenerating(true);
 
-    // Delete failed message with error handling
-    const deleteResult = await deleteMessage(message.id);
-    if (!deleteResult.success) {
-      logger.ai.error('Failed to delete failed message:', deleteResult.error);
+    const resumeResult = await updateAssistantMessage(message.id, {
+      content: '',
+      outputImage: null,
+      creditsUsed: null,
+      generationTime: null,
+      status: 'generating',
+      errorMessage: null,
+    });
+
+    if (!resumeResult.success || !resumeResult.data) {
+      logger.ai.error('Failed to resume failed assistant message', {
+        messageId: message.id,
+        error: resumeResult.error,
+      });
       if (isMountedRef.current) {
         setIsRetrying(false);
-        setGenerating(false);
       }
       return;
     }
-    removeMessage(message.id);
 
-    const startTime = Date.now();
+    updateMessage(
+      message.id,
+      normalizePersistedAssistantMessage({
+        ...resumeResult.data,
+        createdAt:
+          resumeResult.data.createdAt instanceof Date
+            ? resumeResult.data.createdAt.toISOString()
+            : new Date(resumeResult.data.createdAt).toISOString(),
+      })
+    );
 
-    // Create new AbortController for this request
-    abortControllerRef.current = new AbortController();
+    const controller = new AbortController();
+    const requestToken = crypto.randomUUID();
+
+    setAbortController(controller);
+    setGenerationRequestToken(requestToken);
+    setGenerating(true, message.id);
+    setGenerationStage('submitting');
+    setGenerationStage('queued');
 
     try {
-      // Regenerate image
+      const conversationHistory = getConversationHistory();
+      setGenerationStage('generating');
+
       const result = await generateImage({
         prompt,
-        referenceImage: userMessage.inputImage || undefined,
+        referenceImages: userMessage.inputImage
+          ? [userMessage.inputImage]
+          : undefined,
         aspectRatio,
         model,
         imageSize: imageQuality,
-        signal: abortControllerRef.current.signal,
+        signal: controller.signal,
+        conversationHistory:
+          conversationHistory.length > 0 ? conversationHistory : undefined,
+        projectId: message.projectId,
+        assistantMessageId: message.id,
       });
 
-      // Check if component is still mounted
-      if (!isMountedRef.current) return;
-
-      const generationTime = Date.now() - startTime;
-
-      if (result.success && result.image) {
-        logger.ai.info(
-          `Retry succeeded [messageId=${message.id}, generationTime=${generationTime}ms]`
-        );
-        await createAssistantMessage(true, result, generationTime, genParams);
-      } else {
-        logger.ai.warn(
-          `Retry failed [messageId=${message.id}, error=${result.error}]`
-        );
-        await createAssistantMessage(false, result, 0, genParams);
+      if (!isActiveGenerationRequest(requestToken, message.id)) {
+        return;
       }
-    } catch (error) {
-      // Check if component is still mounted
-      if (!isMountedRef.current) return;
 
-      const errorMessage = parseErrorMessage(error, (key: string) =>
-        t(key as never)
-      );
+      if (result.message) {
+        setGenerationStage('finishing');
+        updateMessage(
+          message.id,
+          normalizePersistedAssistantMessage(result.message)
+        );
+        return;
+      }
+
+      if (isGenerationCancelled(result.error)) {
+        await persistFailureState({
+          content: t('loading.cancelled'),
+          errorMessage: 'Generation cancelled',
+        });
+        return;
+      }
+
+      await persistFailureState({
+        content: result.error || t('errors.generationFailed'),
+        errorMessage: result.error || t('errors.generationFailed'),
+      });
+    } catch (error) {
       logger.ai.error('Retry generation error:', error);
 
-      await createAssistantMessage(
-        false,
-        { error: errorMessage },
-        0,
-        genParams
-      );
+      if (!isActiveGenerationRequest(requestToken, message.id)) {
+        return;
+      }
+
+      await persistFailureState({
+        content: parseErrorMessage(error, (key: string) => t(key as never)),
+        errorMessage:
+          error instanceof Error ? error.message : t('errors.unknown'),
+      });
     } finally {
-      // Only update state if component is still mounted
+      clearFinishedGeneration(
+        requestToken,
+        message.id,
+        setAbortController,
+        setGenerationRequestToken,
+        setGenerating,
+        setGenerationStage
+      );
+
       if (isMountedRef.current) {
         setIsRetrying(false);
-        setGenerating(false);
-        abortControllerRef.current = null;
       }
     }
   };
 
-  // Download image
   const handleDownload = useCallback(async () => {
-    if (!message.outputImage) return;
+    if (!message.outputImage) {
+      return;
+    }
 
     try {
       await downloadImage(message.outputImage, `generation-${message.id}.png`);
     } catch (error) {
       logger.ai.error('Download failed:', error);
     }
-  }, [message.outputImage, message.id]);
+  }, [message.id, message.outputImage]);
 
-  // Share image
   const handleShare = useCallback(async () => {
-    if (!message.outputImage) return;
+    if (!message.outputImage) {
+      return;
+    }
 
     try {
       await shareImage(message.outputImage, t('canvas.shareTitle'));
     } catch (error) {
-      // User cancellation is expected behavior, not an error
       if (error instanceof Error && error.name === 'AbortError') {
         return;
       }
+
       logger.ai.error('Share failed:', error);
     }
   }, [message.outputImage, t]);
@@ -314,8 +413,12 @@ function AssistantMessage({
   const handleEdit = useCallback(
     (event: React.MouseEvent) => {
       event.stopPropagation();
-      if (!message.outputImage) return;
+      if (!message.outputImage) {
+        return;
+      }
+
       setDraftImage(message.outputImage);
+      setIsPreviewOpen(false);
     },
     [message.outputImage, setDraftImage]
   );
@@ -327,18 +430,18 @@ function AssistantMessage({
           <Sparkles className="h-4 w-4" />
         </AvatarFallback>
       </Avatar>
-      <div className="flex-1 space-y-3 min-w-0">
+      <div className="min-w-0 flex-1 space-y-3">
         {isGeneratingNow ? (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
-            <Loader2 className="h-5 w-5 animate-spin text-primary flex-shrink-0" />
-            <span className="text-sm text-muted-foreground flex-1">
+          <div className="flex items-center gap-3 rounded-lg border bg-muted/50 p-3">
+            <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+            <span className="flex-1 text-sm text-muted-foreground">
               {t('canvas.generating')}
             </span>
           </div>
         ) : isFailed ? (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
-            <span className="text-sm text-destructive flex-1">
+          <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
+            <span className="flex-1 text-sm text-destructive">
               {message.errorMessage || t('errors.generationFailed')}
             </span>
             <Button
@@ -349,45 +452,38 @@ function AssistantMessage({
               className="flex-shrink-0"
             >
               {isRetrying ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : (
-                <RefreshCw className="h-4 w-4 mr-1" />
+                <RefreshCw className="mr-1 h-4 w-4" />
               )}
               {t('canvas.retry')}
             </Button>
           </div>
         ) : message.outputImage ? (
           <div
-            className="relative group max-w-lg"
+            className="group relative max-w-lg"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >
-            <div
-              className="relative rounded-xl overflow-hidden border bg-muted cursor-zoom-in"
-              onClick={() => setIsPreviewOpen(true)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  setIsPreviewOpen(true);
-                }
-              }}
-              role="button"
-              tabIndex={0}
-              aria-label={t('canvas.openPreview')}
-            >
-              <Image
-                src={getImageSrc(message.outputImage)}
-                alt={t('canvas.generatedImageAlt')}
-                width={512}
-                height={512}
-                sizes="(max-width: 640px) 100vw, 512px"
-                className="w-full h-auto"
-              />
-
-              {/* Hover overlay with actions */}
+            <div className="relative overflow-hidden rounded-xl border bg-muted">
+              <button
+                type="button"
+                className="block w-full cursor-zoom-in"
+                onClick={() => setIsPreviewOpen(true)}
+                aria-label={t('canvas.openPreview')}
+              >
+                <Image
+                  src={getImageSrc(message.outputImage)}
+                  alt={t('canvas.generatedImageAlt')}
+                  width={512}
+                  height={512}
+                  sizes="(max-width: 640px) 100vw, 512px"
+                  className="h-auto w-full"
+                />
+              </button>
               <div
                 className={cn(
-                  'absolute inset-0 bg-black/50 flex items-center justify-center gap-2 transition-opacity',
+                  'absolute inset-0 hidden items-center justify-center gap-2 bg-black/50 transition-opacity sm:flex',
                   isHovered ? 'opacity-100' : 'opacity-0'
                 )}
               >
@@ -402,6 +498,7 @@ function AssistantMessage({
                           void handleDownload();
                         }}
                         className="h-10 w-10"
+                        aria-label={t('canvas.download')}
                       >
                         <Download className="h-5 w-5" />
                       </Button>
@@ -419,6 +516,7 @@ function AssistantMessage({
                           void handleShare();
                         }}
                         className="h-10 w-10"
+                        aria-label={t('canvas.share')}
                       >
                         <Share2 className="h-5 w-5" />
                       </Button>
@@ -446,25 +544,48 @@ function AssistantMessage({
               </div>
             </div>
 
-            {/* Generation info */}
             {message.generationTime && (
               <div className="mt-1 text-xs text-muted-foreground">
                 {t('canvas.generatedIn', {
                   seconds: (message.generationTime / 1000).toFixed(1),
                 })}
                 {message.creditsUsed &&
-                  ` · ${t('projects.credits', {
-                    count: message.creditsUsed,
-                  })}`}
+                  ` · ${t('projects.credits', { count: message.creditsUsed })}`}
               </div>
             )}
 
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-              <DialogContent className="max-w-5xl p-0 overflow-hidden">
+              <DialogContent className="max-w-5xl overflow-hidden p-0">
                 <DialogTitle className="sr-only">
                   {t('canvas.generatedImageAlt')}
                 </DialogTitle>
-                <div className="relative w-full h-[80vh] bg-black">
+                <div className="border-b bg-background/95 px-4 py-3">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void handleDownload()}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      {t('canvas.download')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void handleShare()}
+                    >
+                      <Share2 className="mr-2 h-4 w-4" />
+                      {t('canvas.share')}
+                    </Button>
+                    {isLast && (
+                      <Button variant="outline" size="sm" onClick={handleEdit}>
+                        <Edit3 className="mr-2 h-4 w-4" />
+                        {t('canvas.edit')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="relative h-[80vh] w-full bg-black">
                   <Image
                     src={getImageSrc(message.outputImage)}
                     alt={t('canvas.generatedImageAlt')}
@@ -479,7 +600,7 @@ function AssistantMessage({
         ) : null}
 
         {message.content && (
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
             {message.content}
           </p>
         )}
@@ -487,3 +608,14 @@ function AssistantMessage({
     </div>
   );
 }
+type PersistedAssistantMessageLike = {
+  content: string;
+  outputImage: string | null;
+  generationParams: string | null;
+  creditsUsed: number | null;
+  generationTime: number | null;
+  status: string;
+  errorMessage: string | null;
+  orderIndex: number;
+  createdAt: string | Date;
+};

@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, text, timestamp, index, unique } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -263,4 +263,5 @@ export const projectMessage = pgTable("project_message", {
 	projectMessageProjectOrderIdx: index("project_message_project_order_idx").on(table.projectId, table.orderIndex),
 	projectMessageUserProjectIdx: index("project_message_user_project_idx").on(table.userId, table.projectId),
 	projectMessageProjectCreatedAtIdx: index("project_message_project_created_at_idx").on(table.projectId, table.createdAt),
+	projectMessageProjectOrderUnique: unique("project_message_project_order_unique").on(table.projectId, table.orderIndex),
 }));

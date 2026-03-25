@@ -21,6 +21,7 @@ interface ConversationState {
   isGenerating: boolean;
   generatingMessageId: string | null;
   abortController: AbortController | null;
+  generationRequestToken: string | null;
   generationStage: GenerationStage;
 
   // Current project context
@@ -41,6 +42,7 @@ interface ConversationState {
   // Generation state
   setGenerating: (generating: boolean, messageId?: string | null) => void;
   setAbortController: (controller: AbortController | null) => void;
+  setGenerationRequestToken: (token: string | null) => void;
   setGenerationStage: (stage: GenerationStage) => void;
   cancelGeneration: () => void;
 
@@ -71,6 +73,7 @@ const initialState = {
   generatingMessageId: null as string | null,
   currentProjectId: null as string | null,
   abortController: null as AbortController | null,
+  generationRequestToken: null as string | null,
   generationStage: null as GenerationStage,
 };
 
@@ -150,6 +153,9 @@ export const useConversationStore = create<ConversationState>()(
 
       setAbortController: (controller) => set({ abortController: controller }),
 
+      setGenerationRequestToken: (token) =>
+        set({ generationRequestToken: token }),
+
       setGenerationStage: (stage) => set({ generationStage: stage }),
 
       cancelGeneration: () => {
@@ -159,8 +165,10 @@ export const useConversationStore = create<ConversationState>()(
         }
         set({
           isGenerating: false,
+          generatingMessageId: null,
           generationStage: null,
           abortController: null,
+          generationRequestToken: null,
         });
       },
 
@@ -177,6 +185,7 @@ export const useConversationStore = create<ConversationState>()(
             isGenerating: false,
             generatingMessageId: null,
             abortController: null,
+            generationRequestToken: null,
             generationStage: null,
           });
         }
@@ -193,6 +202,7 @@ export const useConversationStore = create<ConversationState>()(
           isGenerating: false,
           generatingMessageId: null,
           abortController: null,
+          generationRequestToken: null,
           generationStage: null,
         });
       },

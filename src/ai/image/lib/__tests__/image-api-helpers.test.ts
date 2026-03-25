@@ -99,6 +99,7 @@ describe('executeImageGeneration', () => {
 
     it('returns error when confirmHold fails', async () => {
       mocks.confirmHold.mockRejectedValue(new Error('confirm-failure'));
+      mocks.releaseHold.mockResolvedValue(undefined);
 
       const result = await executeImageGeneration({
         ctx,
@@ -112,6 +113,7 @@ describe('executeImageGeneration', () => {
 
       expect(result.error).toBe('积分处理失败，请重试');
       expect(mocks.uploadGeneratedImage).not.toHaveBeenCalled();
+      expect(mocks.releaseHold).toHaveBeenCalledWith('hold-123');
     });
   });
 

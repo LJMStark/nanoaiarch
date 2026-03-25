@@ -29,6 +29,7 @@ export interface ApiContext {
   modelId: string;
   creditCost: number;
   holdId?: string;
+  messageId?: string;
 }
 
 export interface ImageGenerationResult {
@@ -228,8 +229,18 @@ export async function executeImageGeneration({
               );
             }
           } catch (creditError) {
+            if (ctx.holdId) {
+              try {
+                await releaseHold(ctx.holdId);
+              } catch (releaseError) {
+                logger.api.error(
+                  `Failed to release credit hold after confirm failure [requestId=${ctx.requestId}, holdId=${ctx.holdId}]`,
+                  releaseError
+                );
+              }
+            }
             logger.api.error(
-              `Failed to confirm credit hold [requestId=${ctx.requestId}, holdId=${ctx.holdId}]`,
+              `Failed to confirm credit hold [requestId=${ctx.requestId}, holdId=${ctx.holdId}, messageId=${ctx.messageId ?? 'n/a'}]`,
               creditError
             );
             return {
@@ -253,7 +264,7 @@ export async function executeImageGeneration({
           }
 
           logger.api.info(
-            `Completed image ${operationType} [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s]`
+            `Completed image ${operationType} [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s, messageId=${ctx.messageId ?? 'n/a'}]`
           );
           return {
             image: imageData,
@@ -268,14 +279,14 @@ export async function executeImageGeneration({
             await releaseHold(ctx.holdId);
           } catch (releaseError) {
             logger.api.error(
-              `Failed to release credit hold [requestId=${ctx.requestId}, holdId=${ctx.holdId}]`,
+              `Failed to release credit hold [requestId=${ctx.requestId}, holdId=${ctx.holdId}, messageId=${ctx.messageId ?? 'n/a'}]`,
               releaseError
             );
           }
         }
 
         logger.api.error(
-          `Image ${operationType} failed [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s]: ${genResult.error}`
+          `Image ${operationType} failed [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s, messageId=${ctx.messageId ?? 'n/a'}]: ${genResult.error}`
         );
         return {
           error:
@@ -292,7 +303,7 @@ export async function executeImageGeneration({
         await releaseHold(ctx.holdId);
       } catch (releaseError) {
         logger.api.error(
-          `Failed to release credit hold after timeout [requestId=${ctx.requestId}, holdId=${ctx.holdId}]`,
+          `Failed to release credit hold after timeout [requestId=${ctx.requestId}, holdId=${ctx.holdId}, messageId=${ctx.messageId ?? 'n/a'}]`,
           releaseError
         );
       }

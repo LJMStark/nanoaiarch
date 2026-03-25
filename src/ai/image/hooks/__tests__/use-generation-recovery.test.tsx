@@ -1,16 +1,46 @@
-import { renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGenerationRecovery } from '../use-generation-recovery';
 
 const {
   getMessageStatusMock,
   updateAssistantMessageMock,
+  storeState,
   useConversationStoreMock,
-} = vi.hoisted(() => ({
-  getMessageStatusMock: vi.fn(),
-  updateAssistantMessageMock: vi.fn(),
-  useConversationStoreMock: vi.fn(),
-}));
+  setGeneratingMock,
+  updateMessageMock,
+} = vi.hoisted(() => {
+  const storeState = {
+    generatingMessageId: 'assistant-1' as string | null,
+  };
+  const setGeneratingMock = vi.fn(
+    (isGenerating: boolean, messageId?: string | null) => {
+      storeState.generatingMessageId = isGenerating
+        ? (messageId ?? null)
+        : null;
+    }
+  );
+  const updateMessageMock = vi.fn();
+  const useConversationStoreMock = Object.assign(
+    vi.fn(() => ({
+      generatingMessageId: storeState.generatingMessageId,
+      setGenerating: setGeneratingMock,
+      updateMessage: updateMessageMock,
+    })),
+    {
+      getState: vi.fn(() => storeState),
+    }
+  );
+
+  return {
+    getMessageStatusMock: vi.fn(),
+    updateAssistantMessageMock: vi.fn(),
+    storeState,
+    useConversationStoreMock,
+    setGeneratingMock,
+    updateMessageMock,
+  };
+});
 
 vi.mock('@/actions/project-message', () => ({
   getMessageStatus: getMessageStatusMock,
@@ -22,16 +52,13 @@ vi.mock('@/stores/conversation-store', () => ({
 }));
 
 describe('useGenerationRecovery', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useRealTimers();
+    storeState.generatingMessageId = 'assistant-1';
+  });
+
   it('marks missing generating messages as failed so the user can retry', async () => {
-    const setGeneratingMock = vi.fn();
-    const updateMessageMock = vi.fn();
-
-    useConversationStoreMock.mockReturnValue({
-      generatingMessageId: 'assistant-1',
-      setGenerating: setGeneratingMock,
-      updateMessage: updateMessageMock,
-    });
-
     getMessageStatusMock.mockResolvedValue({
       success: true,
       data: null,
@@ -63,5 +90,41 @@ describe('useGenerationRecovery', () => {
       errorMessage: '生成任务状态已丢失，请重试',
     });
     expect(setGeneratingMock).toHaveBeenCalledWith(false);
+  });
+
+  it('ignores stale poll results after a newer generation starts', async () => {
+    let resolveStatus:
+      | ((value: { success: boolean; data: { status: string } | null }) => void)
+      | null = null;
+    getMessageStatusMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveStatus = resolve;
+        })
+    );
+
+    renderHook(() => useGenerationRecovery('project-1'));
+
+    await Promise.resolve();
+    expect(getMessageStatusMock).toHaveBeenCalledWith(
+      'project-1',
+      'assistant-1'
+    );
+
+    act(() => {
+      storeState.generatingMessageId = 'assistant-2';
+    });
+
+    await act(async () => {
+      resolveStatus?.({
+        success: true,
+        data: {
+          status: 'completed',
+        },
+      });
+    });
+
+    expect(updateMessageMock).not.toHaveBeenCalled();
+    expect(setGeneratingMock).not.toHaveBeenCalledWith(false);
   });
 });

@@ -3,8 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { useConversationSubmit } from '../use-conversation-submit';
 
 const {
-  addUserMessageMock,
-  addAssistantMessageMock,
+  createPendingGenerationMock,
   updateAssistantMessageMock,
   generateImageMock,
   storeState,
@@ -13,6 +12,7 @@ const {
   const storeState = {
     abortController: null as AbortController | null,
     generatingMessageId: null as string | null,
+    generationRequestToken: null as string | null,
   };
 
   const useConversationStoreMock = Object.assign(vi.fn(), {
@@ -20,8 +20,7 @@ const {
   });
 
   return {
-    addUserMessageMock: vi.fn(),
-    addAssistantMessageMock: vi.fn(),
+    createPendingGenerationMock: vi.fn(),
     updateAssistantMessageMock: vi.fn(),
     generateImageMock: vi.fn(),
     storeState,
@@ -30,8 +29,7 @@ const {
 });
 
 vi.mock('@/actions/project-message', () => ({
-  addUserMessage: addUserMessageMock,
-  addAssistantMessage: addAssistantMessageMock,
+  createPendingGeneration: createPendingGenerationMock,
   updateAssistantMessage: updateAssistantMessageMock,
 }));
 
@@ -44,6 +42,50 @@ vi.mock('@/stores/conversation-store', () => ({
 }));
 
 describe('useConversationSubmit', () => {
+  it('keeps the draft intact when bootstrapping the pending generation fails', async () => {
+    const addMessageMock = vi.fn();
+    const updateMessageMock = vi.fn();
+    const clearDraftMock = vi.fn();
+    const setReferenceImagesMock = vi.fn();
+    const setShowImageUploadMock = vi.fn();
+
+    createPendingGenerationMock.mockResolvedValue({
+      success: false,
+      error: 'db error',
+    });
+
+    const { result } = renderHook(() =>
+      useConversationSubmit({
+        t: (key) => key,
+        currentProjectId: 'project-1',
+        draftPrompt: 'draw a chair',
+        referenceImages: ['base64-image'],
+        aspectRatio: '1:1',
+        selectedModel: 'forma',
+        imageQuality: '2K',
+        isGenerating: false,
+        clearDraft: clearDraftMock,
+        setReferenceImages: setReferenceImagesMock,
+        setShowImageUpload: setShowImageUploadMock,
+        addMessage: addMessageMock,
+        updateMessage: updateMessageMock,
+        setGenerating: vi.fn(),
+        getLastOutputImage: () => null,
+        getConversationHistory: () => [],
+        setAbortController: vi.fn(),
+        setGenerationRequestToken: vi.fn(),
+        setGenerationStage: vi.fn(),
+      })
+    );
+
+    await result.current();
+
+    expect(clearDraftMock).not.toHaveBeenCalled();
+    expect(setReferenceImagesMock).not.toHaveBeenCalled();
+    expect(setShowImageUploadMock).not.toHaveBeenCalled();
+    expect(addMessageMock).not.toHaveBeenCalled();
+  });
+
   it('falls back to local failed state when cancellation persistence fails', async () => {
     const addMessageMock = vi.fn();
     const updateMessageMock = vi.fn();
@@ -51,20 +93,43 @@ describe('useConversationSubmit', () => {
 
     storeState.abortController = null;
     storeState.generatingMessageId = null;
+    storeState.generationRequestToken = null;
 
-    addUserMessageMock.mockResolvedValue({
+    createPendingGenerationMock.mockResolvedValue({
       success: true,
       data: {
-        id: 'user-1',
-        content: 'draw a chair',
-      },
-    });
-    addAssistantMessageMock.mockResolvedValue({
-      success: true,
-      data: {
-        id: 'assistant-1',
-        content: '',
-        status: 'generating',
+        userMessage: {
+          id: 'user-1',
+          projectId: 'project-1',
+          role: 'user',
+          content: 'draw a chair',
+          inputImage: null,
+          outputImage: null,
+          maskImage: null,
+          generationParams: null,
+          creditsUsed: null,
+          generationTime: null,
+          status: 'completed',
+          errorMessage: null,
+          orderIndex: 0,
+          createdAt: new Date(),
+        },
+        assistantMessage: {
+          id: 'assistant-1',
+          projectId: 'project-1',
+          role: 'assistant',
+          content: '',
+          inputImage: null,
+          outputImage: null,
+          maskImage: null,
+          generationParams: JSON.stringify({ prompt: 'draw a chair' }),
+          creditsUsed: null,
+          generationTime: null,
+          status: 'generating',
+          errorMessage: null,
+          orderIndex: 1,
+          createdAt: new Date(),
+        },
       },
     });
     generateImageMock.mockResolvedValue({
@@ -79,9 +144,12 @@ describe('useConversationSubmit', () => {
     const setAbortController = vi.fn((controller: AbortController | null) => {
       storeState.abortController = controller;
     });
+    const setGenerationRequestToken = vi.fn((token: string | null) => {
+      storeState.generationRequestToken = token;
+    });
     const setGenerationStage = vi.fn();
     const setGenerating = vi.fn(
-      (isGenerating: boolean, generatingMessageId?: string) => {
+      (isGenerating: boolean, generatingMessageId?: string | null) => {
         storeState.generatingMessageId = isGenerating
           ? (generatingMessageId ?? null)
           : null;
@@ -107,6 +175,7 @@ describe('useConversationSubmit', () => {
         getLastOutputImage: () => null,
         getConversationHistory: () => [],
         setAbortController,
+        setGenerationRequestToken,
         setGenerationStage,
         onError: onErrorMock,
       })
@@ -128,5 +197,6 @@ describe('useConversationSubmit', () => {
     });
     expect(setGenerating).toHaveBeenLastCalledWith(false);
     expect(storeState.generatingMessageId).toBeNull();
+    expect(storeState.generationRequestToken).toBeNull();
   });
 });

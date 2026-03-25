@@ -8,6 +8,26 @@ const MAX_REFERENCE_IMAGES = 5;
 const MAX_CONVERSATION_MESSAGES = 10;
 const MAX_HISTORY_CONTENT_LENGTH = 4000;
 
+function formatImageValidationError(
+  index: number,
+  kind: 'reference' | 'conversation',
+  error: string | undefined
+): string {
+  if (kind === 'reference') {
+    if (error === '图片来源未被允许') {
+      return `第 ${index + 1} 张参考图图片来源未被允许`;
+    }
+
+    return error || `第 ${index + 1} 张参考图无效`;
+  }
+
+  if (error === '图片来源未被允许') {
+    return `第 ${index + 1} 条对话消息图片来源未被允许`;
+  }
+
+  return error || `第 ${index + 1} 条对话消息图片无效`;
+}
+
 type ConversationMessage = {
   role: 'user' | 'model';
   content: string;
@@ -68,7 +88,7 @@ export function validateReferenceImages(
     if (!validation.valid) {
       return {
         valid: false,
-        error: validation.error || `第 ${index + 1} 张参考图无效`,
+        error: formatImageValidationError(index, 'reference', validation.error),
       };
     }
   }
@@ -131,7 +151,11 @@ export function validateConversationMessages(
       if (!validation.valid) {
         return {
           valid: false,
-          error: validation.error || `第 ${index + 1} 条对话消息图片无效`,
+          error: formatImageValidationError(
+            index,
+            'conversation',
+            validation.error
+          ),
         };
       }
     }

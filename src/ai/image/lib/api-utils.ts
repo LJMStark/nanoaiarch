@@ -3,6 +3,10 @@ import {
   type ImageQuality,
 } from '@/ai/image/lib/image-constants';
 import { logger } from '@/lib/logger';
+import type {
+  GenerateImageResponse,
+  PersistedAssistantMessagePayload,
+} from './api-types';
 import type { GeminiAspectRatio, GeminiImageModelId } from './gemini-client';
 import { GEMINI_MODEL_IDS, type GeminiModelId } from './provider-config';
 
@@ -99,6 +103,20 @@ export interface ImageValidationResult {
   sizeBytes?: number;
 }
 
+function getAllowedImageFetchHosts(): Set<string> {
+  const rawHosts = process.env.IMAGE_ALLOWED_FETCH_HOSTS?.trim();
+  if (!rawHosts) {
+    return new Set();
+  }
+
+  return new Set(
+    rawHosts
+      .split(',')
+      .map((host) => host.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
 export function validateBase64Image(
   base64: string | undefined | null
 ): ImageValidationResult {
@@ -116,9 +134,17 @@ export function validateBase64Image(
 
   // Skip validation for URLs (they don't need size validation here)
   if (base64.startsWith('http://') || base64.startsWith('https://')) {
-    // Validate URL format
     try {
-      new URL(base64);
+      const url = new URL(base64);
+      const allowedHosts = getAllowedImageFetchHosts();
+
+      if (!allowedHosts.has(url.hostname.toLowerCase())) {
+        return {
+          valid: false,
+          error: '图片来源未被允许',
+        };
+      }
+
       return { valid: true };
     } catch {
       return {
@@ -182,6 +208,8 @@ export interface GenerateImageParams {
     content: string;
     image?: string;
   }>;
+  projectId?: string;
+  assistantMessageId?: string;
 }
 
 export interface GenerateImageResult {
@@ -190,6 +218,7 @@ export interface GenerateImageResult {
   text?: string;
   error?: string;
   creditsUsed?: number;
+  message?: PersistedAssistantMessagePayload;
 }
 
 const CLIENT_TIMEOUT_MS = 150 * 1000;
@@ -202,6 +231,7 @@ export async function generateImage(
     () => internalController.abort(),
     CLIENT_TIMEOUT_MS
   );
+  const handleAbort = () => internalController.abort();
 
   // If external signal provided, forward its abort to the internal controller
   if (params.signal) {
@@ -209,9 +239,7 @@ export async function generateImage(
       clearTimeout(timeoutId);
       return { success: false, error: '生成已取消' };
     }
-    params.signal.addEventListener('abort', () => internalController.abort(), {
-      once: true,
-    });
+    params.signal.addEventListener('abort', handleAbort, { once: true });
   }
 
   try {
@@ -228,12 +256,26 @@ export async function generateImage(
         aspectRatio: params.aspectRatio,
         imageSize: params.imageSize || DEFAULT_IMAGE_QUALITY,
         conversationHistory: params.conversationHistory,
+        projectId: params.projectId,
+        assistantMessageId: params.assistantMessageId,
       }),
       signal: internalController.signal,
     });
 
     clearTimeout(timeoutId);
-    const data = await response.json();
+    params.signal?.removeEventListener('abort', handleAbort);
+    const data = (await response.json()) as GenerateImageResponse;
+
+    if (data.message) {
+      return {
+        success: data.message.status === 'completed',
+        image: data.message.outputImage ?? undefined,
+        text: data.message.content || data.text,
+        error: data.error || data.message.errorMessage || undefined,
+        creditsUsed: data.creditsUsed ?? data.message.creditsUsed ?? undefined,
+        message: data.message,
+      };
+    }
 
     if (!response.ok) {
       return {
@@ -257,6 +299,7 @@ export async function generateImage(
     };
   } catch (error) {
     clearTimeout(timeoutId);
+    params.signal?.removeEventListener('abort', handleAbort);
     if (error instanceof Error && error.name === 'AbortError') {
       const wasCancelled = params.signal?.aborted;
       if (wasCancelled) {

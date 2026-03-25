@@ -28,7 +28,8 @@ describe('resolveRequestedImageSize', () => {
 });
 
 describe('validateConversationMessages', () => {
-  it('accepts valid multi-turn history with optional image URLs', () => {
+  it('accepts valid multi-turn history with allowlisted image URLs', () => {
+    process.env.IMAGE_ALLOWED_FETCH_HOSTS = 'example.com';
     expect(
       validateConversationMessages([
         {
@@ -42,6 +43,23 @@ describe('validateConversationMessages', () => {
         },
       ])
     ).toEqual({ valid: true });
+  });
+
+  it('rejects non-allowlisted image URLs', () => {
+    process.env.IMAGE_ALLOWED_FETCH_HOSTS = 'assets.example.com';
+
+    expect(
+      validateConversationMessages([
+        {
+          role: 'user',
+          content: 'bad',
+          image: 'https://attacker.example/image.png',
+        },
+      ])
+    ).toEqual({
+      valid: false,
+      error: '第 1 条对话消息图片来源未被允许',
+    });
   });
 
   it('rejects invalid roles', () => {

@@ -7,33 +7,27 @@ import { logger } from '@/lib/logger';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useCallback, useEffect, useRef } from 'react';
 
-/**
- * Generation state recovery and monitoring hook
- * Periodically polls database to check if generating messages have completed
- *
- * Features:
- * - Optimized API calls (fetches single message status)
- * - Auto-retry mechanism (with max attempts limit)
- * - Timeout protection (max duration limit)
- * - Proper cleanup on component unmount
- */
 export function useGenerationRecovery(projectId: string | null): void {
   const { generatingMessageId, setGenerating, updateMessage } =
     useConversationStore();
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retryCountRef = useRef(0);
   const startTimeRef = useRef(0);
 
-  // Helper function to stop polling
   const stopPolling = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
   }, []);
 
   const markGenerationFailed = useCallback(
     async (messageId: string, errorMessage: string) => {
+      const state = useConversationStore.getState();
+      if (state.generatingMessageId !== messageId) {
+        return;
+      }
+
       updateMessage(messageId, {
         status: 'failed',
         content: errorMessage,
@@ -59,100 +53,121 @@ export function useGenerationRecovery(projectId: string | null): void {
   );
 
   useEffect(() => {
-    // Only start polling when there's a generating message
     if (!projectId || !generatingMessageId) {
       stopPolling();
       return;
     }
 
-    // Reset counters
+    let cancelled = false;
+    const activeMessageId = generatingMessageId;
+
     retryCountRef.current = 0;
     startTimeRef.current = Date.now();
 
     logger.ai.info(
-      `Starting generation recovery polling [messageId=${generatingMessageId}]`
+      `Starting generation recovery polling [messageId=${activeMessageId}]`
     );
 
-    // Polling function
-    const checkGeneratingStatus = async () => {
-      const elapsed = Date.now() - startTimeRef.current;
+    const scheduleNextPoll = () => {
+      if (cancelled) {
+        return;
+      }
 
-      // Check if max retries or max duration exceeded
+      timeoutRef.current = setTimeout(() => {
+        void pollStatus();
+      }, GENERATION_RECOVERY_CONFIG.POLL_INTERVAL_MS);
+    };
+
+    const pollStatus = async () => {
+      if (cancelled) {
+        return;
+      }
+
+      const state = useConversationStore.getState();
+      if (state.generatingMessageId !== activeMessageId) {
+        return;
+      }
+
+      const elapsed = Date.now() - startTimeRef.current;
       if (
         retryCountRef.current >= GENERATION_RECOVERY_CONFIG.MAX_RETRIES ||
         elapsed > GENERATION_RECOVERY_CONFIG.MAX_POLL_DURATION_MS
       ) {
         logger.ai.warn(
-          `Generation polling timeout [retries=${retryCountRef.current}, elapsed=${elapsed}ms]`
+          `Generation polling timeout [retries=${retryCountRef.current}, elapsed=${elapsed}ms, messageId=${activeMessageId}]`
         );
-        await markGenerationFailed(generatingMessageId, '生成超时，请重试');
+        await markGenerationFailed(activeMessageId, '生成超时，请重试');
         return;
       }
 
       try {
-        // Use optimized API to query single message status
-        const result = await getMessageStatus(projectId, generatingMessageId);
+        const result = await getMessageStatus(projectId, activeMessageId);
+
+        if (cancelled) {
+          return;
+        }
+
+        const latestState = useConversationStore.getState();
+        if (latestState.generatingMessageId !== activeMessageId) {
+          return;
+        }
 
         if (!result.success) {
-          retryCountRef.current++;
+          retryCountRef.current += 1;
           logger.ai.warn(
             `Failed to check message status (attempt ${retryCountRef.current}/${GENERATION_RECOVERY_CONFIG.MAX_RETRIES})`
           );
+          scheduleNextPoll();
           return;
         }
 
         if (!result.data) {
           logger.ai.warn(
-            `Generating message not found [messageId=${generatingMessageId}]`
+            `Generating message not found [messageId=${activeMessageId}]`
           );
           await markGenerationFailed(
-            generatingMessageId,
+            activeMessageId,
             '生成任务状态已丢失，请重试'
           );
           return;
         }
 
-        // Successful query, reset retry count
         retryCountRef.current = 0;
 
-        // Check if status changed (completed or failed)
         if (result.data.status !== 'generating') {
           logger.ai.info(
-            `Generation completed [messageId=${generatingMessageId}, status=${result.data.status}, elapsed=${elapsed}ms]`
+            `Generation completed [messageId=${activeMessageId}, status=${result.data.status}, elapsed=${elapsed}ms]`
           );
-          // Update message state
-          updateMessage(generatingMessageId, result.data);
+          updateMessage(activeMessageId, result.data);
           setGenerating(false);
           stopPolling();
+          return;
         }
+
+        scheduleNextPoll();
       } catch (error) {
-        retryCountRef.current++;
+        retryCountRef.current += 1;
         logger.ai.error(
           `Generation recovery polling error (attempt ${retryCountRef.current}/${GENERATION_RECOVERY_CONFIG.MAX_RETRIES}):`,
           error
         );
+        scheduleNextPoll();
       }
     };
 
-    // Execute immediately
-    checkGeneratingStatus();
-
-    // Start interval polling
-    intervalRef.current = setInterval(
-      checkGeneratingStatus,
-      GENERATION_RECOVERY_CONFIG.POLL_INTERVAL_MS
-    );
+    void pollStatus();
 
     return () => {
+      cancelled = true;
       logger.ai.info('Stopping generation recovery polling');
       stopPolling();
     };
   }, [
-    projectId,
     generatingMessageId,
     markGenerationFailed,
+    projectId,
     setGenerating,
-    updateMessage,
     stopPolling,
+    updateMessage,
   ]);
 }

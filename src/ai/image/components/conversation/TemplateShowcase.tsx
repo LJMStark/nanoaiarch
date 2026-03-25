@@ -113,13 +113,10 @@ export function TemplateShowcase({
         const first = entries[0];
         if (first.isIntersecting && hasMore && !isLoadingMore) {
           setIsLoadingMore(true);
-          // 模拟加载延迟，实际可以直接加载
-          setTimeout(() => {
-            setDisplayCount((prev) =>
-              Math.min(prev + PAGE_SIZE, filteredTemplates.length)
-            );
-            setIsLoadingMore(false);
-          }, 300);
+          setDisplayCount((prev) =>
+            Math.min(prev + PAGE_SIZE, filteredTemplates.length)
+          );
+          setIsLoadingMore(false);
         }
       },
       {
