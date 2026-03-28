@@ -21,9 +21,14 @@ export function ReferenceImagesPreview({
     <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
       <div className="flex gap-1">
         {images.slice(0, 3).map((img, idx) => {
-          // Type safety check
-          const imageSrc =
-            typeof img === 'string' ? `data:image/png;base64,${img}` : '';
+          let imageSrc = '';
+          if (typeof img === 'string') {
+            if (img.startsWith('http') || img.startsWith('data:')) {
+              imageSrc = img;
+            } else {
+              imageSrc = `data:image/png;base64,${img}`;
+            }
+          }
           if (!imageSrc) {
             console.error('Invalid image data at index', idx, img);
             return null;

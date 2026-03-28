@@ -150,7 +150,12 @@ export function QuickActionCard({
               <div className="relative group">
                 <div className="w-12 h-12 rounded-lg overflow-hidden border border-border/50">
                   <Image
-                    src={`data:image/png;base64,${referenceImage}`}
+                    src={
+                      referenceImage.startsWith('http') ||
+                      referenceImage.startsWith('data:')
+                        ? referenceImage
+                        : `data:image/png;base64,${referenceImage}`
+                    }
                     alt="Reference"
                     width={48}
                     height={48}

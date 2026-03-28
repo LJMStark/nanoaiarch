@@ -144,7 +144,11 @@ export function MultiImageUploader({
               className="relative h-16 w-16 overflow-hidden rounded-lg border bg-muted"
             >
               <Image
-                src={`data:image/png;base64,${image}`}
+                src={
+                  image.startsWith('http') || image.startsWith('data:')
+                    ? image
+                    : `data:image/png;base64,${image}`
+                }
                 alt={t('referenceImageAlt', { index: index + 1 })}
                 fill
                 className="object-cover"

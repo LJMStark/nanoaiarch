@@ -154,7 +154,12 @@ export function FloatingControlBar({
             <div className="relative group">
               <div className="w-16 h-16 rounded-lg overflow-hidden border border-border/50">
                 <Image
-                  src={`data:image/png;base64,${referenceImage}`}
+                  src={
+                    referenceImage.startsWith('http') ||
+                    referenceImage.startsWith('data:')
+                      ? referenceImage
+                      : `data:image/png;base64,${referenceImage}`
+                  }
                   alt="Reference"
                   width={64}
                   height={64}
