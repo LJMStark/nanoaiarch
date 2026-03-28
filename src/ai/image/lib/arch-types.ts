@@ -18,7 +18,7 @@ export type StylePresetId =
 
 // Aspect ratio identifiers
 // 画幅比例标识符
-export type AspectRatioId = '1:1' | '16:9' | '4:3' | '3:4' | '9:16';
+export type AspectRatioId = 'auto' | '1:1' | '16:9' | '4:3' | '3:4' | '9:16';
 
 // Style preset configuration
 // 风格预设配置

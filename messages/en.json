@@ -1537,6 +1537,7 @@
       "whiteModel": "White Model"
     },
     "aspectRatios": {
+      "auto": "Auto",
       "square": "Square",
       "landscape": "Landscape",
       "standard": "Standard",

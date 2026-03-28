@@ -1537,6 +1537,7 @@
       "whiteModel": "白模渲染"
     },
     "aspectRatios": {
+      "auto": "自动",
       "square": "正方形",
       "landscape": "横屏",
       "standard": "标准",

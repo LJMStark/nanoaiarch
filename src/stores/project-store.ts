@@ -72,7 +72,7 @@ const initialState = {
   currentProjectId: null as string | null,
   isLoadingProjects: false,
   imageQuality: DEFAULT_IMAGE_QUALITY,
-  aspectRatio: '1:1' as AspectRatioId,
+  aspectRatio: 'auto' as AspectRatioId,
   selectedModel: 'forma' as GeminiModelId,
   draftPrompt: '',
   draftImage: null as string | null,
@@ -111,7 +111,7 @@ export const useProjectStore = create<ProjectState>()(
         set({
           currentProjectId: projectId,
           // Restore project aspect ratio, keep user's quality preference
-          aspectRatio: (project?.aspectRatio as AspectRatioId) ?? '1:1',
+          aspectRatio: (project?.aspectRatio as AspectRatioId) ?? 'auto',
           // Clear draft when switching projects
           draftPrompt: '',
           draftImage: null,
@@ -135,7 +135,7 @@ export const useProjectStore = create<ProjectState>()(
       applyTemplate: (template) => {
         set({
           draftPrompt: template.promptTemplate,
-          aspectRatio: template.defaultAspectRatio ?? '1:1',
+          aspectRatio: template.defaultAspectRatio ?? 'auto',
         });
       },
 
@@ -143,7 +143,7 @@ export const useProjectStore = create<ProjectState>()(
         set({
           currentProjectId: projectId,
           draftPrompt: template.promptTemplate,
-          aspectRatio: template.defaultAspectRatio ?? '1:1',
+          aspectRatio: template.defaultAspectRatio ?? 'auto',
           draftImage: null,
         });
       },

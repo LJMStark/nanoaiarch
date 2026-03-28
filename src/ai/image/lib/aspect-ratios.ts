@@ -2,6 +2,7 @@
 // 建筑可视化画幅比例配置
 
 import {
+  Wand2,
   RectangleHorizontal,
   RectangleVertical,
   Smartphone,
@@ -12,6 +13,13 @@ import type { AspectRatioConfig, AspectRatioId } from './arch-types';
 // Aspect ratio definitions with dimensions
 // 画幅比例定义及尺寸
 export const ASPECT_RATIOS: Record<AspectRatioId, AspectRatioConfig> = {
+  auto: {
+    id: 'auto',
+    labelKey: 'ArchPage.aspectRatios.auto',
+    width: 1024,
+    height: 1024,
+    icon: Wand2,
+  },
   '1:1': {
     id: '1:1',
     labelKey: 'ArchPage.aspectRatios.square',
@@ -71,4 +79,4 @@ export function getAspectRatioDimensions(id: AspectRatioId): {
 
 // Default aspect ratio
 // 默认画幅比例
-export const DEFAULT_ASPECT_RATIO: AspectRatioId = '16:9';
+export const DEFAULT_ASPECT_RATIO: AspectRatioId = 'auto';
