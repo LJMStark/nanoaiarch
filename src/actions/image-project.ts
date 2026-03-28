@@ -44,7 +44,7 @@ export async function createImageProjectRecord(params: {
   await params.db.insert(imageProject).values({
     id,
     userId: params.userId,
-    title: params.data?.title ?? 'Untitled',
+    title: params.data?.title ?? '未命名项目',
     templateId: params.data?.templateId ?? null,
     stylePreset: params.data?.stylePreset ?? null,
     aspectRatio: params.data?.aspectRatio ?? '1:1',
@@ -55,7 +55,7 @@ export async function createImageProjectRecord(params: {
 
   return {
     id,
-    title: params.data?.title ?? 'Untitled',
+    title: params.data?.title ?? '未命名项目',
     coverImage: null,
     templateId: params.data?.templateId ?? null,
     stylePreset: params.data?.stylePreset ?? null,

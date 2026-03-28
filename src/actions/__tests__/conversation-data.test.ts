@@ -117,7 +117,7 @@ describe('getConversationInitData', () => {
     getDbMock.mockResolvedValue(db);
     createImageProjectRecordMock.mockResolvedValue({
       id: 'project-new',
-      title: 'Untitled',
+      title: '未命名项目',
       coverImage: null,
       templateId: null,
       stylePreset: null,

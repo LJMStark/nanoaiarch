@@ -193,7 +193,7 @@ export const imageProject = pgTable("image_project", {
 	userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
 
 	// Project info
-	title: text("title").notNull().default("Untitled"),
+	title: text("title").notNull().default("未命名项目"),
 	coverImage: text("cover_image"), // base64 or URL
 
 	// Project config

@@ -1,0 +1,1 @@
+ALTER TABLE "image_project" ALTER COLUMN "title" SET DEFAULT '未命名项目';
