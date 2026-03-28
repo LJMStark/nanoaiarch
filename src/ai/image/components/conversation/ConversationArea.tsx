@@ -19,16 +19,18 @@ export function ConversationArea() {
 
   const hasMessages = messages.length > 0;
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
-    const viewport = viewportRef.current;
-    if (!viewport) {
-      return;
-    }
+    setTimeout(() => {
+      const viewport = viewportRef.current;
+      if (!viewport) {
+        return;
+      }
 
-    viewport.scrollTo({
-      top: viewport.scrollHeight,
-      behavior,
-    });
-    setShowJumpToBottom(false);
+      viewport.scrollTo({
+        top: viewport.scrollHeight,
+        behavior,
+      });
+      setShowJumpToBottom(false);
+    }, 100); // 延迟执行以确保React渲染和Framer Motion动画完成
   }, []);
 
   const updateScrollState = useCallback(() => {
