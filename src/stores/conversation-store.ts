@@ -1,4 +1,9 @@
-import type { ProjectMessageItem } from '@/ai/image/lib/workspace-types';
+import type {
+  ConversationHistoryMessage,
+  GeminiConversationPart,
+  GenerationParams,
+  ProjectMessageItem,
+} from '@/ai/image/lib/workspace-types';
 import { logger } from '@/lib/logger';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -56,11 +61,7 @@ interface ConversationState {
   getLastOutputImage: () => string | null;
 
   // Get conversation history for multi-turn context
-  getConversationHistory: () => Array<{
-    role: 'user' | 'model';
-    content: string;
-    image?: string;
-  }>;
+  getConversationHistory: () => ConversationHistoryMessage[];
 
   // Reset
   reset: () => void;
@@ -118,6 +119,40 @@ const customStorage = {
 
 // Create storage object for zustand persist
 const persistStorage = createJSONStorage(() => customStorage);
+
+function getStoredModelResponseParts(
+  generationParams: string | null
+): GeminiConversationPart[] | undefined {
+  if (!generationParams) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(generationParams) as GenerationParams;
+    if (!Array.isArray(parsed.modelResponseParts)) {
+      return undefined;
+    }
+
+    return parsed.modelResponseParts.filter(
+      (part): part is GeminiConversationPart => {
+        if (!part || typeof part !== 'object' || !('type' in part)) {
+          return false;
+        }
+
+        if (part.type === 'text') {
+          return typeof part.text === 'string' && part.text.length > 0;
+        }
+
+        return part.type === 'image';
+      }
+    );
+  } catch (error) {
+    logger.general.warn('Failed to parse stored model response parts', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return undefined;
+  }
+}
 
 export const useConversationStore = create<ConversationState>()(
   persist(
@@ -221,7 +256,7 @@ export const useConversationStore = create<ConversationState>()(
         return lastMessage?.outputImage ?? null;
       },
 
-      getConversationHistory: () => {
+      getConversationHistory: (): ConversationHistoryMessage[] => {
         const messages = get().messages;
 
         // Collect completed user+assistant pairs (most recent 5 rounds)
@@ -242,20 +277,27 @@ export const useConversationStore = create<ConversationState>()(
           }
         }
 
-        return pairs.slice(-5).flatMap((pair) => [
-          {
-            role: 'user' as const,
-            content: pair.user.content,
-            ...(pair.user.inputImage && { image: pair.user.inputImage }),
-          },
-          {
-            role: 'model' as const,
-            content: pair.assistant.content || '',
-            ...(pair.assistant.outputImage && {
-              image: pair.assistant.outputImage,
-            }),
-          },
-        ]);
+        return pairs.slice(-5).flatMap((pair) => {
+          const modelResponseParts = getStoredModelResponseParts(
+            pair.assistant.generationParams
+          );
+
+          return [
+            {
+              role: 'user' as const,
+              content: pair.user.content,
+              ...(pair.user.inputImage && { image: pair.user.inputImage }),
+            },
+            {
+              role: 'model' as const,
+              content: pair.assistant.content || '',
+              ...(pair.assistant.outputImage && {
+                image: pair.assistant.outputImage,
+              }),
+              ...(modelResponseParts ? { parts: modelResponseParts } : {}),
+            },
+          ];
+        });
       },
 
       reset: () => set(initialState),

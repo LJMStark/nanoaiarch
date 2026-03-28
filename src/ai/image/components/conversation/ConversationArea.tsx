@@ -104,7 +104,7 @@ export function ConversationArea() {
 
   // 有消息时显示消息列表
   return (
-    <div className="relative flex-1 min-h-0">
+    <div className="relative flex flex-1 min-h-0 flex-col">
       <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
         <div className="p-4">
           <div className="max-w-3xl mx-auto">

@@ -2,6 +2,7 @@
 
 import { validateBase64Image } from '@/ai/image/lib/api-utils';
 import { generateProjectTitle } from '@/ai/image/lib/title-generator';
+import type { GeminiConversationPart } from '@/ai/image/lib/workspace-types';
 import { getDb } from '@/db';
 import { imageProject, projectMessage } from '@/db/schema';
 import { auth } from '@/lib/auth';
@@ -38,6 +39,7 @@ export type GenerationParams = {
   aspectRatio?: string;
   model?: string;
   imageQuality?: string;
+  modelResponseParts?: GeminiConversationPart[];
 };
 
 type DbClient = Awaited<ReturnType<typeof getDb>>;

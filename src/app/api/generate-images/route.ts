@@ -23,6 +23,7 @@ import {
   validateConversationMessages,
   validateReferenceImages,
 } from '@/ai/image/lib/request-validation';
+import type { ConversationHistoryMessage } from '@/ai/image/lib/workspace-types';
 import { logger } from '@/lib/logger';
 import { applyRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -33,27 +34,11 @@ export const maxDuration = 150;
 export async function POST(req: NextRequest) {
   const requestId = generateRequestId();
   let resolvedModelId = 'unknown';
-  let payload: GenerateImageRequest & {
-    aspectRatio?: string;
-    imageSize?: '1K' | '2K' | '4K';
-    conversationHistory?: Array<{
-      role: 'user' | 'model';
-      content: string;
-      image?: string;
-    }>;
-  };
+  let payload: GenerateImageRequest;
 
   try {
     try {
-      payload = (await req.json()) as GenerateImageRequest & {
-        aspectRatio?: string;
-        imageSize?: '1K' | '2K' | '4K';
-        conversationHistory?: Array<{
-          role: 'user' | 'model';
-          content: string;
-          image?: string;
-        }>;
-      };
+      payload = (await req.json()) as GenerateImageRequest;
     } catch (error) {
       logger.api.error(
         `Malformed JSON payload [requestId=${requestId}]`,
@@ -180,22 +165,21 @@ export async function POST(req: NextRequest) {
     ) {
       // Multi-turn conversation mode with images
       // Gemini API supports inline_data directly - no S3 upload needed
-      const messages = conversationHistory.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-        image: msg.image,
-      }));
+      const messages: ConversationHistoryMessage[] = conversationHistory.map(
+        (msg) => ({
+          role: msg.role,
+          content: msg.content,
+          image: msg.image,
+          parts: msg.parts,
+        })
+      );
 
-      // Add current reference images to the latest user message if any
-      if (allReferenceImages.length > 0) {
-        const lastUserIdx = messages.findLastIndex((m) => m.role === 'user');
-        if (lastUserIdx >= 0 && allReferenceImages[0]) {
-          messages[lastUserIdx] = {
-            ...messages[lastUserIdx],
-            image: allReferenceImages[0],
-          };
-        }
-      }
+      messages.push({
+        role: 'user',
+        content: prompt,
+        image: allReferenceImages[0],
+        parts: undefined,
+      });
 
       logger.api.info(
         `[requestId=${requestId}] Using conversation mode with ${messages.length} messages`
@@ -258,6 +242,15 @@ export async function POST(req: NextRequest) {
         ? await updateAssistantMessage(assistantMessageId, {
             content: result.text ?? '',
             outputImage: result.image,
+            generationParams: {
+              prompt,
+              aspectRatio,
+              model: modelId,
+              imageQuality: selectedImageSize,
+              ...(result.modelResponseParts
+                ? { modelResponseParts: result.modelResponseParts }
+                : {}),
+            },
             creditsUsed: result.creditsUsed,
             generationTime,
             status: 'completed',

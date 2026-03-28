@@ -15,6 +15,7 @@ import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { NextResponse } from 'next/server';
 import { TIMEOUT_MILLIS, withTimeout } from './api-utils';
+import type { GeminiConversationPart } from './workspace-types';
 
 // Valid model IDs for validation
 const VALID_MODEL_IDS: readonly string[] = GEMINI_MODELS;
@@ -37,6 +38,7 @@ export interface ImageGenerationResult {
   image?: string;
   text?: string;
   error?: string;
+  modelResponseParts?: GeminiConversationPart[];
 }
 
 // ============================================================================
@@ -210,6 +212,7 @@ export async function executeImageGeneration({
   text?: string;
   error?: string;
   creditsUsed?: number;
+  modelResponseParts?: GeminiConversationPart[];
 }> {
   try {
     return await withTimeout(
@@ -270,6 +273,7 @@ export async function executeImageGeneration({
             image: imageData,
             text: genResult.text,
             creditsUsed: ctx.creditCost,
+            modelResponseParts: genResult.modelResponseParts,
           };
         }
 

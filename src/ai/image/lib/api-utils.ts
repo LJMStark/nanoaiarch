@@ -9,6 +9,7 @@ import type {
 } from './api-types';
 import type { GeminiAspectRatio, GeminiImageModelId } from './gemini-client';
 import { GEMINI_MODEL_IDS, type GeminiModelId } from './provider-config';
+import type { ConversationHistoryMessage } from './workspace-types';
 
 /**
  * Request timeout duration (120 seconds)
@@ -223,11 +224,7 @@ export interface GenerateImageParams {
   model?: string;
   imageSize?: ImageQuality;
   signal?: AbortSignal;
-  conversationHistory?: Array<{
-    role: 'user' | 'model';
-    content: string;
-    image?: string;
-  }>;
+  conversationHistory?: ConversationHistoryMessage[];
   projectId?: string;
   assistantMessageId?: string;
 }

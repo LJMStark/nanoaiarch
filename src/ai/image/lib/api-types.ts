@@ -1,5 +1,6 @@
 import type { AspectRatioId, StylePresetId } from './arch-types';
 import type { GeminiModelId, ProviderKey } from './provider-config';
+import type { ConversationHistoryMessage } from './workspace-types';
 
 export interface PersistedAssistantMessagePayload {
   id: string;
@@ -33,6 +34,8 @@ export interface GenerateImageRequest {
   aspectRatio?: AspectRatioId;
   useSystemPrompt?: boolean;
   templateId?: string;
+  imageSize?: '1K' | '2K' | '4K';
+  conversationHistory?: ConversationHistoryMessage[];
   projectId?: string;
   assistantMessageId?: string;
 }
@@ -49,11 +52,7 @@ export interface GenerateImageResponse {
 // 对话式编辑请求
 export interface EditImageRequest {
   // 对话历史
-  messages: Array<{
-    role: 'user' | 'model';
-    content: string;
-    image?: string; // base64 编码的图像
-  }>;
+  messages: ConversationHistoryMessage[];
   modelId: GeminiModelId;
   imageSize?: '1K' | '2K' | '4K';
 }

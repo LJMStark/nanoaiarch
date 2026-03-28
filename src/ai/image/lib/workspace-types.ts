@@ -2,6 +2,25 @@ export type SerializableDate = string | Date;
 
 export type MessageRole = 'user' | 'assistant';
 
+export type GeminiConversationPart =
+  | {
+      type: 'text';
+      text: string;
+      thoughtSignature?: string;
+    }
+  | {
+      type: 'image';
+      mimeType?: string;
+      thoughtSignature?: string;
+    };
+
+export type ConversationHistoryMessage = {
+  role: 'user' | 'model';
+  content: string;
+  image?: string;
+  parts?: GeminiConversationPart[];
+};
+
 export type ImageProjectItem = {
   id: string;
   title: string;
@@ -58,6 +77,7 @@ export type GenerationParams = {
   aspectRatio?: string;
   model?: string;
   imageQuality?: string;
+  modelResponseParts?: GeminiConversationPart[];
 };
 
 export type ConversationInitData = {

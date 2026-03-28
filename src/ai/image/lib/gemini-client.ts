@@ -1,5 +1,9 @@
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import type {
+  ConversationHistoryMessage,
+  GeminiConversationPart,
+} from './workspace-types';
 
 // Official Google Gemini API configuration
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
@@ -7,6 +11,13 @@ const DEFAULT_MODEL: GeminiImageModelId =
   (process.env.GEMINI_DEFAULT_MODEL as GeminiImageModelId) ||
   'gemini-3-pro-image-preview';
 const REQUEST_TIMEOUT_MS = 120_000; // 120s - synchronous API, no polling
+const LEGACY_GEMINI_THOUGHT_SIGNATURE_TEXT =
+  'context_engineering_is_the_way to_go';
+// The REST API serializes bytes fields as base64 strings, so the documented
+// legacy sentinel must be encoded before being sent as `thoughtSignature`.
+const LEGACY_GEMINI_THOUGHT_SIGNATURE = Buffer.from(
+  LEGACY_GEMINI_THOUGHT_SIGNATURE_TEXT
+).toString('base64');
 
 // Model types
 // Nano Banana Pro = gemini-3-pro-image-preview
@@ -48,6 +59,7 @@ const PartSchema = z.object({
   text: z.string().optional(),
   inline_data: InlineDataSchema.optional(),
   inlineData: InlineDataSchema.optional(),
+  thoughtSignature: z.string().optional(),
 });
 
 const GeminiResponseSchema = z.object({
@@ -90,11 +102,7 @@ export interface EditImageParams {
   signal?: AbortSignal;
 }
 
-export interface ConversationMessage {
-  role: 'user' | 'model';
-  content: string;
-  image?: string; // base64 or URL
-}
+export type ConversationMessage = ConversationHistoryMessage;
 
 export interface ConversationEditParams {
   messages: ConversationMessage[];
@@ -109,6 +117,7 @@ export interface GenerateImageResult {
   image?: string; // base64 encoded image
   text?: string;
   error?: string;
+  modelResponseParts?: GeminiConversationPart[];
 }
 
 // ============================================
@@ -181,14 +190,25 @@ function extractImageFromResponse(data: unknown): GenerateImageResult {
   const { parts } = candidate.content;
   let imageBase64: string | undefined;
   let text: string | undefined;
+  const modelResponseParts: GeminiConversationPart[] = [];
 
   for (const part of parts) {
     if (part.text) {
       text = part.text;
+      modelResponseParts.push({
+        type: 'text',
+        text: part.text,
+        thoughtSignature: part.thoughtSignature,
+      });
     }
     const inlineData = part.inline_data ?? part.inlineData;
     if (inlineData?.data) {
       imageBase64 = inlineData.data;
+      modelResponseParts.push({
+        type: 'image',
+        mimeType: inlineData.mime_type ?? inlineData.mimeType,
+        thoughtSignature: part.thoughtSignature,
+      });
     }
   }
 
@@ -197,10 +217,18 @@ function extractImageFromResponse(data: unknown): GenerateImageResult {
       success: false,
       error: '未生成图片，请尝试其他描述',
       text,
+      modelResponseParts:
+        modelResponseParts.length > 0 ? modelResponseParts : undefined,
     };
   }
 
-  return { success: true, image: imageBase64, text };
+  return {
+    success: true,
+    image: imageBase64,
+    text,
+    modelResponseParts:
+      modelResponseParts.length > 0 ? modelResponseParts : undefined,
+  };
 }
 
 /**
@@ -213,6 +241,141 @@ async function urlToBase64(url: string, signal?: AbortSignal): Promise<string> {
   }
   const buffer = await response.arrayBuffer();
   return Buffer.from(buffer).toString('base64');
+}
+
+async function resolveImageData(
+  image: string,
+  signal?: AbortSignal
+): Promise<string> {
+  if (image.startsWith('http')) {
+    return urlToBase64(image, signal);
+  }
+
+  return image;
+}
+
+function createTextPart(
+  text: string,
+  thoughtSignature?: string
+): Record<string, string> {
+  return thoughtSignature ? { text, thoughtSignature } : { text };
+}
+
+async function createImagePart(
+  image: string,
+  signal?: AbortSignal,
+  options?: {
+    mimeType?: string;
+    thoughtSignature?: string;
+  }
+): Promise<Record<string, unknown>> {
+  const data = await resolveImageData(image, signal);
+
+  return {
+    inlineData: {
+      mimeType: options?.mimeType || 'image/jpeg',
+      data,
+    },
+    ...(options?.thoughtSignature
+      ? { thoughtSignature: options.thoughtSignature }
+      : {}),
+  };
+}
+
+async function buildModelMessageParts(
+  message: ConversationMessage,
+  signal?: AbortSignal
+): Promise<Array<Record<string, unknown>>> {
+  if (message.parts && message.parts.length > 0) {
+    const builtParts: Array<Record<string, unknown>> = [];
+    let imageUsed = false;
+
+    for (const part of message.parts) {
+      if (part.type === 'text') {
+        builtParts.push(createTextPart(part.text, part.thoughtSignature));
+        continue;
+      }
+
+      if (imageUsed || !message.image) {
+        logger.ai.warn('[Gemini] Missing image source for stored model part');
+        continue;
+      }
+
+      try {
+        builtParts.push(
+          await createImagePart(message.image, signal, {
+            mimeType: part.mimeType,
+            thoughtSignature:
+              part.thoughtSignature || LEGACY_GEMINI_THOUGHT_SIGNATURE,
+          })
+        );
+        imageUsed = true;
+      } catch (error) {
+        logger.ai.warn(
+          `[Gemini] Failed to resolve stored model image, skipping [role=${message.role}]`,
+          { error: error instanceof Error ? error.message : String(error) }
+        );
+      }
+    }
+
+    if (builtParts.length > 0) {
+      return builtParts;
+    }
+  }
+
+  const legacyParts: Array<Record<string, unknown>> = [];
+
+  if (message.content) {
+    legacyParts.push(
+      createTextPart(message.content, LEGACY_GEMINI_THOUGHT_SIGNATURE)
+    );
+  }
+
+  if (message.image) {
+    try {
+      legacyParts.push(
+        await createImagePart(message.image, signal, {
+          thoughtSignature: LEGACY_GEMINI_THOUGHT_SIGNATURE,
+        })
+      );
+    } catch (error) {
+      logger.ai.warn(
+        '[Gemini] Failed to resolve legacy model image, skipping',
+        {
+          error: error instanceof Error ? error.message : String(error),
+        }
+      );
+    }
+  }
+
+  return legacyParts;
+}
+
+async function buildConversationMessageParts(
+  message: ConversationMessage,
+  signal?: AbortSignal
+): Promise<Array<Record<string, unknown>>> {
+  if (message.role === 'model') {
+    return buildModelMessageParts(message, signal);
+  }
+
+  const parts: Array<Record<string, unknown>> = [];
+
+  if (message.content) {
+    parts.push(createTextPart(message.content));
+  }
+
+  if (message.image) {
+    try {
+      parts.push(await createImagePart(message.image, signal));
+    } catch (error) {
+      logger.ai.warn('[Gemini] Failed to resolve user image, skipping', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  return parts;
 }
 
 /**
@@ -332,12 +495,11 @@ export async function editImageWithGemini(
   const parts: Array<Record<string, unknown>> = [];
 
   for (const imageBase64 of params.referenceImages) {
-    parts.push({
-      inline_data: {
-        mime_type: 'image/jpeg',
-        data: imageBase64,
-      },
-    });
+    parts.push(
+      await createImagePart(imageBase64, params.signal, {
+        mimeType: 'image/jpeg',
+      })
+    );
   }
 
   parts.push({ text: params.prompt });
@@ -371,32 +533,15 @@ export async function editImageWithConversationGemini(
   const contents: Array<Record<string, unknown>> = [];
 
   for (const msg of params.messages) {
-    const parts: Array<Record<string, unknown>> = [];
+    let parts: Array<Record<string, unknown>> = [];
 
-    if (msg.content) {
-      parts.push({ text: msg.content });
-    }
-
-    if (msg.image) {
-      if (msg.image.startsWith('http')) {
-        // URL image: fetch and convert to base64
-        try {
-          const base64 = await urlToBase64(msg.image, params.signal);
-          parts.push({
-            inline_data: { mime_type: 'image/jpeg', data: base64 },
-          });
-        } catch (error) {
-          logger.ai.warn(
-            `[Gemini] Failed to fetch image URL, skipping: ${msg.image}`,
-            { error: error instanceof Error ? error.message : String(error) }
-          );
-        }
-      } else {
-        // Already base64
-        parts.push({
-          inline_data: { mime_type: 'image/jpeg', data: msg.image },
-        });
-      }
+    try {
+      parts = await buildConversationMessageParts(msg, params.signal);
+    } catch (error) {
+      logger.ai.warn(
+        `[Gemini] Failed to build conversation message, skipping [role=${msg.role}]`,
+        { error: error instanceof Error ? error.message : String(error) }
+      );
     }
 
     if (parts.length > 0) {
