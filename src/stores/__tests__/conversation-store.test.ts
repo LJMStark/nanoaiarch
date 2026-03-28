@@ -26,7 +26,10 @@ describe('conversation-store', () => {
     useConversationStore.getState().reset();
   });
 
-  it('aborts active generation when switching project', () => {
+  it('aborts active generation when switching project without storage warnings', () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
     const controller = new AbortController();
     const abortSpy = vi.spyOn(controller, 'abort');
     const store = useConversationStore.getState();
@@ -43,9 +46,13 @@ describe('conversation-store', () => {
     expect(nextState.isGenerating).toBe(false);
     expect(nextState.generatingMessageId).toBeNull();
     expect(nextState.generationStage).toBeNull();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
-  it('aborts active generation when clearing messages', () => {
+  it('aborts active generation when clearing messages without storage warnings', () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
     const controller = new AbortController();
     const abortSpy = vi.spyOn(controller, 'abort');
     const store = useConversationStore.getState();
@@ -64,5 +71,6 @@ describe('conversation-store', () => {
     expect(nextState.isGenerating).toBe(false);
     expect(nextState.generatingMessageId).toBeNull();
     expect(nextState.generationStage).toBeNull();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 });

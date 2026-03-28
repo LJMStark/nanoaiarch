@@ -1768,6 +1768,7 @@
       "share": "分享",
       "shareTitle": "AI 生成图像",
       "openPreview": "查看大图",
+      "previewDescription": "预览生成图，并可进行下载、分享和编辑操作。",
       "retry": "重试",
       "edit": "编辑",
       "generatedIn": "生成耗时 {seconds}s",

@@ -49,8 +49,8 @@ vi.mock('next-intl', () => ({
 
 vi.mock('next/image', () => ({
   __esModule: true,
-  default: ({ alt = 'mock image', ...props }: any) => (
-    <div data-alt={alt} data-testid="mock-image" {...props} />
+  default: ({ alt = 'mock image', fill: _fill, src = '', className }: any) => (
+    <img alt={alt} src={src} data-testid="mock-image" className={className} />
   ),
 }));
 
@@ -86,6 +86,10 @@ describe('MessageItem', () => {
   });
 
   it('shows toolbar actions inside the preview dialog', () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+
     render(<MessageItem message={createAssistantMessage()} isLast={true} />);
 
     fireEvent.click(screen.getByLabelText('canvas.openPreview'));
@@ -93,5 +97,7 @@ describe('MessageItem', () => {
     expect(screen.getAllByText('canvas.download').length).toBeGreaterThan(0);
     expect(screen.getAllByText('canvas.share').length).toBeGreaterThan(0);
     expect(screen.getAllByText('canvas.edit').length).toBeGreaterThan(0);
+    expect(screen.getByText('canvas.previewDescription')).toBeInTheDocument();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 });

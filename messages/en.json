@@ -1768,6 +1768,7 @@
       "share": "Share",
       "shareTitle": "AI Generated Image",
       "openPreview": "Open full preview",
+      "previewDescription": "Preview the generated image with download, share, and edit actions.",
       "retry": "Retry",
       "edit": "Edit",
       "generatedIn": "Generated in {seconds}s",

@@ -14,7 +14,12 @@ import type {
 } from '@/ai/image/lib/workspace-types';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Tooltip,
   TooltipContent,
@@ -559,6 +564,9 @@ function AssistantMessage({
                 <DialogTitle className="sr-only">
                   {t('canvas.generatedImageAlt')}
                 </DialogTitle>
+                <DialogDescription className="sr-only">
+                  {t('canvas.previewDescription')}
+                </DialogDescription>
                 <div className="border-b bg-background/95 px-4 py-3">
                   <div className="flex flex-wrap items-center justify-end gap-2">
                     <Button
