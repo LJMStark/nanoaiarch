@@ -104,7 +104,11 @@ function iterativeCompress(img: HTMLImageElement): string {
     base64 = dataUrl.split(',')[1] ?? '';
     const sizeBytes = Math.round((base64.length * 3) / 4);
 
-    if (sizeBytes <= TARGET_SIZE_BYTES || quality <= MIN_QUALITY || sizeScale <= MIN_SCALE) {
+    if (
+      sizeBytes <= TARGET_SIZE_BYTES ||
+      quality <= MIN_QUALITY ||
+      sizeScale <= MIN_SCALE
+    ) {
       break;
     }
 

@@ -173,7 +173,9 @@ export function ImagePlayground({
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <Stopwatch startTime={timing?.startTime} />
               <p className="mt-2 text-sm text-muted-foreground">
-                {mode === 'edit' ? t('loading.editing') : t('loading.generating')}
+                {mode === 'edit'
+                  ? t('loading.editing')
+                  : t('loading.generating')}
               </p>
             </div>
           )}
