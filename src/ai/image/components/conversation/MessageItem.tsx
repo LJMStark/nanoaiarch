@@ -271,6 +271,19 @@ function AssistantMessage({
 
     setIsRetrying(true);
 
+    // Optimistic: immediately show loading state
+    const prevErrorMessage = message.errorMessage;
+    const prevContent = message.content;
+    updateMessage(message.id, {
+      content: '',
+      outputImage: null,
+      creditsUsed: null,
+      generationTime: null,
+      status: 'generating',
+      errorMessage: null,
+    });
+
+    // Sync with server in background
     const resumeResult = await updateAssistantMessageRequest(message.id, {
       content: '',
       outputImage: null,
@@ -285,22 +298,17 @@ function AssistantMessage({
         messageId: message.id,
         error: resumeResult.error,
       });
+      // Rollback to failed state
+      updateMessage(message.id, {
+        content: prevContent,
+        status: 'failed',
+        errorMessage: prevErrorMessage,
+      });
       if (isMountedRef.current) {
         setIsRetrying(false);
       }
       return;
     }
-
-    updateMessage(
-      message.id,
-      normalizePersistedAssistantMessage({
-        ...resumeResult.data,
-        createdAt:
-          resumeResult.data.createdAt instanceof Date
-            ? resumeResult.data.createdAt.toISOString()
-            : new Date(resumeResult.data.createdAt).toISOString(),
-      })
-    );
 
     const controller = new AbortController();
     const requestToken = crypto.randomUUID();

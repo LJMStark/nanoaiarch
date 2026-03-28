@@ -40,6 +40,11 @@ interface ConversationState {
     updates: Partial<ProjectMessageItem>
   ) => void;
   removeMessage: (messageId: string) => void;
+  replaceMessageId: (
+    oldId: string,
+    newId: string,
+    updates?: Partial<ProjectMessageItem>
+  ) => void;
 
   // Loading state
   setLoadingMessages: (loading: boolean) => void;
@@ -176,6 +181,17 @@ export const useConversationStore = create<ConversationState>()(
       removeMessage: (messageId) =>
         set((state) => ({
           messages: state.messages.filter((m) => m.id !== messageId),
+        })),
+
+      replaceMessageId: (oldId, newId, updates) =>
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            m.id === oldId ? { ...m, ...updates, id: newId } : m
+          ),
+          generatingMessageId:
+            state.generatingMessageId === oldId
+              ? newId
+              : state.generatingMessageId,
         })),
 
       setLoadingMessages: (loading) => set({ isLoadingMessages: loading }),

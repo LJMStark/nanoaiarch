@@ -70,24 +70,23 @@ export function ProjectRenameDialog({
       return;
     }
 
-    setIsSubmitting(true);
-    setError('');
+    // Optimistic: immediately apply and close
+    const prevTitle = project.title;
+    onSuccess(project.id, trimmedTitle);
+    onOpenChange(false);
 
+    // Sync with server in background
     try {
       const result = await updateImageProjectRequest(project.id, {
         title: trimmedTitle,
       });
 
-      if (result.success) {
-        onSuccess(project.id, trimmedTitle);
-        onOpenChange(false);
-      } else {
-        setError(result.error || t('projects.renameFailed'));
+      if (!result.success) {
+        // Rollback
+        onSuccess(project.id, prevTitle);
       }
-    } catch (err) {
-      setError(t('projects.renameUnexpected'));
-    } finally {
-      setIsSubmitting(false);
+    } catch {
+      onSuccess(project.id, prevTitle);
     }
   };
 

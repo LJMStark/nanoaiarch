@@ -53,6 +53,12 @@ interface UseConversationSubmitParams {
   setShowImageUpload: (visible: boolean) => void;
   addMessage: (message: ProjectMessageItem) => void;
   updateMessage: (messageId: string, data: Partial<ProjectMessageItem>) => void;
+  removeMessage: (messageId: string) => void;
+  replaceMessageId: (
+    oldId: string,
+    newId: string,
+    updates?: Partial<ProjectMessageItem>
+  ) => void;
   setGenerating: (isGenerating: boolean, generatingMessageId?: string) => void;
   getLastOutputImage: () => string | null;
   getConversationHistory: () => ConversationMessageLike[];
@@ -148,6 +154,30 @@ function normalizePersistedAssistantMessage(
   };
 }
 
+function createTempMessage(
+  projectId: string,
+  role: 'user' | 'assistant',
+  content: string,
+  inputImage: string | null
+): ProjectMessageItem {
+  return {
+    id: `temp-${crypto.randomUUID()}`,
+    projectId,
+    role,
+    content,
+    inputImage,
+    outputImage: null,
+    maskImage: null,
+    generationParams: null,
+    creditsUsed: null,
+    generationTime: null,
+    status: role === 'assistant' ? 'generating' : 'completed',
+    errorMessage: null,
+    orderIndex: Date.now(),
+    createdAt: new Date().toISOString(),
+  };
+}
+
 export function useConversationSubmit({
   t,
   currentProjectId,
@@ -162,6 +192,8 @@ export function useConversationSubmit({
   setShowImageUpload,
   addMessage,
   updateMessage,
+  removeMessage,
+  replaceMessageId,
   setGenerating,
   getLastOutputImage,
   getConversationHistory,
@@ -212,6 +244,36 @@ export function useConversationSubmit({
     const prompt = draftPrompt.trim();
     const inputImages = getInputImages(referenceImages, getLastOutputImage);
 
+    // Optimistic: immediately show messages and loading state
+    const tempUserMsg = createTempMessage(
+      currentProjectId,
+      'user',
+      prompt,
+      inputImages[0] || null
+    );
+    const tempAssistantMsg = createTempMessage(
+      currentProjectId,
+      'assistant',
+      '',
+      null
+    );
+
+    addMessage(tempUserMsg);
+    addMessage(tempAssistantMsg);
+
+    clearDraft();
+    setReferenceImages([]);
+    setShowImageUpload(false);
+
+    const controller = new AbortController();
+    const requestToken = crypto.randomUUID();
+
+    setAbortController(controller);
+    setGenerationRequestToken(requestToken);
+    setGenerating(true, tempAssistantMsg.id);
+    setGenerationStage('submitting');
+
+    // Bootstrap with server (user already sees loading UI)
     const bootstrapResult = await createPendingGenerationRequest(
       currentProjectId,
       {
@@ -227,6 +289,14 @@ export function useConversationSubmit({
     );
 
     if (!bootstrapResult.success || !bootstrapResult.data) {
+      // Rollback: remove temp messages
+      removeMessage(tempUserMsg.id);
+      removeMessage(tempAssistantMsg.id);
+      setGenerating(false);
+      setGenerationStage(null);
+      setAbortController(null);
+      setGenerationRequestToken(null);
+
       logger.ai.error('Failed to create pending generation', {
         projectId: currentProjectId,
         error: bootstrapResult.error,
@@ -239,21 +309,16 @@ export function useConversationSubmit({
     }
 
     const { userMessage, assistantMessage } = bootstrapResult.data;
-    addMessage(userMessage);
-    addMessage(assistantMessage);
 
-    clearDraft();
-    setReferenceImages([]);
-    setShowImageUpload(false);
+    // Replace temp IDs with real server IDs
+    replaceMessageId(tempUserMsg.id, userMessage.id, userMessage);
+    replaceMessageId(
+      tempAssistantMsg.id,
+      assistantMessage.id,
+      assistantMessage
+    );
 
-    const controller = new AbortController();
-    const requestToken = crypto.randomUUID();
     const generatingMessageId = assistantMessage.id;
-
-    setAbortController(controller);
-    setGenerationRequestToken(requestToken);
-    setGenerating(true, generatingMessageId);
-    setGenerationStage('submitting');
     setGenerationStage('queued');
 
     try {
@@ -334,6 +399,8 @@ export function useConversationSubmit({
     onError,
     persistFailureState,
     referenceImages,
+    removeMessage,
+    replaceMessageId,
     selectedModel,
     setAbortController,
     setGenerationRequestToken,

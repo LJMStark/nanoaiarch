@@ -87,16 +87,43 @@ export function ProjectSidebar() {
     : [];
 
   const handleNewProject = async () => {
+    if (isCreating) return;
     setIsCreating(true);
+
+    // Optimistic: immediately show temp project
+    const tempId = `temp-${crypto.randomUUID()}`;
+    const tempProject: ImageProjectItem = {
+      id: tempId,
+      title: t('projects.untitled'),
+      coverImage: null,
+      templateId: null,
+      stylePreset: null,
+      aspectRatio: null,
+      model: null,
+      messageCount: 0,
+      generationCount: 0,
+      totalCreditsUsed: 0,
+      status: 'active',
+      isPinned: false,
+      lastActiveAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+    addProject(tempProject);
+    selectProject(tempId);
+    clearMessages();
+
     try {
       const result = await createImageProjectRequest();
       if (result.success && result.data) {
+        // Replace temp with real project
+        removeProject(tempId);
         addProject(result.data);
         selectProject(result.data.id);
-        clearMessages();
         return;
       }
 
+      // Rollback
+      removeProject(tempId);
       toast({
         title: '创建项目失败',
         description: result.error || '请稍后重试',
@@ -104,6 +131,7 @@ export function ProjectSidebar() {
       });
     } catch (error) {
       logger.ai.error('Failed to create a new project from sidebar', error);
+      removeProject(tempId);
       toast({
         title: '创建项目失败',
         description: '发生了意外错误，请稍后重试',
@@ -119,18 +147,20 @@ export function ProjectSidebar() {
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    if (busyProjectId === project.id) {
-      return;
-    }
+    if (busyProjectId === project.id) return;
 
-    setBusyProjectId(project.id);
+    // Optimistic: toggle immediately
+    const prevPinned = project.isPinned;
+    updateProject(project.id, { isPinned: !prevPinned });
+
     try {
       const result = await toggleProjectPinRequest(project.id);
-      if (result.success) {
-        updateProject(project.id, { isPinned: result.isPinned });
+      if (!result.success) {
+        // Rollback
+        updateProject(project.id, { isPinned: prevPinned });
       }
-    } finally {
-      setBusyProjectId((current) => (current === project.id ? null : current));
+    } catch {
+      updateProject(project.id, { isPinned: prevPinned });
     }
   };
 
@@ -139,18 +169,24 @@ export function ProjectSidebar() {
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    if (busyProjectId === project.id) {
-      return;
-    }
+    if (busyProjectId === project.id) return;
 
-    setBusyProjectId(project.id);
+    // Optimistic: remove immediately
+    removeProject(project.id);
+
     try {
       const result = await archiveProjectRequest(project.id);
-      if (result.success) {
-        removeProject(project.id);
+      if (!result.success) {
+        // Rollback
+        addProject(project);
+        toast({
+          title: '归档失败',
+          description: result.error || '请稍后重试',
+          variant: 'destructive',
+        });
       }
-    } finally {
-      setBusyProjectId((current) => (current === project.id ? null : current));
+    } catch {
+      addProject(project);
     }
   };
 
@@ -159,18 +195,24 @@ export function ProjectSidebar() {
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    if (busyProjectId === project.id) {
-      return;
-    }
+    if (busyProjectId === project.id) return;
 
-    setBusyProjectId(project.id);
+    // Optimistic: remove immediately
+    removeProject(project.id);
+
     try {
       const result = await deleteImageProjectRequest(project.id);
-      if (result.success) {
-        removeProject(project.id);
+      if (!result.success) {
+        // Rollback
+        addProject(project);
+        toast({
+          title: '删除失败',
+          description: result.error || '请稍后重试',
+          variant: 'destructive',
+        });
       }
-    } finally {
-      setBusyProjectId((current) => (current === project.id ? null : current));
+    } catch {
+      addProject(project);
     }
   };
 

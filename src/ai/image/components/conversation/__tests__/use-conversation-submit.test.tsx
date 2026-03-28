@@ -42,12 +42,16 @@ vi.mock('@/stores/conversation-store', () => ({
 }));
 
 describe('useConversationSubmit', () => {
-  it('keeps the draft intact when bootstrapping the pending generation fails', async () => {
+  it('rolls back temp messages when bootstrapping the pending generation fails', async () => {
     const addMessageMock = vi.fn();
     const updateMessageMock = vi.fn();
+    const removeMessageMock = vi.fn();
+    const replaceMessageIdMock = vi.fn();
     const clearDraftMock = vi.fn();
     const setReferenceImagesMock = vi.fn();
     const setShowImageUploadMock = vi.fn();
+    const setGeneratingMock = vi.fn();
+    const setGenerationStageMock = vi.fn();
 
     createPendingGenerationRequestMock.mockResolvedValue({
       success: false,
@@ -69,21 +73,24 @@ describe('useConversationSubmit', () => {
         setShowImageUpload: setShowImageUploadMock,
         addMessage: addMessageMock,
         updateMessage: updateMessageMock,
-        setGenerating: vi.fn(),
+        removeMessage: removeMessageMock,
+        replaceMessageId: replaceMessageIdMock,
+        setGenerating: setGeneratingMock,
         getLastOutputImage: () => null,
         getConversationHistory: () => [],
         setAbortController: vi.fn(),
         setGenerationRequestToken: vi.fn(),
-        setGenerationStage: vi.fn(),
+        setGenerationStage: setGenerationStageMock,
       })
     );
 
     await result.current();
 
-    expect(clearDraftMock).not.toHaveBeenCalled();
-    expect(setReferenceImagesMock).not.toHaveBeenCalled();
-    expect(setShowImageUploadMock).not.toHaveBeenCalled();
-    expect(addMessageMock).not.toHaveBeenCalled();
+    // Optimistic: messages were added, then removed on failure
+    expect(addMessageMock).toHaveBeenCalledTimes(2);
+    expect(removeMessageMock).toHaveBeenCalledTimes(2);
+    // Generation state was rolled back
+    expect(setGeneratingMock).toHaveBeenLastCalledWith(false);
   });
 
   it('falls back to local failed state when cancellation persistence fails', async () => {
@@ -171,6 +178,12 @@ describe('useConversationSubmit', () => {
         setShowImageUpload: vi.fn(),
         addMessage: addMessageMock,
         updateMessage: updateMessageMock,
+        removeMessage: vi.fn(),
+        replaceMessageId: vi.fn((oldId: string, newId: string) => {
+          if (storeState.generatingMessageId === oldId) {
+            storeState.generatingMessageId = newId;
+          }
+        }),
         setGenerating,
         getLastOutputImage: () => null,
         getConversationHistory: () => [],
