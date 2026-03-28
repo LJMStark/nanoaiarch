@@ -3,6 +3,8 @@
  * Common functions for handling image display, download, and sharing
  */
 
+const IMAGE_PROXY_ROUTE = '/api/image/proxy';
+
 /**
  * Convert image data to displayable src
  * Handles both URLs and base64 data
@@ -14,13 +16,28 @@ export function getImageSrc(imageData: string): string {
   return `data:image/png;base64,${imageData}`;
 }
 
+export function buildImageProxyUrl(url: string): string {
+  const searchParams = new URLSearchParams({ url });
+  return `${IMAGE_PROXY_ROUTE}?${searchParams.toString()}`;
+}
+
+function resolveImageFetchUrl(imageData: string): string {
+  if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
+    return buildImageProxyUrl(imageData);
+  }
+
+  if (imageData.startsWith('data:')) {
+    return imageData;
+  }
+
+  return `data:image/png;base64,${imageData}`;
+}
+
 /**
  * Fetch image as Blob (supports both URL and base64)
  */
 export async function fetchImageBlob(imageData: string): Promise<Blob> {
-  const url = imageData.startsWith('http')
-    ? imageData
-    : `data:image/png;base64,${imageData}`;
+  const url = resolveImageFetchUrl(imageData);
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch image: ${response.status}`);

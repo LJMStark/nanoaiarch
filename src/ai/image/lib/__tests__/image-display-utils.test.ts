@@ -1,4 +1,5 @@
 import {
+  buildImageProxyUrl,
   downloadImage,
   fetchImageBlob,
 } from '@/ai/image/lib/image-display-utils';
@@ -40,7 +41,9 @@ describe('image-display-utils', () => {
 
     await downloadImage('https://example.com/image.png', 'generated.png');
 
-    expect(fetchMock).toHaveBeenCalledWith('https://example.com/image.png');
+    expect(fetchMock).toHaveBeenCalledWith(
+      buildImageProxyUrl('https://example.com/image.png')
+    );
     expect(URL.createObjectURL).toHaveBeenCalledWith(blob);
     expect(appendSpy).toHaveBeenCalledTimes(1);
 
@@ -67,5 +70,11 @@ describe('image-display-utils', () => {
     await expect(
       fetchImageBlob('https://example.com/image.png')
     ).rejects.toThrow('Failed to fetch image: 403');
+  });
+
+  it('builds a same-origin proxy url for remote images', () => {
+    expect(buildImageProxyUrl('https://example.com/image.png')).toBe(
+      '/api/image/proxy?url=https%3A%2F%2Fexample.com%2Fimage.png'
+    );
   });
 });

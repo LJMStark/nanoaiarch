@@ -6,6 +6,7 @@ import {
   toggleFavoriteRequest,
 } from '@/ai/image/lib/generation-history-client';
 import type { GenerationHistoryItem } from '@/ai/image/lib/generation-history-types';
+import { downloadImage } from '@/ai/image/lib/image-display-utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,16 +76,10 @@ export function RecentGenerations() {
     if (!imageUrl) return;
 
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `arch-ai-${prompt.slice(0, 20).replace(/\s+/g, '-')}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      await downloadImage(
+        imageUrl,
+        `arch-ai-${prompt.slice(0, 20).replace(/\s+/g, '-')}.png`
+      );
     } catch (error) {
       console.error('Download failed:', error);
     }

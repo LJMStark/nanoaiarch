@@ -1,6 +1,7 @@
 'use client';
 
 import type { PublicGeneration } from '@/actions/public-gallery';
+import { downloadImage } from '@/ai/image/lib/image-display-utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -57,16 +58,7 @@ export function ExploreDetail({
     if (!generation.imageUrl) return;
 
     try {
-      const response = await fetch(generation.imageUrl);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `arch-ai-${generation.id}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await downloadImage(generation.imageUrl, `arch-ai-${generation.id}.png`);
       toast({ title: t('downloadStarted') });
     } catch {
       toast({ title: t('downloadFailed'), variant: 'destructive' });

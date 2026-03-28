@@ -7,7 +7,7 @@ import {
   togglePublicRequest,
 } from '@/ai/image/lib/generation-history-client';
 import type { GenerationHistoryItem } from '@/ai/image/lib/generation-history-types';
-import { shareImage, urlToBase64 } from '@/ai/image/lib/image-helpers';
+import { downloadImage, shareImage } from '@/ai/image/lib/image-display-utils';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import {
   AlertDialog,
@@ -158,16 +158,10 @@ export default function GalleryPage() {
     if (!imageUrl) return;
 
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `forma-ai-${prompt.slice(0, 20).replace(/\s+/g, '-')}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      await downloadImage(
+        imageUrl,
+        `forma-ai-${prompt.slice(0, 20).replace(/\s+/g, '-')}.png`
+      );
     } catch (error) {
       console.error('Download failed:', error);
     }
@@ -177,8 +171,7 @@ export default function GalleryPage() {
     if (!imageUrl) return;
 
     try {
-      const base64 = await urlToBase64(imageUrl);
-      await shareImage(base64, prompt);
+      await shareImage(imageUrl, prompt);
     } catch (error) {
       console.error('Share failed:', error);
     }
