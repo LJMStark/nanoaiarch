@@ -124,14 +124,9 @@ function UserMessage({ message }: { message: ProjectMessageItem }) {
   const t = useTranslations('ArchPage');
 
   return (
-    <div className="flex gap-3">
-      <Avatar className="h-8 w-8 flex-shrink-0">
-        <AvatarFallback className="bg-muted">
-          <User className="h-4 w-4" />
-        </AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1 space-y-2">
-        <p className="break-words whitespace-pre-wrap text-sm">
+    <div className="flex w-full justify-end px-2 py-2">
+      <div className="flex max-w-[85%] flex-col gap-2 rounded-2xl bg-muted/60 px-4 py-2.5 sm:max-w-[75%]">
+        <p className="break-words whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
           {message.content}
         </p>
         {message.inputImage && (
@@ -434,13 +429,8 @@ function AssistantMessage({
   }
 
   return (
-    <div className="flex gap-3">
-      <Avatar className="h-8 w-8 flex-shrink-0 bg-primary">
-        <AvatarFallback className="bg-primary text-primary-foreground">
-          <Sparkles className="h-4 w-4" />
-        </AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1 space-y-3">
+    <div className="flex w-full justify-start px-2 py-2">
+      <div className="min-w-0 flex-1 space-y-4 max-w-[90%] sm:max-w-[85%]">
         {isFailed ? (
           <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
             <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
@@ -606,7 +596,7 @@ function AssistantMessage({
         ) : null}
 
         {message.content && (
-          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+          <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
             {message.content}
           </p>
         )}

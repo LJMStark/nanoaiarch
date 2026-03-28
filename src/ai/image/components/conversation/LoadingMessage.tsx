@@ -40,13 +40,8 @@ export function LoadingMessage() {
   const stageText = stageTextMap[generationStage ?? 'submitting'];
 
   return (
-    <div className="flex gap-3">
-      <Avatar className="h-8 w-8 flex-shrink-0 bg-primary">
-        <AvatarFallback className="bg-primary text-primary-foreground">
-          <Sparkles className="h-4 w-4" />
-        </AvatarFallback>
-      </Avatar>
-      <div className="flex-1 space-y-3">
+    <div className="flex w-full justify-start px-2 py-2">
+      <div className="flex-1 space-y-4 max-w-[90%] sm:max-w-[85%]">
         <div className="relative max-w-lg">
           {/* Placeholder loading animation */}
           <div className="aspect-square rounded-xl bg-muted overflow-hidden">

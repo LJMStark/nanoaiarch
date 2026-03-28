@@ -195,7 +195,7 @@ export function ConversationInput() {
         )}
 
         {/* Main input area */}
-        <div className="rounded-2xl border bg-muted/70 p-3">
+        <div className="rounded-2xl border bg-muted/70 p-3 flex flex-col transition-all">
           <Textarea
             ref={textareaRef}
             value={draftPrompt}
@@ -213,7 +213,7 @@ export function ConversationInput() {
                 : t('controls.promptNoProject')
             }
             disabled={!currentProjectId}
-            className="min-h-[72px] max-h-[200px] resize-none border-0 bg-transparent px-0 py-1 text-sm focus-visible:ring-0"
+            className="min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent px-2 py-1.5 text-[15px] leading-relaxed placeholder:text-muted-foreground/70 focus-visible:ring-0"
             rows={1}
           />
 
