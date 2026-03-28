@@ -49,7 +49,7 @@ type MessageStatusResult =
   | ErrorResult;
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Request failed';
+  return error instanceof Error ? error.message : '请求失败';
 }
 
 async function safeRequest<T extends { success: boolean; error?: string }>(
@@ -78,7 +78,7 @@ export async function fetchConversationInitData(
     '/api/image/conversation-init',
     {
       success: false,
-      error: 'Failed to load data',
+      error: '加载数据失败',
       data: {
         projects: [],
         messages: [],
@@ -103,7 +103,7 @@ export async function fetchProjectMessages(
 
   return safeRequest(url.toString(), {
     success: false,
-    error: 'Failed to get messages',
+    error: '获取消息失败',
     data: [],
   });
 }
@@ -118,7 +118,7 @@ export async function fetchMessageStatus(
 
   return safeRequest(url.toString(), {
     success: false,
-    error: 'Failed to get message status',
+    error: '获取消息状态失败',
   });
 }
 
@@ -129,7 +129,7 @@ export async function createImageProjectRequest(
     '/api/image/projects',
     {
       success: false,
-      error: 'Failed to create project',
+      error: '创建项目失败',
     },
     {
       method: 'POST',
@@ -146,7 +146,7 @@ export async function updateImageProjectRequest(
     '/api/image/projects/actions',
     {
       success: false,
-      error: 'Failed to update project',
+      error: '更新项目失败',
     },
     {
       method: 'POST',
@@ -166,7 +166,7 @@ export async function toggleProjectPinRequest(
     '/api/image/projects/actions',
     {
       success: false,
-      error: 'Failed to update',
+      error: '更新失败',
     },
     {
       method: 'POST',
@@ -185,7 +185,7 @@ export async function archiveProjectRequest(
     '/api/image/projects/actions',
     {
       success: false,
-      error: 'Failed to archive',
+      error: '归档失败',
     },
     {
       method: 'POST',
@@ -204,7 +204,7 @@ export async function deleteImageProjectRequest(
     '/api/image/projects/actions',
     {
       success: false,
-      error: 'Failed to delete',
+      error: '删除失败',
     },
     {
       method: 'POST',
@@ -228,7 +228,7 @@ export async function createPendingGenerationRequest(
     '/api/image/messages',
     {
       success: false,
-      error: 'Failed to create pending generation',
+      error: '创建生成任务失败',
     },
     {
       method: 'POST',
@@ -257,7 +257,7 @@ export async function updateAssistantMessageRequest(
     '/api/image/messages',
     {
       success: false,
-      error: 'Failed to update message',
+      error: '更新消息失败',
     },
     {
       method: 'PATCH',

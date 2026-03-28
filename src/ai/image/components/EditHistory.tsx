@@ -71,7 +71,7 @@ export function EditHistory({
               <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border bg-muted">
                 <Image
                   src={`data:image/png;base64,${item.afterImage}`}
-                  alt="Edit result"
+                  alt="编辑结果"
                   fill
                   className="object-cover"
                 />
@@ -100,19 +100,19 @@ function formatTimestamp(timestamp: number): string {
 
   // 1 分钟内
   if (diff < 60 * 1000) {
-    return 'Just now';
+    return '刚刚';
   }
 
   // 1 小时内
   if (diff < 60 * 60 * 1000) {
     const minutes = Math.floor(diff / (60 * 1000));
-    return `${minutes}m ago`;
+    return `${minutes} 分钟前`;
   }
 
   // 24 小时内
   if (diff < 24 * 60 * 60 * 1000) {
     const hours = Math.floor(diff / (60 * 60 * 1000));
-    return `${hours}h ago`;
+    return `${hours} 小时前`;
   }
 
   // 超过 24 小时显示日期

@@ -77,7 +77,7 @@ export async function createImageProjectRecord(params: {
 export async function createImageProject(data?: CreateImageProjectInput) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -91,7 +91,7 @@ export async function createImageProject(data?: CreateImageProjectInput) {
     return { success: true, data: project };
   } catch (error) {
     logger.actions.error('Failed to create project', error);
-    return { success: false, error: 'Failed to create project' };
+    return { success: false, error: '创建项目失败' };
   }
 }
 
@@ -107,7 +107,7 @@ export async function getImageProjects(options?: {
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized', data: [] };
+    return { success: false, error: '未授权访问', data: [] };
   }
 
   const limit = options?.limit ?? 50;
@@ -144,7 +144,7 @@ export async function getImageProjects(options?: {
     return { success: true, data: items as ImageProjectItem[] };
   } catch (error) {
     logger.actions.error('Failed to get projects', error);
-    return { success: false, error: 'Failed to get projects', data: [] };
+    return { success: false, error: '获取项目列表失败', data: [] };
   }
 }
 
@@ -154,7 +154,7 @@ export async function getImageProjects(options?: {
 export async function getImageProject(projectId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -171,13 +171,13 @@ export async function getImageProject(projectId: string) {
       .limit(1);
 
     if (!project.length) {
-      return { success: false, error: 'Project not found' };
+      return { success: false, error: '项目未找到' };
     }
 
     return { success: true, data: project[0] as ImageProjectItem };
   } catch (error) {
     logger.actions.error('Failed to get project', error);
-    return { success: false, error: 'Failed to get project' };
+    return { success: false, error: '获取项目失败' };
   }
 }
 
@@ -196,7 +196,7 @@ export async function updateImageProject(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -217,7 +217,7 @@ export async function updateImageProject(
     return { success: true };
   } catch (error) {
     logger.actions.error('Failed to update project', error);
-    return { success: false, error: 'Failed to update project' };
+    return { success: false, error: '更新项目失败' };
   }
 }
 
@@ -234,7 +234,7 @@ export async function updateProjectActivity(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -270,7 +270,7 @@ export async function updateProjectActivity(
     return { success: true };
   } catch (error) {
     logger.actions.error('Failed to update project activity', error);
-    return { success: false, error: 'Failed to update project' };
+    return { success: false, error: '更新项目失败' };
   }
 }
 
@@ -280,7 +280,7 @@ export async function updateProjectActivity(
 export async function toggleProjectPin(projectId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -299,7 +299,7 @@ export async function toggleProjectPin(projectId: string) {
       .limit(1);
 
     if (!current.length) {
-      return { success: false, error: 'Project not found' };
+      return { success: false, error: '项目未找到' };
     }
 
     // Toggle pin status
@@ -319,7 +319,7 @@ export async function toggleProjectPin(projectId: string) {
     return { success: true, isPinned: !current[0].isPinned };
   } catch (error) {
     logger.actions.error('Failed to toggle pin', error);
-    return { success: false, error: 'Failed to update' };
+    return { success: false, error: '更新失败' };
   }
 }
 
@@ -329,7 +329,7 @@ export async function toggleProjectPin(projectId: string) {
 export async function archiveProject(projectId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -350,7 +350,7 @@ export async function archiveProject(projectId: string) {
     return { success: true };
   } catch (error) {
     logger.actions.error('Failed to archive project', error);
-    return { success: false, error: 'Failed to archive' };
+    return { success: false, error: '归档失败' };
   }
 }
 
@@ -360,7 +360,7 @@ export async function archiveProject(projectId: string) {
 export async function deleteImageProject(projectId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -379,7 +379,7 @@ export async function deleteImageProject(projectId: string) {
       .limit(1);
 
     if (!project.length) {
-      return { success: false, error: 'Project not found' };
+      return { success: false, error: '项目未找到' };
     }
 
     // The project_message FK already cascades on delete. Delete the parent row once.
@@ -394,13 +394,13 @@ export async function deleteImageProject(projectId: string) {
       .returning({ id: imageProject.id });
 
     if (deleted.length === 0) {
-      return { success: false, error: 'Project not found' };
+      return { success: false, error: '项目未找到' };
     }
 
     return { success: true };
   } catch (error) {
     logger.actions.error('Failed to delete project', error);
-    return { success: false, error: 'Failed to delete' };
+    return { success: false, error: '删除失败' };
   }
 }
 
@@ -410,7 +410,7 @@ export async function deleteImageProject(projectId: string) {
 export async function getProjectStats() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -440,6 +440,6 @@ export async function getProjectStats() {
     };
   } catch (error) {
     logger.actions.error('Failed to get project stats', error);
-    return { success: false, error: 'Failed to get stats' };
+    return { success: false, error: '获取统计数据失败' };
   }
 }

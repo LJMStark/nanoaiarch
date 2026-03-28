@@ -160,7 +160,7 @@ export function FloatingControlBar({
                       ? referenceImage
                       : `data:image/png;base64,${referenceImage}`
                   }
-                  alt="Reference"
+                  alt="参考图"
                   width={64}
                   height={64}
                   className="w-full h-full object-cover"

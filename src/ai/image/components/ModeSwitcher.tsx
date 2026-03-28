@@ -34,7 +34,7 @@ export function ModeSwitcher({
         )}
       >
         <ImagePlus className="h-4 w-4" />
-        Generate
+        生成
       </button>
       <button
         type="button"
@@ -49,7 +49,7 @@ export function ModeSwitcher({
         )}
       >
         <Pencil className="h-4 w-4" />
-        Edit
+        编辑
       </button>
     </div>
   );

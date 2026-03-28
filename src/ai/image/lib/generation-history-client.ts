@@ -37,7 +37,7 @@ type PublicResult =
   | ErrorResult;
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Request failed';
+  return error instanceof Error ? error.message : '请求失败';
 }
 
 async function safeRequest<T extends { success: boolean; error?: string }>(
@@ -76,7 +76,7 @@ export async function fetchGenerationHistory(options?: {
 
   return safeRequest(url.toString(), {
     success: false,
-    error: 'Failed to get history',
+    error: '获取历史记录失败',
     data: [],
   });
 }
@@ -86,7 +86,7 @@ export async function fetchGenerationStats(): Promise<
 > {
   return safeRequest('/api/generation-history/stats', {
     success: false,
-    error: 'Failed to get stats',
+    error: '获取统计数据失败',
   });
 }
 
@@ -97,7 +97,7 @@ export async function toggleFavoriteRequest(
     '/api/generation-history/actions',
     {
       success: false,
-      error: 'Failed to update',
+      error: '更新失败',
     },
     {
       method: 'POST',
@@ -116,7 +116,7 @@ export async function togglePublicRequest(
     '/api/generation-history/actions',
     {
       success: false,
-      error: 'Failed to update',
+      error: '更新失败',
     },
     {
       method: 'POST',
@@ -135,7 +135,7 @@ export async function deleteGenerationRequest(
     '/api/generation-history/actions',
     {
       success: false,
-      error: 'Failed to delete',
+      error: '删除失败',
     },
     {
       method: 'POST',

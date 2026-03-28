@@ -79,7 +79,7 @@ export async function downloadImage(
  */
 export async function shareImage(
   imageData: string,
-  title = 'Generated Image'
+  title = '生成的图像'
 ): Promise<void> {
   const blob = await fetchImageBlob(imageData);
   const file = new File([blob], 'generation.png', { type: 'image/png' });
