@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingMessage } from '@/ai/image/components/conversation/LoadingMessage';
 import { generateImage } from '@/ai/image/lib/api-utils';
 import { parseErrorMessage } from '@/ai/image/lib/error-utils';
 import {
@@ -428,6 +429,10 @@ function AssistantMessage({
     [message.outputImage, setDraftImage]
   );
 
+  if (isGeneratingNow) {
+    return <LoadingMessage />;
+  }
+
   return (
     <div className="flex gap-3">
       <Avatar className="h-8 w-8 flex-shrink-0 bg-primary">
@@ -436,14 +441,7 @@ function AssistantMessage({
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1 space-y-3">
-        {isGeneratingNow ? (
-          <div className="flex items-center gap-3 rounded-lg border bg-muted/50 p-3">
-            <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
-            <span className="flex-1 text-sm text-muted-foreground">
-              {t('canvas.generating')}
-            </span>
-          </div>
-        ) : isFailed ? (
+        {isFailed ? (
           <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
             <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
             <span className="flex-1 text-sm text-destructive">
