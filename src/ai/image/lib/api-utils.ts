@@ -104,17 +104,37 @@ export interface ImageValidationResult {
 }
 
 function getAllowedImageFetchHosts(): Set<string> {
+  const hosts = new Set<string>();
   const rawHosts = process.env.IMAGE_ALLOWED_FETCH_HOSTS?.trim();
-  if (!rawHosts) {
-    return new Set();
+
+  if (rawHosts) {
+    for (const host of rawHosts
+      .split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean)) {
+      hosts.add(host);
+    }
   }
 
-  return new Set(
-    rawHosts
-      .split(',')
-      .map((host) => host.trim().toLowerCase())
-      .filter(Boolean)
-  );
+  for (const [envKey, envValue] of [
+    ['STORAGE_PUBLIC_URL', process.env.STORAGE_PUBLIC_URL],
+    ['STORAGE_ENDPOINT', process.env.STORAGE_ENDPOINT],
+  ] as const) {
+    if (!envValue?.trim()) {
+      continue;
+    }
+
+    try {
+      hosts.add(new URL(envValue).hostname.toLowerCase());
+    } catch (error) {
+      logger.ai.warn(`[Image Validation] Ignoring invalid ${envKey}`, {
+        value: envValue,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  return hosts;
 }
 
 export function validateBase64Image(

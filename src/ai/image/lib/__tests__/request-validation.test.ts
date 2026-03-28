@@ -1,8 +1,25 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { validateBase64Image } from '../api-utils';
 import {
   resolveRequestedImageSize,
   validateConversationMessages,
 } from '../request-validation';
+
+describe('validateBase64Image', () => {
+  beforeEach(() => {
+    process.env.IMAGE_ALLOWED_FETCH_HOSTS = '';
+    process.env.STORAGE_PUBLIC_URL = '';
+    process.env.STORAGE_ENDPOINT = '';
+  });
+
+  it('accepts generated image URLs from the configured storage public host', () => {
+    process.env.STORAGE_PUBLIC_URL = 'https://cdn.example.com/assets';
+
+    expect(
+      validateBase64Image('https://cdn.example.com/assets/generated/test.png')
+    ).toEqual({ valid: true });
+  });
+});
 
 describe('resolveRequestedImageSize', () => {
   it('returns the provided valid image size', () => {
