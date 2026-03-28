@@ -1,11 +1,11 @@
 'use client';
 
-import {
-  type ProjectMessageItem,
-  createPendingGeneration,
-  updateAssistantMessage,
-} from '@/actions/project-message';
 import { generateImage } from '@/ai/image/lib/api-utils';
+import {
+  createPendingGenerationRequest,
+  updateAssistantMessageRequest,
+} from '@/ai/image/lib/workspace-client';
+import type { ProjectMessageItem } from '@/ai/image/lib/workspace-types';
 import { logger } from '@/lib/logger';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useCallback } from 'react';
@@ -172,7 +172,7 @@ export function useConversationSubmit({
 }: UseConversationSubmitParams): () => Promise<void> {
   const persistFailureState = useCallback(
     async (messageId: string, data: MessageUpdateData): Promise<void> => {
-      const updateResult = await updateAssistantMessage(messageId, data);
+      const updateResult = await updateAssistantMessageRequest(messageId, data);
 
       if (updateResult.success && updateResult.data) {
         updateMessage(
@@ -212,16 +212,19 @@ export function useConversationSubmit({
     const prompt = draftPrompt.trim();
     const inputImages = getInputImages(referenceImages, getLastOutputImage);
 
-    const bootstrapResult = await createPendingGeneration(currentProjectId, {
-      content: prompt,
-      inputImage: inputImages[0] || undefined,
-      generationParams: {
-        prompt,
-        aspectRatio,
-        model: selectedModel,
-        imageQuality,
-      },
-    });
+    const bootstrapResult = await createPendingGenerationRequest(
+      currentProjectId,
+      {
+        content: prompt,
+        inputImage: inputImages[0] || undefined,
+        generationParams: {
+          prompt,
+          aspectRatio,
+          model: selectedModel,
+          imageQuality,
+        },
+      }
+    );
 
     if (!bootstrapResult.success || !bootstrapResult.data) {
       logger.ai.error('Failed to create pending generation', {

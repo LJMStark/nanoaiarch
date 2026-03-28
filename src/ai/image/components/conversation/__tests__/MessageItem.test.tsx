@@ -1,4 +1,4 @@
-import type { ProjectMessageItem } from '@/actions/project-message';
+import type { ProjectMessageItem } from '@/ai/image/lib/workspace-types';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MessageItem } from '../MessageItem';
@@ -35,8 +35,8 @@ vi.mock('@/stores/conversation-store', () => ({
   useConversationStore: useConversationStoreMock,
 }));
 
-vi.mock('@/actions/project-message', () => ({
-  updateAssistantMessage: vi.fn(),
+vi.mock('@/ai/image/lib/workspace-client', () => ({
+  updateAssistantMessageRequest: vi.fn(),
 }));
 
 vi.mock('@/ai/image/lib/api-utils', () => ({

@@ -1,7 +1,7 @@
 'use client';
 
-import { updateImageProject } from '@/actions/image-project';
-import type { ImageProjectItem } from '@/actions/image-project';
+import { updateImageProjectRequest } from '@/ai/image/lib/workspace-client';
+import type { ImageProjectItem } from '@/ai/image/lib/workspace-types';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -74,7 +74,7 @@ export function ProjectRenameDialog({
     setError('');
 
     try {
-      const result = await updateImageProject(project.id, {
+      const result = await updateImageProjectRequest(project.id, {
         title: trimmedTitle,
       });
 

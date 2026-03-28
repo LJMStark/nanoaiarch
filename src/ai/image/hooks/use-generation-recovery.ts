@@ -1,8 +1,8 @@
-import {
-  getMessageStatus,
-  updateAssistantMessage,
-} from '@/actions/project-message';
 import { GENERATION_RECOVERY_CONFIG } from '@/ai/image/config/generation-recovery';
+import {
+  fetchMessageStatus,
+  updateAssistantMessageRequest,
+} from '@/ai/image/lib/workspace-client';
 import { logger } from '@/lib/logger';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useCallback, useEffect, useRef } from 'react';
@@ -36,7 +36,7 @@ export function useGenerationRecovery(projectId: string | null): void {
       setGenerating(false);
       stopPolling();
 
-      const result = await updateAssistantMessage(messageId, {
+      const result = await updateAssistantMessageRequest(messageId, {
         status: 'failed',
         content: errorMessage,
         errorMessage,
@@ -101,7 +101,7 @@ export function useGenerationRecovery(projectId: string | null): void {
       }
 
       try {
-        const result = await getMessageStatus(projectId, activeMessageId);
+        const result = await fetchMessageStatus(projectId, activeMessageId);
 
         if (cancelled) {
           return;

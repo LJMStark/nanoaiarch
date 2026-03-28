@@ -1,4 +1,4 @@
-import type { ProjectMessageItem } from '@/actions/project-message';
+import type { ProjectMessageItem } from '@/ai/image/lib/workspace-types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useConversationStore } from '../conversation-store';
 

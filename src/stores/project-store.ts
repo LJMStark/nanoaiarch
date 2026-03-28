@@ -1,10 +1,10 @@
-import type { ImageProjectItem } from '@/actions/image-project';
 import type { AspectRatioId } from '@/ai/image/lib/arch-types';
 import {
   DEFAULT_IMAGE_QUALITY,
   type ImageQuality,
 } from '@/ai/image/lib/image-constants';
 import type { GeminiModelId } from '@/ai/image/lib/provider-config';
+import type { ImageProjectItem } from '@/ai/image/lib/workspace-types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 

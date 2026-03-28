@@ -1,12 +1,12 @@
 'use client';
 
-import { getProjectMessages } from '@/actions/project-message';
 import { LazyTemplateDetailModal } from '@/ai/image/components/lazy';
 import { useConversationInit } from '@/ai/image/hooks/use-conversation-init';
 import { useGenerationRecovery } from '@/ai/image/hooks/use-generation-recovery';
 import { useTemplateApply } from '@/ai/image/hooks/use-template-apply';
 import type { ArchTemplate, AspectRatioId } from '@/ai/image/lib/arch-types';
 import { ARCH_TEMPLATES } from '@/ai/image/lib/templates';
+import { fetchProjectMessages } from '@/ai/image/lib/workspace-client';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Routes } from '@/routes';
 import { useConversationStore } from '@/stores/conversation-store';
@@ -104,7 +104,7 @@ export function ConversationLayout() {
     const loadMessages = async () => {
       setCurrentProject(currentProjectId);
       setLoadingMessages(true);
-      const result = await getProjectMessages(currentProjectId);
+      const result = await fetchProjectMessages(currentProjectId);
 
       if (loadRequestIdRef.current !== requestId) {
         return;

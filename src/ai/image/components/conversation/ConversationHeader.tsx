@@ -1,6 +1,6 @@
 'use client';
 
-import { updateImageProject } from '@/actions/image-project';
+import { updateImageProjectRequest } from '@/ai/image/lib/workspace-client';
 import { LoginWrapper } from '@/components/auth/login-wrapper';
 import LocaleSwitcher from '@/components/layout/locale-switcher';
 import { Logo } from '@/components/layout/logo';
@@ -48,7 +48,7 @@ export function ConversationHeader() {
       return;
     }
 
-    const result = await updateImageProject(currentProjectId, {
+    const result = await updateImageProjectRequest(currentProjectId, {
       title: editTitle.trim(),
     });
 

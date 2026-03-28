@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useConversationInit } from '../use-conversation-init';
 
 const {
-  getConversationInitDataMock,
+  fetchConversationInitDataMock,
+  fetchProjectMessagesMock,
   selectProjectMock,
   setProjectsMock,
   setLoadingProjectsMock,
@@ -30,7 +31,8 @@ const {
   );
 
   return {
-    getConversationInitDataMock: vi.fn(),
+    fetchConversationInitDataMock: vi.fn(),
+    fetchProjectMessagesMock: vi.fn(),
     selectProjectMock: vi.fn(),
     setProjectsMock: vi.fn(),
     setLoadingProjectsMock: vi.fn(),
@@ -49,12 +51,9 @@ useProjectStoreMock.mockImplementation(() => ({
   selectProject: selectProjectMock,
 }));
 
-vi.mock('@/actions/conversation-data', () => ({
-  getConversationInitData: getConversationInitDataMock,
-}));
-
-vi.mock('@/actions/project-message', () => ({
-  getProjectMessages: vi.fn(),
+vi.mock('@/ai/image/lib/workspace-client', () => ({
+  fetchConversationInitData: fetchConversationInitDataMock,
+  fetchProjectMessages: fetchProjectMessagesMock,
 }));
 
 vi.mock('@/stores/project-store', () => ({
@@ -77,7 +76,7 @@ describe('useConversationInit', () => {
   });
 
   it('requests a blank bootstrap without restoring the persisted project', async () => {
-    getConversationInitDataMock.mockResolvedValue({
+    fetchConversationInitDataMock.mockResolvedValue({
       success: true,
       data: {
         projects: [{ id: 'project-1' }],
@@ -89,7 +88,7 @@ describe('useConversationInit', () => {
     renderHook(() => useConversationInit({ mode: 'blank' } as any));
 
     await waitFor(() => {
-      expect(getConversationInitDataMock).toHaveBeenCalledWith(null, {
+      expect(fetchConversationInitDataMock).toHaveBeenCalledWith(null, {
         mode: 'blank',
       });
     });
@@ -100,7 +99,7 @@ describe('useConversationInit', () => {
   });
 
   it('hydrates the newly created project from the bootstrap response', async () => {
-    getConversationInitDataMock.mockResolvedValue({
+    fetchConversationInitDataMock.mockResolvedValue({
       success: true,
       data: {
         projects: [{ id: 'project-new' }],
@@ -112,7 +111,7 @@ describe('useConversationInit', () => {
     renderHook(() => useConversationInit({ mode: 'new-project' } as any));
 
     await waitFor(() => {
-      expect(getConversationInitDataMock).toHaveBeenCalledWith(null, {
+      expect(fetchConversationInitDataMock).toHaveBeenCalledWith(null, {
         mode: 'new-project',
       });
     });

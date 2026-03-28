@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { useConversationSubmit } from '../use-conversation-submit';
 
 const {
-  createPendingGenerationMock,
-  updateAssistantMessageMock,
+  createPendingGenerationRequestMock,
+  updateAssistantMessageRequestMock,
   generateImageMock,
   storeState,
   useConversationStoreMock,
@@ -20,17 +20,17 @@ const {
   });
 
   return {
-    createPendingGenerationMock: vi.fn(),
-    updateAssistantMessageMock: vi.fn(),
+    createPendingGenerationRequestMock: vi.fn(),
+    updateAssistantMessageRequestMock: vi.fn(),
     generateImageMock: vi.fn(),
     storeState,
     useConversationStoreMock,
   };
 });
 
-vi.mock('@/actions/project-message', () => ({
-  createPendingGeneration: createPendingGenerationMock,
-  updateAssistantMessage: updateAssistantMessageMock,
+vi.mock('@/ai/image/lib/workspace-client', () => ({
+  createPendingGenerationRequest: createPendingGenerationRequestMock,
+  updateAssistantMessageRequest: updateAssistantMessageRequestMock,
 }));
 
 vi.mock('@/ai/image/lib/api-utils', () => ({
@@ -49,7 +49,7 @@ describe('useConversationSubmit', () => {
     const setReferenceImagesMock = vi.fn();
     const setShowImageUploadMock = vi.fn();
 
-    createPendingGenerationMock.mockResolvedValue({
+    createPendingGenerationRequestMock.mockResolvedValue({
       success: false,
       error: 'db error',
     });
@@ -95,7 +95,7 @@ describe('useConversationSubmit', () => {
     storeState.generatingMessageId = null;
     storeState.generationRequestToken = null;
 
-    createPendingGenerationMock.mockResolvedValue({
+    createPendingGenerationRequestMock.mockResolvedValue({
       success: true,
       data: {
         userMessage: {
@@ -136,7 +136,7 @@ describe('useConversationSubmit', () => {
       success: false,
       error: '生成已取消',
     });
-    updateAssistantMessageMock.mockResolvedValue({
+    updateAssistantMessageRequestMock.mockResolvedValue({
       success: false,
       error: 'db unavailable',
     });

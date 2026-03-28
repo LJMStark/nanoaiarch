@@ -5,6 +5,7 @@ import { ConversationLayout } from '../ConversationLayout';
 
 const {
   searchParamsState,
+  fetchProjectMessagesMock,
   routerReplaceMock,
   useConversationInitMock,
   setMessagesMock,
@@ -15,6 +16,7 @@ const {
   searchParamsState: {
     value: '',
   },
+  fetchProjectMessagesMock: vi.fn(),
   routerReplaceMock: vi.fn(),
   useConversationInitMock: vi.fn(),
   setMessagesMock: vi.fn(),
@@ -46,8 +48,8 @@ vi.mock('@/ai/image/hooks/use-template-apply', () => ({
   }),
 }));
 
-vi.mock('@/actions/project-message', () => ({
-  getProjectMessages: vi.fn(),
+vi.mock('@/ai/image/lib/workspace-client', () => ({
+  fetchProjectMessages: fetchProjectMessagesMock,
 }));
 
 vi.mock('@/stores/project-store', () => ({

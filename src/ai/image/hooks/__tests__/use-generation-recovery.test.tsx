@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGenerationRecovery } from '../use-generation-recovery';
 
 const {
-  getMessageStatusMock,
-  updateAssistantMessageMock,
+  fetchMessageStatusMock,
+  updateAssistantMessageRequestMock,
   storeState,
   useConversationStoreMock,
   setGeneratingMock,
@@ -33,8 +33,8 @@ const {
   );
 
   return {
-    getMessageStatusMock: vi.fn(),
-    updateAssistantMessageMock: vi.fn(),
+    fetchMessageStatusMock: vi.fn(),
+    updateAssistantMessageRequestMock: vi.fn(),
     storeState,
     useConversationStoreMock,
     setGeneratingMock,
@@ -42,9 +42,9 @@ const {
   };
 });
 
-vi.mock('@/actions/project-message', () => ({
-  getMessageStatus: getMessageStatusMock,
-  updateAssistantMessage: updateAssistantMessageMock,
+vi.mock('@/ai/image/lib/workspace-client', () => ({
+  fetchMessageStatus: fetchMessageStatusMock,
+  updateAssistantMessageRequest: updateAssistantMessageRequestMock,
 }));
 
 vi.mock('@/stores/conversation-store', () => ({
@@ -59,18 +59,18 @@ describe('useGenerationRecovery', () => {
   });
 
   it('marks missing generating messages as failed so the user can retry', async () => {
-    getMessageStatusMock.mockResolvedValue({
+    fetchMessageStatusMock.mockResolvedValue({
       success: true,
       data: null,
     });
-    updateAssistantMessageMock.mockResolvedValue({
+    updateAssistantMessageRequestMock.mockResolvedValue({
       success: true,
     });
 
     renderHook(() => useGenerationRecovery('project-1'));
 
     await waitFor(() => {
-      expect(getMessageStatusMock).toHaveBeenCalledWith(
+      expect(fetchMessageStatusMock).toHaveBeenCalledWith(
         'project-1',
         'assistant-1'
       );
@@ -84,11 +84,14 @@ describe('useGenerationRecovery', () => {
       });
     });
 
-    expect(updateAssistantMessageMock).toHaveBeenCalledWith('assistant-1', {
-      status: 'failed',
-      content: '生成任务状态已丢失，请重试',
-      errorMessage: '生成任务状态已丢失，请重试',
-    });
+    expect(updateAssistantMessageRequestMock).toHaveBeenCalledWith(
+      'assistant-1',
+      {
+        status: 'failed',
+        content: '生成任务状态已丢失，请重试',
+        errorMessage: '生成任务状态已丢失，请重试',
+      }
+    );
     expect(setGeneratingMock).toHaveBeenCalledWith(false);
   });
 
@@ -96,7 +99,7 @@ describe('useGenerationRecovery', () => {
     let resolveStatus:
       | ((value: { success: boolean; data: { status: string } | null }) => void)
       | null = null;
-    getMessageStatusMock.mockImplementation(
+    fetchMessageStatusMock.mockImplementation(
       () =>
         new Promise((resolve) => {
           resolveStatus = resolve;
@@ -106,7 +109,7 @@ describe('useGenerationRecovery', () => {
     renderHook(() => useGenerationRecovery('project-1'));
 
     await Promise.resolve();
-    expect(getMessageStatusMock).toHaveBeenCalledWith(
+    expect(fetchMessageStatusMock).toHaveBeenCalledWith(
       'project-1',
       'assistant-1'
     );

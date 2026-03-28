@@ -1,11 +1,11 @@
 'use client';
 
 import {
-  type GenerationHistoryItem,
-  deleteGeneration,
-  getGenerationHistory,
-  toggleFavorite,
-} from '@/actions/generation-history';
+  deleteGenerationRequest,
+  fetchGenerationHistory,
+  toggleFavoriteRequest,
+} from '@/ai/image/lib/generation-history-client';
+import type { GenerationHistoryItem } from '@/ai/image/lib/generation-history-types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +40,7 @@ export function RecentGenerations() {
 
   useEffect(() => {
     const fetchGenerations = async () => {
-      const result = await getGenerationHistory({ limit: 8 });
+      const result = await fetchGenerationHistory({ limit: 8 });
       if (result.success) {
         setGenerations(result.data);
       }
@@ -51,7 +51,7 @@ export function RecentGenerations() {
 
   const handleToggleFavorite = (id: string) => {
     startTransition(async () => {
-      const result = await toggleFavorite(id);
+      const result = await toggleFavoriteRequest(id);
       if (result.success) {
         setGenerations((prev) =>
           prev.map((g) =>
@@ -64,7 +64,7 @@ export function RecentGenerations() {
 
   const handleDelete = (id: string) => {
     startTransition(async () => {
-      const result = await deleteGeneration(id);
+      const result = await deleteGenerationRequest(id);
       if (result.success) {
         setGenerations((prev) => prev.filter((g) => g.id !== id));
       }

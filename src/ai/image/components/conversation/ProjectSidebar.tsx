@@ -1,13 +1,13 @@
 'use client';
 
-import {
-  archiveProject,
-  createImageProject,
-  deleteImageProject,
-  toggleProjectPin,
-} from '@/actions/image-project';
-import type { ImageProjectItem } from '@/actions/image-project';
 import { getImageSrc } from '@/ai/image/lib/image-display-utils';
+import {
+  archiveProjectRequest,
+  createImageProjectRequest,
+  deleteImageProjectRequest,
+  toggleProjectPinRequest,
+} from '@/ai/image/lib/workspace-client';
+import type { ImageProjectItem } from '@/ai/image/lib/workspace-types';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -89,7 +89,7 @@ export function ProjectSidebar() {
   const handleNewProject = async () => {
     setIsCreating(true);
     try {
-      const result = await createImageProject();
+      const result = await createImageProjectRequest();
       if (result.success && result.data) {
         addProject(result.data);
         selectProject(result.data.id);
@@ -125,7 +125,7 @@ export function ProjectSidebar() {
 
     setBusyProjectId(project.id);
     try {
-      const result = await toggleProjectPin(project.id);
+      const result = await toggleProjectPinRequest(project.id);
       if (result.success) {
         updateProject(project.id, { isPinned: result.isPinned });
       }
@@ -145,7 +145,7 @@ export function ProjectSidebar() {
 
     setBusyProjectId(project.id);
     try {
-      const result = await archiveProject(project.id);
+      const result = await archiveProjectRequest(project.id);
       if (result.success) {
         removeProject(project.id);
       }
@@ -165,7 +165,7 @@ export function ProjectSidebar() {
 
     setBusyProjectId(project.id);
     try {
-      const result = await deleteImageProject(project.id);
+      const result = await deleteImageProjectRequest(project.id);
       if (result.success) {
         removeProject(project.id);
       }
@@ -371,7 +371,7 @@ function ProjectListItem({
   isBusy,
 }: ProjectListItemProps) {
   const t = useTranslations('ArchPage');
-  const formatDate = (date: Date) => {
+  const formatDate = (date: string | Date) => {
     const now = new Date();
     const diff = now.getTime() - new Date(date).getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));

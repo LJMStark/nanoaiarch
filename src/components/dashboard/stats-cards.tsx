@@ -4,10 +4,8 @@ import { Calendar, Heart, Image, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
-import {
-  type GenerationStats,
-  getGenerationStats,
-} from '@/actions/generation-history';
+import { fetchGenerationStats } from '@/ai/image/lib/generation-history-client';
+import type { GenerationStats } from '@/ai/image/lib/generation-history-types';
 import {
   Card,
   CardDescription,
@@ -23,7 +21,7 @@ export function StatsCards() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const result = await getGenerationStats();
+      const result = await fetchGenerationStats();
       if (result.success && result.data) {
         setStats(result.data);
       }

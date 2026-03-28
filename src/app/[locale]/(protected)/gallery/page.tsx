@@ -1,12 +1,12 @@
 'use client';
 
 import {
-  type GenerationHistoryItem,
-  deleteGeneration,
-  getGenerationHistory,
-  toggleFavorite,
-  togglePublic,
-} from '@/actions/generation-history';
+  deleteGenerationRequest,
+  fetchGenerationHistory,
+  toggleFavoriteRequest,
+  togglePublicRequest,
+} from '@/ai/image/lib/generation-history-client';
+import type { GenerationHistoryItem } from '@/ai/image/lib/generation-history-types';
 import { shareImage, urlToBase64 } from '@/ai/image/lib/image-helpers';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import {
@@ -78,7 +78,7 @@ export default function GalleryPage() {
 
   useEffect(() => {
     const fetchGenerations = async () => {
-      const result = await getGenerationHistory({ limit: 100 });
+      const result = await fetchGenerationHistory({ limit: 100 });
       if (result.success) {
         setGenerations(result.data);
         setFilteredGenerations(result.data);
@@ -113,7 +113,7 @@ export default function GalleryPage() {
   const handleToggleFavorite = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     startTransition(async () => {
-      const result = await toggleFavorite(id);
+      const result = await toggleFavoriteRequest(id);
       if (result.success) {
         setGenerations((prev) =>
           prev.map((g) =>
@@ -127,7 +127,7 @@ export default function GalleryPage() {
   const handleTogglePublic = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     startTransition(async () => {
-      const result = await togglePublic(id);
+      const result = await togglePublicRequest(id);
       if (result.success) {
         setGenerations((prev) =>
           prev.map((g) =>
@@ -146,7 +146,7 @@ export default function GalleryPage() {
 
   const handleDelete = (id: string) => {
     startTransition(async () => {
-      const result = await deleteGeneration(id);
+      const result = await deleteGenerationRequest(id);
       if (result.success) {
         setGenerations((prev) => prev.filter((g) => g.id !== id));
         setSelectedGeneration(null);

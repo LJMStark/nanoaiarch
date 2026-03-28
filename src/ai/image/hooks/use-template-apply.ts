@@ -1,7 +1,7 @@
 'use client';
 
-import { createImageProject } from '@/actions/image-project';
 import type { ArchTemplate, AspectRatioId } from '@/ai/image/lib/arch-types';
+import { createImageProjectRequest } from '@/ai/image/lib/workspace-client';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
 import { useProjectStore } from '@/stores/project-store';
@@ -59,7 +59,7 @@ export function useTemplateApply(): UseTemplateApplyReturn {
         }
 
         // Create new project with template
-        const result = await createImageProject({
+        const result = await createImageProjectRequest({
           title: title || template.id,
           templateId: template.id,
           aspectRatio: ratio,
@@ -119,7 +119,7 @@ export function useTemplateApply(): UseTemplateApplyReturn {
       setIsApplying(true);
 
       try {
-        const result = await createImageProject({
+        const result = await createImageProjectRequest({
           title: '新项目',
         });
 

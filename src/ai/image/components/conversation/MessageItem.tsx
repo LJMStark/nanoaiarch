@@ -1,10 +1,5 @@
 'use client';
 
-import {
-  type GenerationParams,
-  type ProjectMessageItem,
-  updateAssistantMessage,
-} from '@/actions/project-message';
 import { generateImage } from '@/ai/image/lib/api-utils';
 import { parseErrorMessage } from '@/ai/image/lib/error-utils';
 import {
@@ -12,6 +7,11 @@ import {
   getImageSrc,
   shareImage,
 } from '@/ai/image/lib/image-display-utils';
+import { updateAssistantMessageRequest } from '@/ai/image/lib/workspace-client';
+import type {
+  GenerationParams,
+  ProjectMessageItem,
+} from '@/ai/image/lib/workspace-types';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -194,7 +194,7 @@ function AssistantMessage({
       content: string;
       errorMessage: string;
     }) => {
-      const result = await updateAssistantMessage(message.id, {
+      const result = await updateAssistantMessageRequest(message.id, {
         content: data.content,
         status: 'failed',
         errorMessage: data.errorMessage,
@@ -270,7 +270,7 @@ function AssistantMessage({
 
     setIsRetrying(true);
 
-    const resumeResult = await updateAssistantMessage(message.id, {
+    const resumeResult = await updateAssistantMessageRequest(message.id, {
       content: '',
       outputImage: null,
       creditsUsed: null,

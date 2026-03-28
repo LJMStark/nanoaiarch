@@ -1,8 +1,8 @@
 import {
-  type ConversationInitMode,
-  getConversationInitData,
-} from '@/actions/conversation-data';
-import { getProjectMessages } from '@/actions/project-message';
+  fetchConversationInitData,
+  fetchProjectMessages,
+} from '@/ai/image/lib/workspace-client';
+import type { ConversationInitMode } from '@/ai/image/lib/workspace-types';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
 import { useCallback, useEffect, useRef } from 'react';
@@ -33,7 +33,7 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
       const persistedProjectId =
         mode === 'resume' ? useProjectStore.getState().currentProjectId : null;
 
-      const result = await getConversationInitData(persistedProjectId, {
+      const result = await fetchConversationInitData(persistedProjectId, {
         mode,
       });
 
@@ -101,7 +101,7 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
       setCurrentProject(projectId);
       setLoadingMessages(true);
 
-      const result = await getProjectMessages(projectId);
+      const result = await fetchProjectMessages(projectId);
       if (result.success) {
         setMessages(result.data);
 

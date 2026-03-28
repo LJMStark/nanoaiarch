@@ -1,4 +1,4 @@
-import type { ProjectMessageItem } from '@/actions/project-message';
+import type { ProjectMessageItem } from '@/ai/image/lib/workspace-types';
 import { logger } from '@/lib/logger';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
