@@ -22,7 +22,28 @@ export async function fetchImageBlob(imageData: string): Promise<Blob> {
     ? imageData
     : `data:image/png;base64,${imageData}`;
   const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.status}`);
+  }
   return response.blob();
+}
+
+function triggerBlobDownload(blob: Blob, filename: string): void {
+  const blobUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = blobUrl;
+  link.download = filename;
+  link.style.display = 'none';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  // Revoke after the click has been handed off to the browser.
+  window.setTimeout(() => {
+    URL.revokeObjectURL(blobUrl);
+  }, 0);
 }
 
 /**
@@ -33,12 +54,7 @@ export async function downloadImage(
   filename = 'image.png'
 ): Promise<void> {
   const blob = await fetchImageBlob(imageData);
-  const blobUrl = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = blobUrl;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(blobUrl);
+  triggerBlobDownload(blob, filename);
 }
 
 /**
