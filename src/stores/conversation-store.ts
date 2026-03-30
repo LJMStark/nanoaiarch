@@ -321,21 +321,24 @@ export const useConversationStore = create<ConversationState>()(
     {
       name: 'conversation-storage',
       storage: persistStorage,
-      version: 1,
-      // Only persist critical state, messages are loaded from database
+      version: 2,
+      // Only persist project selection. Generation state is recovered from
+      // server-side messages to avoid reviving stale "generating" sessions.
       partialize: (state) => ({
-        isGenerating: state.isGenerating,
-        generatingMessageId: state.generatingMessageId,
         currentProjectId: state.currentProjectId,
       }),
       migrate: (persistedState: unknown, version: number) => {
-        // Handle data structure changes
-        if (version === 0) {
-          logger.general.info('Migrating conversation store from v0 to v1');
-          // Migrate from version 0 to version 1 (current version)
-          return persistedState as Partial<ConversationState>;
+        const state = (persistedState ?? {}) as Partial<ConversationState>;
+
+        if (version < 2) {
+          logger.general.info(
+            `Migrating conversation store from v${version} to v2`
+          );
         }
-        return persistedState as Partial<ConversationState>;
+
+        return {
+          currentProjectId: state.currentProjectId ?? null,
+        } as Partial<ConversationState>;
       },
       onRehydrateStorage: () => {
         logger.general.info('Hydrating conversation store');

@@ -8,9 +8,11 @@ const {
   fetchProjectMessagesMock,
   routerReplaceMock,
   useConversationInitMock,
+  projectStoreState,
   setMessagesMock,
   setLoadingMessagesMock,
   setCurrentProjectMock,
+  setGenerationStageMock,
   setGeneratingMock,
 } = vi.hoisted(() => ({
   searchParamsState: {
@@ -19,9 +21,13 @@ const {
   fetchProjectMessagesMock: vi.fn(),
   routerReplaceMock: vi.fn(),
   useConversationInitMock: vi.fn(),
+  projectStoreState: {
+    currentProjectId: null as string | null,
+  },
   setMessagesMock: vi.fn(),
   setLoadingMessagesMock: vi.fn(),
   setCurrentProjectMock: vi.fn(),
+  setGenerationStageMock: vi.fn(),
   setGeneratingMock: vi.fn(),
 }));
 
@@ -54,7 +60,7 @@ vi.mock('@/ai/image/lib/workspace-client', () => ({
 
 vi.mock('@/stores/project-store', () => ({
   useProjectStore: () => ({
-    currentProjectId: null,
+    currentProjectId: projectStoreState.currentProjectId,
   }),
 }));
 
@@ -63,6 +69,7 @@ vi.mock('@/stores/conversation-store', () => ({
     setMessages: setMessagesMock,
     setLoadingMessages: setLoadingMessagesMock,
     setCurrentProject: setCurrentProjectMock,
+    setGenerationStage: setGenerationStageMock,
     setGenerating: setGeneratingMock,
   }),
 }));
@@ -106,6 +113,7 @@ describe('ConversationLayout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     searchParamsState.value = '';
+    projectStoreState.currentProjectId = null;
   });
 
   it('bootstraps the new project entry with new-project mode', () => {
@@ -134,5 +142,31 @@ describe('ConversationLayout', () => {
         scroll: false,
       });
     });
+  });
+
+  it('clears stale generating state after loading a project without pending messages', async () => {
+    fetchProjectMessagesMock.mockResolvedValue({
+      success: true,
+      data: [
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          status: 'completed',
+        },
+      ],
+    });
+
+    projectStoreState.currentProjectId = 'project-0';
+    const { rerender } = render(<ConversationLayout />);
+
+    projectStoreState.currentProjectId = 'project-1';
+    rerender(<ConversationLayout />);
+
+    await waitFor(() => {
+      expect(fetchProjectMessagesMock).toHaveBeenCalledWith('project-1');
+    });
+
+    expect(setGeneratingMock).toHaveBeenCalledWith(false);
+    expect(setGenerationStageMock).toHaveBeenCalledWith(null);
   });
 });

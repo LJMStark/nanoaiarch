@@ -19,6 +19,27 @@ import { ConversationHeader } from './ConversationHeader';
 import { ConversationInput } from './ConversationInput';
 import { ProjectSidebar } from './ProjectSidebar';
 
+function syncRecoveredGenerationState(
+  messages: Array<{ role: string; status: string; id: string }>,
+  setGenerating: (generating: boolean, messageId?: string | null) => void,
+  setGenerationStage: (
+    stage: 'submitting' | 'queued' | 'generating' | 'finishing' | null
+  ) => void
+): void {
+  const generatingMessage = messages.find(
+    (msg) => msg.role === 'assistant' && msg.status === 'generating'
+  );
+
+  if (generatingMessage) {
+    setGenerating(true, generatingMessage.id);
+    setGenerationStage('generating');
+    return;
+  }
+
+  setGenerating(false);
+  setGenerationStage(null);
+}
+
 export function ConversationLayout() {
   const t = useTranslations();
   const searchParams = useSearchParams();
@@ -42,8 +63,13 @@ export function ConversationLayout() {
   const prevProjectIdRef = useRef<string | null>(null);
   const loadRequestIdRef = useRef(0);
 
-  const { setMessages, setLoadingMessages, setCurrentProject, setGenerating } =
-    useConversationStore();
+  const {
+    setMessages,
+    setLoadingMessages,
+    setCurrentProject,
+    setGenerating,
+    setGenerationStage,
+  } = useConversationStore();
 
   // Enable generation recovery polling
   useGenerationRecovery(currentProjectId);
@@ -93,6 +119,8 @@ export function ConversationLayout() {
     if (!currentProjectId) {
       loadRequestIdRef.current += 1;
       setCurrentProject(null);
+      setGenerating(false);
+      setGenerationStage(null);
       setLoadingMessages(false);
       return;
     }
@@ -112,14 +140,14 @@ export function ConversationLayout() {
 
       if (result.success) {
         setMessages(result.data);
-
-        // Check for generating messages and restore generation state
-        const generatingMessage = result.data.find(
-          (msg) => msg.role === 'assistant' && msg.status === 'generating'
+        syncRecoveredGenerationState(
+          result.data,
+          setGenerating,
+          setGenerationStage
         );
-        if (generatingMessage) {
-          setGenerating(true, generatingMessage.id);
-        }
+      } else {
+        setGenerating(false);
+        setGenerationStage(null);
       }
       if (loadRequestIdRef.current === requestId) {
         setLoadingMessages(false);
@@ -132,6 +160,7 @@ export function ConversationLayout() {
     setMessages,
     setLoadingMessages,
     setCurrentProject,
+    setGenerationStage,
     setGenerating,
   ]);
 

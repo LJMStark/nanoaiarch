@@ -11,6 +11,7 @@ const {
   setMessagesMock,
   setLoadingMessagesMock,
   setCurrentProjectMock,
+  setGenerationStageMock,
   setGeneratingMock,
   projectStoreState,
   useProjectStoreMock,
@@ -39,6 +40,7 @@ const {
     setMessagesMock: vi.fn(),
     setLoadingMessagesMock: vi.fn(),
     setCurrentProjectMock: vi.fn(),
+    setGenerationStageMock: vi.fn(),
     setGeneratingMock: vi.fn(),
     projectStoreState,
     useProjectStoreMock,
@@ -65,6 +67,7 @@ vi.mock('@/stores/conversation-store', () => ({
     setMessages: setMessagesMock,
     setLoadingMessages: setLoadingMessagesMock,
     setCurrentProject: setCurrentProjectMock,
+    setGenerationStage: setGenerationStageMock,
     setGenerating: setGeneratingMock,
   }),
 }));
@@ -119,5 +122,37 @@ describe('useConversationInit', () => {
     expect(selectProjectMock).toHaveBeenCalledWith('project-new');
     expect(setCurrentProjectMock).toHaveBeenCalledWith('project-new');
     expect(setMessagesMock).toHaveBeenCalledWith([]);
+  });
+
+  it('clears stale generating state when bootstrap returns no generating messages', async () => {
+    fetchConversationInitDataMock.mockResolvedValue({
+      success: true,
+      data: {
+        projects: [{ id: 'project-1' }],
+        messages: [
+          {
+            id: 'assistant-1',
+            role: 'assistant',
+            status: 'completed',
+          },
+        ],
+        currentProjectId: 'project-1',
+      },
+    });
+
+    renderHook(() => useConversationInit({ mode: 'resume' } as any));
+
+    await waitFor(() => {
+      expect(setMessagesMock).toHaveBeenCalledWith([
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          status: 'completed',
+        },
+      ]);
+    });
+
+    expect(setGeneratingMock).toHaveBeenCalledWith(false);
+    expect(setGenerationStageMock).toHaveBeenCalledWith(null);
   });
 });

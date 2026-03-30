@@ -7,6 +7,27 @@ import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
 import { useCallback, useEffect, useRef } from 'react';
 
+function syncRecoveredGenerationState(
+  messages: Array<{ role: string; status: string; id: string }>,
+  setGenerating: (generating: boolean, messageId?: string | null) => void,
+  setGenerationStage: (
+    stage: 'submitting' | 'queued' | 'generating' | 'finishing' | null
+  ) => void
+): void {
+  const generatingMessage = messages.find(
+    (msg) => msg.role === 'assistant' && msg.status === 'generating'
+  );
+
+  if (generatingMessage) {
+    setGenerating(true, generatingMessage.id);
+    setGenerationStage('generating');
+    return;
+  }
+
+  setGenerating(false);
+  setGenerationStage(null);
+}
+
 /**
  * Hook to handle conversation data initialization
  * Optimizes initial load by fetching projects and messages in a single request
@@ -17,8 +38,13 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
 
   const { setProjects, setLoadingProjects, selectProject } = useProjectStore();
 
-  const { setMessages, setLoadingMessages, setCurrentProject, setGenerating } =
-    useConversationStore();
+  const {
+    setMessages,
+    setLoadingMessages,
+    setCurrentProject,
+    setGenerating,
+    setGenerationStage,
+  } = useConversationStore();
 
   // Initial data load - single request for projects + messages
   useEffect(() => {
@@ -52,6 +78,7 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
           setCurrentProject(null);
           setMessages([]);
           setGenerating(false);
+          setGenerationStage(null);
           setLoadingProjects(false);
           setLoadingMessages(false);
           return;
@@ -66,15 +93,15 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
         if (resolvedProjectId) {
           setCurrentProject(resolvedProjectId);
           setMessages(messages);
-
-          // Check for generating messages and restore generation state
-          const generatingMessage = messages.find(
-            (msg) => msg.role === 'assistant' && msg.status === 'generating'
+          syncRecoveredGenerationState(
+            messages,
+            setGenerating,
+            setGenerationStage
           );
-          if (generatingMessage) {
-            setGenerating(true, generatingMessage.id);
-          }
         }
+      } else {
+        setGenerating(false);
+        setGenerationStage(null);
       }
 
       setLoadingProjects(false);
@@ -88,6 +115,7 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
     setMessages,
     setLoadingMessages,
     setCurrentProject,
+    setGenerationStage,
     setGenerating,
     selectProject,
     mode,
@@ -104,19 +132,25 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
       const result = await fetchProjectMessages(projectId);
       if (result.success) {
         setMessages(result.data);
-
-        // Check for generating messages and restore generation state
-        const generatingMessage = result.data.find(
-          (msg) => msg.role === 'assistant' && msg.status === 'generating'
+        syncRecoveredGenerationState(
+          result.data,
+          setGenerating,
+          setGenerationStage
         );
-        if (generatingMessage) {
-          setGenerating(true, generatingMessage.id);
-        }
+      } else {
+        setGenerating(false);
+        setGenerationStage(null);
       }
 
       setLoadingMessages(false);
     },
-    [setMessages, setLoadingMessages, setCurrentProject, setGenerating]
+    [
+      setGenerationStage,
+      setMessages,
+      setLoadingMessages,
+      setCurrentProject,
+      setGenerating,
+    ]
   );
 
   return { loadMessagesForProject };
