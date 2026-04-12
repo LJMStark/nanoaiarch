@@ -34,6 +34,30 @@ export interface CreditHoldResult {
 }
 
 /**
+ * Credit domain error types
+ */
+export class CreditError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CreditError';
+  }
+}
+
+export class CreditBalanceReadError extends CreditError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CreditBalanceReadError';
+  }
+}
+
+export class CreditBalanceUpdateError extends CreditError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CreditBalanceUpdateError';
+  }
+}
+
+/**
  * Credit package price
  */
 export interface CreditPackagePrice {

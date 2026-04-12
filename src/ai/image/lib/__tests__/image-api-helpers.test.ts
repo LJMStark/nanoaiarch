@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { executeImageGeneration } from '../image-api-helpers';
+import { executeImageGeneration, verifyCredits } from '../image-api-helpers';
 
 const mocks = vi.hoisted(() => ({
   consumeCredits: vi.fn(),
+  hasEnoughCredits: vi.fn(),
   holdCredits: vi.fn(),
   confirmHold: vi.fn(),
   releaseHold: vi.fn(),
@@ -11,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/credits/credits', () => ({
   consumeCredits: mocks.consumeCredits,
-  hasEnoughCredits: vi.fn(),
+  hasEnoughCredits: mocks.hasEnoughCredits,
   holdCredits: mocks.holdCredits,
   confirmHold: mocks.confirmHold,
   releaseHold: mocks.releaseHold,
@@ -31,6 +32,28 @@ describe('executeImageGeneration', () => {
 
   beforeEach(() => {
     for (const fn of Object.values(mocks)) fn.mockReset();
+  });
+
+  it('returns 500 when credit verification fails unexpectedly', async () => {
+    mocks.hasEnoughCredits.mockRejectedValue(new Error('db unavailable'));
+
+    const result = await verifyCredits('user-1', 'forma', 'req-1');
+
+    expect(result.status).toBe(500);
+    await expect(result.json()).resolves.toEqual({
+      error: '积分校验失败，请稍后重试',
+    });
+  });
+
+  it('returns 402 when credits are insufficient', async () => {
+    mocks.hasEnoughCredits.mockResolvedValue(false);
+
+    const result = await verifyCredits('user-1', 'forma', 'req-1');
+
+    expect(result.status).toBe(402);
+    await expect(result.json()).resolves.toEqual({
+      error: '积分不足，请购买更多积分后继续',
+    });
   });
 
   // Legacy flow (no holdId) - backward compatibility

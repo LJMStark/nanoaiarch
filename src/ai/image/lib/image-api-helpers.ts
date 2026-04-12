@@ -77,10 +77,25 @@ export async function verifyCredits(
   requestId: string
 ): Promise<{ creditCost: number } | NextResponse> {
   const creditCost = getCreditCost(modelId as GeminiModelId);
-  const hasCredits = await hasEnoughCredits({
-    userId,
-    requiredCredits: creditCost,
-  });
+  let hasCredits: boolean;
+
+  try {
+    hasCredits = await hasEnoughCredits({
+      userId,
+      requiredCredits: creditCost,
+    });
+  } catch (error) {
+    logger.api.error(
+      `Failed to verify credits [requestId=${requestId}, userId=${userId}, required=${creditCost}]`,
+      error
+    );
+    return NextResponse.json(
+      {
+        error: '积分校验失败，请稍后重试',
+      },
+      { status: 500 }
+    );
+  }
 
   if (!hasCredits) {
     logger.api.error(

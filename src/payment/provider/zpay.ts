@@ -9,7 +9,7 @@ import { getDb } from '@/db';
 import { payment, user } from '@/db/schema';
 import type { Payment } from '@/db/types';
 import { logger } from '@/lib/logger';
-import { findPlanByPlanId } from '@/lib/price-plan';
+import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
 import { sendNotification } from '@/notification/notification';
 import { and, eq } from 'drizzle-orm';
 import {
@@ -387,8 +387,32 @@ export class ZpayProvider implements PaymentProvider {
     });
 
     // Use atomic update to prevent race condition
-    // Only update if payment exists AND is not already paid
     const db = await getDb();
+    const existingPayment = await db
+      .select()
+      .from(payment)
+      .where(eq(payment.invoiceId, outTradeNo))
+      .limit(1);
+
+    if (existingPayment.length === 0) {
+      logger.payment.error('Payment record not found', { outTradeNo });
+      throw new Error('Payment record not found');
+    }
+
+    const paymentRecord = existingPayment[0];
+
+    if (paymentRecord.paid) {
+      logger.payment.info('Payment already processed', { outTradeNo });
+      return;
+    }
+
+    // Process credits/benefits
+    if (paymentRecord.scene === PaymentScenes.CREDIT) {
+      await this.processCreditPurchase(paymentRecord, params);
+    } else if (paymentRecord.scene === PaymentScenes.LIFETIME) {
+      await this.processLifetimePurchase(paymentRecord, money);
+    }
+
     const updateResult = await db
       .update(payment)
       .set({
@@ -400,30 +424,22 @@ export class ZpayProvider implements PaymentProvider {
       .where(and(eq(payment.invoiceId, outTradeNo), eq(payment.paid, false)))
       .returning();
 
-    // If no rows updated, check if it's because payment doesn't exist or already processed
     if (updateResult.length === 0) {
-      const existingPayment = await db
+      const refreshedPayment = await db
         .select()
         .from(payment)
         .where(eq(payment.invoiceId, outTradeNo))
         .limit(1);
 
-      if (existingPayment.length > 0 && existingPayment[0].paid) {
-        logger.payment.info('Payment already processed', { outTradeNo });
+      if (refreshedPayment.length > 0 && refreshedPayment[0].paid) {
+        logger.payment.info('Payment already finalized by another worker', {
+          outTradeNo,
+        });
         return;
       }
 
-      logger.payment.error('Payment record not found', { outTradeNo });
-      throw new Error('Payment record not found');
-    }
-
-    const paymentRecord = updateResult[0];
-
-    // Process credits/benefits
-    if (paymentRecord.scene === PaymentScenes.CREDIT) {
-      await this.processCreditPurchase(paymentRecord, params);
-    } else if (paymentRecord.scene === PaymentScenes.LIFETIME) {
-      await this.processLifetimePurchase(paymentRecord, money);
+      logger.payment.error('Payment finalization failed', { outTradeNo });
+      throw new Error('Payment finalization failed');
     }
 
     // Process referral rewards
@@ -453,14 +469,15 @@ export class ZpayProvider implements PaymentProvider {
           typeof customParams.packageId === 'string'
             ? customParams.packageId
             : null;
-      } catch {
-        logger.payment.warn('Failed to parse custom params');
+      } catch (error) {
+        logger.payment.error('Failed to parse custom params', error);
+        throw new Error('Invalid credit purchase params');
       }
     }
 
     if (!packageId) {
-      logger.payment.warn('Missing packageId in webhook params');
-      return;
+      logger.payment.error('Missing packageId in webhook params');
+      throw new Error('Missing packageId in webhook params');
     }
 
     const creditPackage = getCreditPackageById(packageId);
@@ -470,31 +487,31 @@ export class ZpayProvider implements PaymentProvider {
     });
 
     if (!creditPackage || !purchase) {
-      logger.payment.warn('Unable to resolve credit purchase from webhook', {
+      logger.payment.error('Unable to resolve credit purchase from webhook', {
         packageId,
       });
-      return;
+      throw new Error('Unable to resolve credit purchase from webhook');
     }
 
     if (paymentRecord.priceId !== creditPackage.price.priceId) {
-      logger.payment.warn('Credit package priceId mismatch', {
+      logger.payment.error('Credit package priceId mismatch', {
         packageId,
         paymentPriceId: paymentRecord.priceId,
         packagePriceId: creditPackage.price.priceId,
       });
-      return;
+      throw new Error('Credit package priceId mismatch');
     }
 
     if (
       params.money &&
       Number.parseFloat(params.money) !== creditPackage.price.amount / 100
     ) {
-      logger.payment.warn('Credit package amount mismatch', {
+      logger.payment.error('Credit package amount mismatch', {
         packageId,
         webhookAmount: params.money,
         expectedAmount: creditPackage.price.amount / 100,
       });
-      return;
+      throw new Error('Credit package amount mismatch');
     }
 
     await addCredits({
@@ -504,6 +521,7 @@ export class ZpayProvider implements PaymentProvider {
       description: purchase.description,
       paymentId: paymentRecord.invoiceId || undefined,
       expireDays: purchase.expireDays,
+      idempotencyKey: `credit-purchase:${paymentRecord.invoiceId ?? paymentRecord.id}`,
     });
 
     logger.payment.info('Process credit purchase success');
@@ -517,6 +535,27 @@ export class ZpayProvider implements PaymentProvider {
     money: string
   ): Promise<void> {
     logger.payment.info('Process lifetime plan purchase');
+    const plan = findPlanByPriceId(paymentRecord.priceId);
+    const price = plan?.prices.find(
+      (item) => item.priceId === paymentRecord.priceId
+    );
+    const paidAmountInCents = Math.round((Number.parseFloat(money) || 0) * 100);
+    const expectedAmountInCents = Math.round(
+      ((price?.zpayAmount ?? this.getZpayPrice('LIFETIME')) || 0) * 100
+    );
+
+    if (
+      !plan?.isLifetime ||
+      !price ||
+      paidAmountInCents !== expectedAmountInCents
+    ) {
+      logger.payment.error('Lifetime payment amount mismatch', {
+        priceId: paymentRecord.priceId,
+        paidAmountInCents,
+        expectedAmountInCents,
+      });
+      throw new Error('Lifetime payment amount mismatch');
+    }
 
     if (websiteConfig.credits?.enableCredits) {
       await addLifetimeMonthlyCredits(

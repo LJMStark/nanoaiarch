@@ -1,6 +1,7 @@
 'use server';
 
 import { getUserCredits } from '@/credits/credits';
+import { CreditBalanceReadError } from '@/credits/types';
 import type { User } from '@/lib/auth-types';
 import { logger } from '@/lib/logger';
 import { userActionClient } from '@/lib/safe-action';
@@ -19,7 +20,7 @@ export const getCreditBalanceAction = userActionClient.action(
       return {
         success: false,
         error:
-          error instanceof Error
+          error instanceof CreditBalanceReadError
             ? error.message
             : 'Failed to fetch credit balance',
       };

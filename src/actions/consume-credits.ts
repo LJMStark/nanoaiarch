@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 // consume credits schema
 const consumeSchema = z.object({
-  amount: z.number().min(1),
+  amount: z.number().int().min(1),
   description: z.string().optional(),
 });
 

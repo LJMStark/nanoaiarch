@@ -9,6 +9,8 @@ import { addDays } from 'date-fns';
 import { and, asc, eq, gt, inArray, isNull, not, or, sql } from 'drizzle-orm';
 import {
   CREDIT_TRANSACTION_TYPE,
+  CreditBalanceReadError,
+  CreditBalanceUpdateError,
   type CreditHoldResult,
   HOLD_STATUS,
 } from './types';
@@ -132,11 +134,10 @@ export async function getUserCredits(userId: string): Promise<number> {
       .where(eq(userCredit.userId, userId))
       .limit(1);
 
-    return record[0]?.currentCredits || 0;
+    return record[0]?.currentCredits ?? 0;
   } catch (error) {
     logger.credits.error('getUserCredits error', { error });
-    // Return 0 on error to prevent UI from breaking
-    return 0;
+    throw new CreditBalanceReadError('Failed to load credit balance');
   }
 }
 
@@ -154,6 +155,7 @@ export async function updateUserCredits(userId: string, credits: number) {
       .where(eq(userCredit.userId, userId));
   } catch (error) {
     logger.credits.error('updateUserCredits error', error);
+    throw new CreditBalanceUpdateError('Failed to update credit balance');
   }
 }
 
@@ -461,6 +463,16 @@ export async function consumeCredits({
         })
         .where(eq(creditTransaction.id, transaction.id));
       remainingToDeduct -= deductFromThis;
+    }
+
+    if (remainingToDeduct > 0) {
+      logger.credits.error('consumeCredits ledger mismatch', null, {
+        userId,
+        amount,
+        remainingToDeduct,
+        availableTransactions: transactions.length,
+      });
+      throw new Error('Credit ledger is inconsistent');
     }
 
     // Update balance

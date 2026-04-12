@@ -44,6 +44,19 @@ export const createCreditCheckoutSession = userActionClient
         };
       }
 
+      if (creditPackage.price.priceId !== priceId) {
+        logger.actions.warn('Rejected credit checkout with mismatched price', {
+          userId: currentUser.id,
+          packageId,
+          requestedPriceId: priceId,
+          expectedPriceId: creditPackage.price.priceId,
+        });
+        return {
+          success: false,
+          error: 'Invalid price for credit package',
+        };
+      }
+
       // Check if package is disabled
       if (creditPackage.disabled) {
         logger.actions.warn('Attempted to purchase disabled package', {
