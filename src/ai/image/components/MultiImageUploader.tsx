@@ -8,8 +8,7 @@ import Image from 'next/image';
 import { useCallback, useRef, useState } from 'react';
 import {
   ACCEPTED_IMAGE_TYPES,
-  compressImageForApi,
-  isAcceptedImageType,
+  compressAcceptedImageFiles,
 } from '../lib/image-compress';
 
 // 最大图片数量
@@ -50,18 +49,10 @@ export function MultiImageUploader({
       }
 
       const filesToProcess = Array.from(files).slice(0, remainingSlots);
-      const newImages: string[] = [];
 
       setIsCompressing(true);
       try {
-        for (const file of filesToProcess) {
-          if (!isAcceptedImageType(file.type)) {
-            continue;
-          }
-          const base64 = await compressImageForApi(file);
-          newImages.push(base64);
-        }
-
+        const newImages = await compressAcceptedImageFiles(filesToProcess);
         if (newImages.length > 0) {
           onImagesChange([...currentImages, ...newImages]);
         }

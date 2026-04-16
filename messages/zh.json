@@ -1511,7 +1511,7 @@
     "upload": {
       "dropHere": "将图片拖放到这里",
       "uploadToEdit": "上传图片进行编辑",
-      "dragOrClick": "拖放或点击选择",
+      "dragOrClick": "拖放、点击选择，或在输入框粘贴",
       "fileTypes": "支持 PNG、JPG、WebP、GIF（大图自动压缩）",
       "multiFileTypes": "支持 PNG、JPG、WebP、GIF，最多 5 张",
       "removeHint": "点击 X 移除并上传新图片",

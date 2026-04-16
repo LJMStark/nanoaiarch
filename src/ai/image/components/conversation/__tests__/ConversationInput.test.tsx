@@ -1,11 +1,19 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConversationInput } from '../ConversationInput';
 
-const submitMock = vi.fn();
+const { submitMock, compressAcceptedImageFilesMock } = vi.hoisted(() => ({
+  submitMock: vi.fn(),
+  compressAcceptedImageFilesMock: vi.fn(),
+}));
 
 vi.mock('../use-conversation-submit', () => ({
   useConversationSubmit: () => submitMock,
+}));
+
+vi.mock('@/ai/image/lib/image-compress', () => ({
+  compressAcceptedImageFiles: compressAcceptedImageFilesMock,
+  isAcceptedImageType: (type: string) => type.startsWith('image/'),
 }));
 
 vi.mock('@/stores/project-store', () => ({
@@ -43,6 +51,11 @@ vi.mock('next-intl', () => ({
 }));
 
 describe('ConversationInput', () => {
+  beforeEach(() => {
+    submitMock.mockClear();
+    compressAcceptedImageFilesMock.mockReset();
+  });
+
   it('renders the input textarea', () => {
     render(<ConversationInput />);
     expect(screen.getByPlaceholderText('controls.prompt')).toBeInTheDocument();
@@ -75,5 +88,131 @@ describe('ConversationInput', () => {
     });
 
     expect(submitMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('adds pasted clipboard images to the reference preview', async () => {
+    compressAcceptedImageFilesMock.mockResolvedValue(['pasted-image-base64']);
+
+    render(<ConversationInput />);
+    const textarea = screen.getByPlaceholderText('controls.prompt');
+    const imageFile = new File(['binary'], 'reference.png', {
+      type: 'image/png',
+    });
+
+    fireEvent.paste(textarea, {
+      clipboardData: {
+        items: [
+          {
+            kind: 'file',
+            type: 'image/png',
+            getAsFile: () => imageFile,
+          },
+        ],
+        files: [imageFile],
+      },
+    });
+
+    await waitFor(() => {
+      expect(compressAcceptedImageFilesMock).toHaveBeenCalledWith([imageFile]);
+    });
+
+    expect(screen.getByText('controls.referenceCount')).toBeInTheDocument();
+    expect(screen.getByAltText('Reference 1')).toBeInTheDocument();
+  });
+
+  it('does not submit on Enter while image paste compression is in progress', async () => {
+    let resolveCompression: ((value: string[]) => void) | undefined;
+    compressAcceptedImageFilesMock.mockReturnValue(
+      new Promise<string[]>((resolve) => {
+        resolveCompression = resolve;
+      })
+    );
+
+    render(<ConversationInput />);
+    const textarea = screen.getByPlaceholderText('controls.prompt');
+    const imageFile = new File(['binary'], 'reference.png', {
+      type: 'image/png',
+    });
+
+    fireEvent.paste(textarea, {
+      clipboardData: {
+        items: [
+          {
+            kind: 'file',
+            type: 'image/png',
+            getAsFile: () => imageFile,
+          },
+        ],
+        files: [imageFile],
+      },
+    });
+
+    fireEvent.keyDown(textarea, {
+      key: 'Enter',
+      code: 'Enter',
+      shiftKey: false,
+      nativeEvent: { isComposing: false },
+    });
+
+    expect(submitMock).not.toHaveBeenCalled();
+
+    resolveCompression?.(['pasted-image-base64']);
+    await waitFor(() => {
+      expect(screen.getByAltText('Reference 1')).toBeInTheDocument();
+    });
+  });
+
+  it('ignores additional image paste while a paste compression is running', async () => {
+    let resolveCompression: ((value: string[]) => void) | undefined;
+    compressAcceptedImageFilesMock.mockReturnValue(
+      new Promise<string[]>((resolve) => {
+        resolveCompression = resolve;
+      })
+    );
+
+    render(<ConversationInput />);
+    const textarea = screen.getByPlaceholderText('controls.prompt');
+    const firstImageFile = new File(['binary'], 'first.png', {
+      type: 'image/png',
+    });
+    const secondImageFile = new File(['binary'], 'second.png', {
+      type: 'image/png',
+    });
+
+    fireEvent.paste(textarea, {
+      clipboardData: {
+        items: [
+          {
+            kind: 'file',
+            type: 'image/png',
+            getAsFile: () => firstImageFile,
+          },
+        ],
+        files: [firstImageFile],
+      },
+    });
+
+    fireEvent.paste(textarea, {
+      clipboardData: {
+        items: [
+          {
+            kind: 'file',
+            type: 'image/png',
+            getAsFile: () => secondImageFile,
+          },
+        ],
+        files: [secondImageFile],
+      },
+    });
+
+    expect(compressAcceptedImageFilesMock).toHaveBeenCalledTimes(1);
+    expect(compressAcceptedImageFilesMock).toHaveBeenCalledWith([
+      firstImageFile,
+    ]);
+
+    resolveCompression?.(['pasted-image-base64']);
+    await waitFor(() => {
+      expect(screen.getByAltText('Reference 1')).toBeInTheDocument();
+    });
   });
 });

@@ -30,6 +30,23 @@ export function isAcceptedImageType(type: string): boolean {
   return (ACCEPTED_IMAGE_TYPES as readonly string[]).includes(type);
 }
 
+export async function compressAcceptedImageFiles(
+  files: Iterable<File>
+): Promise<string[]> {
+  const images: string[] = [];
+
+  for (const file of files) {
+    if (!isAcceptedImageType(file.type)) {
+      continue;
+    }
+
+    const base64 = await compressImageForApi(file);
+    images.push(base64);
+  }
+
+  return images;
+}
+
 /**
  * Compress an image file to a Gemini-compatible base64 string.
  *

@@ -1511,7 +1511,7 @@
     "upload": {
       "dropHere": "Drop image here",
       "uploadToEdit": "Upload an image to edit",
-      "dragOrClick": "Drag and drop or click to select",
+      "dragOrClick": "Drag and drop, click to select, or paste into the prompt box",
       "fileTypes": "PNG, JPG, WebP, GIF (large images auto-compressed)",
       "multiFileTypes": "PNG, JPG, WebP, GIF up to 5 images",
       "removeHint": "Click X to remove and upload a different image",

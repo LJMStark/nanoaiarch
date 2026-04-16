@@ -4,6 +4,10 @@ import { MultiImageUploader } from '@/ai/image/components/MultiImageUploader';
 import { GenerationSettings } from '@/ai/image/components/conversation/GenerationSettings';
 import { ReferenceImagesPreview } from '@/ai/image/components/conversation/ReferenceImagesPreview';
 import { validateBase64Image } from '@/ai/image/lib/api-utils';
+import {
+  compressAcceptedImageFiles,
+  isAcceptedImageType,
+} from '@/ai/image/lib/image-compress';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +20,8 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useConversationSubmit } from './use-conversation-submit';
 
+const MAX_REFERENCE_IMAGES = 5;
+
 export function ConversationInput() {
   const t = useTranslations('ArchPage');
   const { toast } = useToast();
@@ -23,7 +29,10 @@ export function ConversationInput() {
   const isComposingRef = useRef(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
+  const referenceImagesRef = useRef(referenceImages);
+  const isPastingImageRef = useRef(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [isPastingImage, setIsPastingImage] = useState(false);
 
   // Get localized error message for image validation
   const getImageValidationError = useCallback(
@@ -107,6 +116,10 @@ export function ConversationInput() {
     }
   }, [draftPrompt]);
 
+  useEffect(() => {
+    referenceImagesRef.current = referenceImages;
+  }, [referenceImages]);
+
   // Apply draft reference image from edit action
   useEffect(() => {
     if (!draftImage) return;
@@ -157,13 +170,88 @@ export function ConversationInput() {
 
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
+        if (isPastingImageRef.current) {
+          return;
+        }
         handleSubmit();
       }
     },
     [handleSubmit]
   );
 
-  const isDisabled = !currentProjectId || !draftPrompt.trim() || isGenerating;
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const clipboardFiles = [
+        ...Array.from(e.clipboardData.items)
+          .filter((item) => item.kind === 'file')
+          .map((item) => item.getAsFile())
+          .filter((file): file is File => Boolean(file)),
+        ...Array.from(e.clipboardData.files),
+      ];
+      const imageFiles = clipboardFiles.filter((file, index, files) => {
+        return isAcceptedImageType(file.type) && files.indexOf(file) === index;
+      });
+
+      if (imageFiles.length === 0) {
+        return;
+      }
+
+      e.preventDefault();
+      if (isPastingImageRef.current) {
+        return;
+      }
+
+      const remainingSlots =
+        MAX_REFERENCE_IMAGES - referenceImagesRef.current.length;
+      if (remainingSlots <= 0) {
+        toast({
+          title: t('upload.maxImagesReached'),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      isPastingImageRef.current = true;
+      setIsPastingImage(true);
+      try {
+        const newImages = await compressAcceptedImageFiles(
+          imageFiles.slice(0, remainingSlots)
+        );
+
+        if (newImages.length === 0) {
+          return;
+        }
+
+        const latestRemainingSlots =
+          MAX_REFERENCE_IMAGES - referenceImagesRef.current.length;
+        if (latestRemainingSlots <= 0) {
+          toast({
+            title: t('upload.maxImagesReached'),
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        handleImagesChange([
+          ...referenceImagesRef.current,
+          ...newImages.slice(0, latestRemainingSlots),
+        ]);
+        textareaRef.current?.focus();
+      } catch {
+        toast({
+          title: t('upload.compressFailed'),
+          variant: 'destructive',
+        });
+      } finally {
+        isPastingImageRef.current = false;
+        setIsPastingImage(false);
+      }
+    },
+    [handleImagesChange, t, toast]
+  );
+
+  const isDisabled =
+    !currentProjectId || !draftPrompt.trim() || isGenerating || isPastingImage;
 
   return (
     <div className="border-t bg-background p-4 flex-shrink-0">
@@ -181,6 +269,8 @@ export function ConversationInput() {
                 <MultiImageUploader
                   currentImages={referenceImages}
                   onImagesChange={handleImagesChange}
+                  disabled={isPastingImage}
+                  maxImages={MAX_REFERENCE_IMAGES}
                 />
                 {imageError && (
                   <p className="text-sm text-destructive px-1">{imageError}</p>
@@ -205,6 +295,7 @@ export function ConversationInput() {
             value={draftPrompt}
             onChange={(e) => setDraftPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             onCompositionStart={() => {
               isComposingRef.current = true;
             }}
@@ -231,6 +322,7 @@ export function ConversationInput() {
                   'h-9 w-9 flex-shrink-0',
                   showImageUpload && 'bg-accent'
                 )}
+                disabled={isPastingImage}
                 aria-label={t('upload.uploadToEdit')}
               >
                 <ImageIcon className="h-5 w-5" />
@@ -250,10 +342,14 @@ export function ConversationInput() {
               size="icon"
               className="h-10 w-10 flex-shrink-0 rounded-full"
               aria-label={
-                isGenerating ? t('controls.generating') : t('controls.generate')
+                isGenerating
+                  ? t('controls.generating')
+                  : isPastingImage
+                    ? t('upload.compressing')
+                    : t('controls.generate')
               }
             >
-              {isGenerating ? (
+              {isGenerating || isPastingImage ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <ArrowUp className="h-4 w-4" />
