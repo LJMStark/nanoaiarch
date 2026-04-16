@@ -143,4 +143,37 @@ describe('conversation-store', () => {
       },
     ]);
   });
+
+  it('keeps the legacy single image field for user messages without inputImages', () => {
+    const store = useConversationStore.getState();
+
+    store.setMessages([
+      createMessage('user-legacy', {
+        role: 'user',
+        content: '继续编辑这张图',
+        inputImage: 'legacy-image-base64',
+        inputImages: [],
+        status: 'completed',
+        orderIndex: 0,
+      }),
+      createMessage('assistant-legacy', {
+        role: 'assistant',
+        content: '收到',
+        status: 'completed',
+        orderIndex: 1,
+      }),
+    ]);
+
+    expect(store.getConversationHistory()).toEqual([
+      {
+        role: 'user',
+        content: '继续编辑这张图',
+        image: 'legacy-image-base64',
+      },
+      {
+        role: 'model',
+        content: '收到',
+      },
+    ]);
+  });
 });

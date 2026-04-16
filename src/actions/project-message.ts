@@ -3,7 +3,7 @@
 import { validateBase64Image } from '@/ai/image/lib/api-utils';
 import {
   getPrimaryInputImage,
-  normalizeInputImages,
+  resolveInputImages,
   serializeInputImages,
 } from '@/ai/image/lib/input-images';
 import { hydrateProjectMessage } from '@/ai/image/lib/project-message-utils';
@@ -20,7 +20,9 @@ import { logger } from '@/lib/logger';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 
-const generateId = () => crypto.randomUUID();
+function generateId(): string {
+  return crypto.randomUUID();
+}
 
 export type MessageRole = 'user' | 'assistant';
 
@@ -40,6 +42,22 @@ export type GenerationParams = {
 
 type DbClient = Awaited<ReturnType<typeof getDb>>;
 type DbTransaction = Parameters<Parameters<DbClient['transaction']>[0]>[0];
+type ValidatedInputImagesResult =
+  | { valid: true; inputImages: string[] }
+  | { valid: false; error: string };
+
+function getValidatedInputImages(
+  images: Array<string | null | undefined>
+): ValidatedInputImagesResult {
+  const inputImages = resolveInputImages(images);
+  const validation = validateReferenceImages(undefined, inputImages);
+
+  if (!validation.valid) {
+    return { valid: false, error: validation.error };
+  }
+
+  return { valid: true, inputImages };
+}
 
 async function getLockedNextOrderIndex(
   tx: DbTransaction,
@@ -191,11 +209,11 @@ export async function addUserMessage(
     return { success: false, error: 'Unauthorized' };
   }
 
-  const inputImages = normalizeInputImages(data.inputImages ?? []);
-  const imageValidation = validateReferenceImages(undefined, inputImages);
-  if (!imageValidation.valid) {
-    return { success: false, error: imageValidation.error };
+  const inputImagesResult = getValidatedInputImages(data.inputImages ?? []);
+  if (!inputImagesResult.valid) {
+    return { success: false, error: inputImagesResult.error };
   }
+  const { inputImages } = inputImagesResult;
 
   try {
     const db = await getDb();
@@ -405,14 +423,14 @@ export async function createPendingGeneration(
     return { success: false, error: 'Unauthorized' };
   }
 
-  const inputImages = normalizeInputImages([
+  const inputImagesResult = getValidatedInputImages([
     ...(data.inputImages ?? []),
     ...(data.generationParams.inputImages ?? []),
   ]);
-  const imageValidation = validateReferenceImages(undefined, inputImages);
-  if (!imageValidation.valid) {
-    return { success: false, error: imageValidation.error };
+  if (!inputImagesResult.valid) {
+    return { success: false, error: inputImagesResult.error };
   }
+  const { inputImages } = inputImagesResult;
 
   try {
     const db = await getDb();

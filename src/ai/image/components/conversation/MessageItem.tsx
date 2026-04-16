@@ -8,6 +8,10 @@ import {
   getImageSrc,
   shareImage,
 } from '@/ai/image/lib/image-display-utils';
+import {
+  getOptionalInputImages,
+  resolveInputImages,
+} from '@/ai/image/lib/input-images';
 import { updateAssistantMessageRequest } from '@/ai/image/lib/workspace-client';
 import type {
   GenerationParams,
@@ -122,12 +126,10 @@ function clearFinishedGeneration(
 
 function UserMessage({ message }: { message: ProjectMessageItem }) {
   const t = useTranslations('ArchPage');
-  const userInputImages =
-    message.inputImages.length > 0
-      ? message.inputImages
-      : message.inputImage
-        ? [message.inputImage]
-        : [];
+  const userInputImages = resolveInputImages(
+    message.inputImages,
+    message.inputImage
+  );
 
   return (
     <div className="flex w-full justify-end px-2 py-2">
@@ -338,12 +340,10 @@ function AssistantMessage({
 
       const result = await generateImage({
         prompt,
-        referenceImages:
-          userMessage.inputImages.length > 0
-            ? userMessage.inputImages
-            : userMessage.inputImage
-              ? [userMessage.inputImage]
-              : undefined,
+        referenceImages: getOptionalInputImages(
+          userMessage.inputImages,
+          userMessage.inputImage
+        ),
         aspectRatio,
         model,
         imageSize: imageQuality,

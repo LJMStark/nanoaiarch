@@ -23,14 +23,30 @@ export function normalizeInputImages(
   return normalized;
 }
 
+export function resolveInputImages(
+  inputImages: Array<string | null | undefined> | null | undefined,
+  fallbackInputImage?: string | null
+): string[] {
+  return normalizeInputImages([...(inputImages ?? []), fallbackInputImage]);
+}
+
 export function getPrimaryInputImage(
   inputImages: string[] | null | undefined,
   fallbackInputImage?: string | null
 ): string | null {
-  return (
-    normalizeInputImages([...(inputImages ?? []), fallbackInputImage])[0] ??
-    null
+  return resolveInputImages(inputImages, fallbackInputImage)[0] ?? null;
+}
+
+export function getOptionalInputImages(
+  inputImages: Array<string | null | undefined> | null | undefined,
+  fallbackInputImage?: string | null
+): string[] | undefined {
+  const resolvedInputImages = resolveInputImages(
+    inputImages,
+    fallbackInputImage
   );
+
+  return resolvedInputImages.length > 0 ? resolvedInputImages : undefined;
 }
 
 export function parseStoredInputImages(
@@ -38,27 +54,27 @@ export function parseStoredInputImages(
   fallbackInputImage?: string | null
 ): string[] {
   if (!rawInputImages) {
-    return normalizeInputImages([fallbackInputImage]);
+    return resolveInputImages([], fallbackInputImage);
   }
 
   try {
     const parsed = JSON.parse(rawInputImages);
     if (!Array.isArray(parsed)) {
-      return normalizeInputImages([fallbackInputImage]);
+      return resolveInputImages([], fallbackInputImage);
     }
 
-    return normalizeInputImages([
-      ...parsed.filter((value): value is string => typeof value === 'string'),
-      fallbackInputImage,
-    ]);
+    return resolveInputImages(
+      parsed.filter((value): value is string => typeof value === 'string'),
+      fallbackInputImage
+    );
   } catch {
-    return normalizeInputImages([fallbackInputImage]);
+    return resolveInputImages([], fallbackInputImage);
   }
 }
 
 export function serializeInputImages(
   inputImages: string[] | null | undefined
 ): string | null {
-  const normalized = normalizeInputImages(inputImages ?? []);
+  const normalized = resolveInputImages(inputImages);
   return normalized.length > 0 ? JSON.stringify(normalized) : null;
 }

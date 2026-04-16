@@ -1,3 +1,4 @@
+import { resolveInputImages } from '@/ai/image/lib/input-images';
 import type {
   ConversationHistoryMessage,
   GeminiConversationPart,
@@ -159,6 +160,25 @@ function getStoredModelResponseParts(
   }
 }
 
+function getConversationUserImageFields(
+  message: ProjectMessageItem
+): Pick<ConversationHistoryMessage, 'image' | 'images'> {
+  const inputImages = resolveInputImages(
+    message.inputImages,
+    message.inputImage
+  );
+
+  if (message.inputImages.length > 0) {
+    return { images: inputImages };
+  }
+
+  if (inputImages.length > 0) {
+    return { image: inputImages[0] };
+  }
+
+  return {};
+}
+
 export const useConversationStore = create<ConversationState>()(
   persist(
     (set, get) => ({
@@ -302,11 +322,7 @@ export const useConversationStore = create<ConversationState>()(
             {
               role: 'user' as const,
               content: pair.user.content,
-              ...(pair.user.inputImages.length > 0
-                ? { images: pair.user.inputImages }
-                : pair.user.inputImage
-                  ? { image: pair.user.inputImage }
-                : {}),
+              ...getConversationUserImageFields(pair.user),
             },
             {
               role: 'model' as const,
