@@ -61,6 +61,7 @@ function createAssistantMessage(): ProjectMessageItem {
     role: 'assistant',
     content: '',
     inputImage: null,
+    inputImages: [],
     outputImage: 'https://example.com/image.png',
     maskImage: null,
     generationParams: null,

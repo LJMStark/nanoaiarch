@@ -1,5 +1,6 @@
 'use server';
 
+import { hydrateProjectMessage } from '@/ai/image/lib/project-message-utils';
 import { getDb } from '@/db';
 import { imageProject, projectMessage } from '@/db/schema';
 import { auth } from '@/lib/auth';
@@ -115,7 +116,7 @@ export async function getConversationInitData(
         .where(eq(projectMessage.projectId, currentProjectId))
         .orderBy(asc(projectMessage.orderIndex), asc(projectMessage.createdAt));
 
-      messages = messagesResult as ProjectMessageItem[];
+      messages = messagesResult.map(hydrateProjectMessage);
     }
 
     return {

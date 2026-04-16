@@ -55,6 +55,7 @@ function createDbMock(projects: Array<{ id: string; title: string }>) {
         role: 'assistant',
         content: 'existing',
         inputImage: null,
+        inputImages: null,
         outputImage: null,
         maskImage: null,
         generationParams: null,

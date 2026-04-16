@@ -302,7 +302,11 @@ export const useConversationStore = create<ConversationState>()(
             {
               role: 'user' as const,
               content: pair.user.content,
-              ...(pair.user.inputImage && { image: pair.user.inputImage }),
+              ...(pair.user.inputImages.length > 0
+                ? { images: pair.user.inputImages }
+                : pair.user.inputImage
+                  ? { image: pair.user.inputImage }
+                : {}),
             },
             {
               role: 'model' as const,

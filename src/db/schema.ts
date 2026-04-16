@@ -234,6 +234,7 @@ export const projectMessage = pgTable("project_message", {
 
 	// Images (base64)
 	inputImage: text("input_image"), // user uploaded reference
+	inputImages: text("input_images"), // JSON array of user uploaded references
 	outputImage: text("output_image"), // generated result
 	maskImage: text("mask_image"), // for inpainting
 

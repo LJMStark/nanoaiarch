@@ -1,5 +1,6 @@
 'use client';
 
+import { MAX_REFERENCE_IMAGES } from '@/ai/image/lib/input-images';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ImageIcon, Loader2, Plus, Upload, X } from 'lucide-react';
@@ -10,9 +11,6 @@ import {
   ACCEPTED_IMAGE_TYPES,
   compressAcceptedImageFiles,
 } from '../lib/image-compress';
-
-// 最大图片数量
-const MAX_IMAGES = 5;
 
 interface MultiImageUploaderProps {
   onImagesChange: (images: string[]) => void;
@@ -27,7 +25,7 @@ export function MultiImageUploader({
   currentImages,
   className,
   disabled = false,
-  maxImages = MAX_IMAGES,
+  maxImages = MAX_REFERENCE_IMAGES,
 }: MultiImageUploaderProps) {
   const t = useTranslations('ArchPage.upload');
   const [isDragging, setIsDragging] = useState(false);

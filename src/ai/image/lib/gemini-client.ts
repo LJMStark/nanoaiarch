@@ -365,9 +365,16 @@ async function buildConversationMessageParts(
     parts.push(createTextPart(message.content));
   }
 
-  if (message.image) {
+  const images =
+    Array.isArray(message.images) && message.images.length > 0
+      ? message.images
+      : message.image
+        ? [message.image]
+        : [];
+
+  for (const image of images) {
     try {
-      parts.push(await createImagePart(message.image, signal));
+      parts.push(await createImagePart(image, signal));
     } catch (error) {
       logger.ai.warn('[Gemini] Failed to resolve user image, skipping', {
         error: error instanceof Error ? error.message : String(error),

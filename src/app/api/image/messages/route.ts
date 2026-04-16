@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       projectId: string;
       data: {
         content: string;
-        inputImage?: string;
+        inputImages?: string[];
         generationParams: GenerationParams;
       };
     };

@@ -18,6 +18,7 @@ export type ConversationHistoryMessage = {
   role: 'user' | 'model';
   content: string;
   image?: string;
+  images?: string[];
   parts?: GeminiConversationPart[];
 };
 
@@ -59,6 +60,7 @@ export type ProjectMessageItem = {
   role: MessageRole;
   content: string;
   inputImage: string | null;
+  inputImages: string[];
   outputImage: string | null;
   maskImage: string | null;
   generationParams: string | null;
@@ -77,6 +79,7 @@ export type GenerationParams = {
   aspectRatio?: string;
   model?: string;
   imageQuality?: string;
+  inputImages?: string[];
   modelResponseParts?: GeminiConversationPart[];
 };
 

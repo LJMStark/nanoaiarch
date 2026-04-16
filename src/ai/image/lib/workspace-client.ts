@@ -220,7 +220,7 @@ export async function createPendingGenerationRequest(
   projectId: string,
   data: {
     content: string;
-    inputImage?: string;
+    inputImages?: string[];
     generationParams: GenerationParams;
   }
 ): Promise<PendingGenerationResult> {

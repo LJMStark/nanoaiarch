@@ -3,6 +3,7 @@ import { validateBase64Image } from '../api-utils';
 import {
   resolveRequestedImageSize,
   validateConversationMessages,
+  validateReferenceImages,
 } from '../request-validation';
 
 describe('validateBase64Image', () => {
@@ -90,6 +91,32 @@ describe('validateConversationMessages', () => {
     ).toEqual({
       valid: false,
       error: '第 1 条对话消息角色无效',
+    });
+  });
+
+  it('accepts user messages with multiple images', () => {
+    expect(
+      validateConversationMessages([
+        {
+          role: 'user',
+          content: '把这两张图融合',
+          images: ['base64-a', 'base64-b'],
+        },
+      ])
+    ).toEqual({ valid: true });
+  });
+});
+
+describe('validateReferenceImages', () => {
+  it('rejects more than 10 reference images', () => {
+    expect(
+      validateReferenceImages(
+        undefined,
+        Array.from({ length: 11 }, (_, index) => `image-${index}`)
+      )
+    ).toEqual({
+      valid: false,
+      error: '最多上传 10 张参考图',
     });
   });
 });

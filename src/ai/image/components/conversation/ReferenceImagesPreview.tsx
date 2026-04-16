@@ -4,12 +4,14 @@ import { useTranslations } from 'next-intl';
 
 interface ReferenceImagesPreviewProps {
   images: string[];
-  onRemove: () => void;
+  onRemove: (index: number) => void;
+  onClearAll: () => void;
 }
 
 export function ReferenceImagesPreview({
   images,
   onRemove,
+  onClearAll,
 }: ReferenceImagesPreviewProps) {
   const t = useTranslations('ArchPage');
 
@@ -43,6 +45,14 @@ export function ReferenceImagesPreview({
                 alt={`Reference ${idx + 1}`}
                 className="h-full w-full object-cover"
               />
+              <button
+                type="button"
+                className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-bl bg-black/60 text-[10px] text-white"
+                onClick={() => onRemove(idx)}
+                aria-label={t('upload.removeHint')}
+              >
+                <X className="h-3 w-3" />
+              </button>
             </div>
           );
         })}
@@ -59,7 +69,7 @@ export function ReferenceImagesPreview({
         variant="ghost"
         size="icon"
         className="h-8 w-8"
-        onClick={onRemove}
+        onClick={onClearAll}
       >
         <X className="h-4 w-4" />
       </Button>

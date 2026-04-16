@@ -130,7 +130,7 @@ describe('ZpayProvider webhook hardening', () => {
       .mockRejectedValue(new Error('fulfillment failed'));
 
     await expect(
-      provider.handleWebhookEvent(createSignedPayload(provider))
+      provider.handleWebhookEvent(createSignedPayload(provider), '')
     ).rejects.toThrow('fulfillment failed');
     expect(db.update).not.toHaveBeenCalled();
   });

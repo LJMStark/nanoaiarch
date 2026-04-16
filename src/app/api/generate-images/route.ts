@@ -161,7 +161,9 @@ export async function POST(req: NextRequest) {
     if (
       conversationHistory &&
       conversationHistory.length > 0 &&
-      conversationHistory.some((m) => m.image)
+      conversationHistory.some(
+        (m) => m.image || (Array.isArray(m.images) && m.images.length > 0)
+      )
     ) {
       // Multi-turn conversation mode with images
       // Gemini API supports inline_data directly - no S3 upload needed
@@ -170,6 +172,7 @@ export async function POST(req: NextRequest) {
           role: msg.role,
           content: msg.content,
           image: msg.image,
+          images: msg.images,
           parts: msg.parts,
         })
       );
@@ -177,7 +180,7 @@ export async function POST(req: NextRequest) {
       messages.push({
         role: 'user',
         content: prompt,
-        image: allReferenceImages[0],
+        images: allReferenceImages.length > 0 ? allReferenceImages : undefined,
         parts: undefined,
       });
 
@@ -247,6 +250,9 @@ export async function POST(req: NextRequest) {
               aspectRatio,
               model: modelId,
               imageQuality: selectedImageSize,
+              ...(allReferenceImages.length > 0
+                ? { inputImages: allReferenceImages }
+                : {}),
               ...(result.modelResponseParts
                 ? { modelResponseParts: result.modelResponseParts }
                 : {}),

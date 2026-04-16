@@ -12,6 +12,7 @@ function createMessage(
     role: 'assistant',
     content: '',
     inputImage: null,
+    inputImages: [],
     outputImage: null,
     maskImage: null,
     generationParams: null,
@@ -86,6 +87,7 @@ describe('conversation-store', () => {
         role: 'user',
         content: '把这个沙发放进去',
         inputImage: 'user-image-base64',
+        inputImages: ['user-image-base64', 'user-image-2-base64'],
         status: 'completed',
         orderIndex: 0,
       }),
@@ -120,7 +122,7 @@ describe('conversation-store', () => {
       {
         role: 'user',
         content: '把这个沙发放进去',
-        image: 'user-image-base64',
+        images: ['user-image-base64', 'user-image-2-base64'],
       },
       {
         role: 'model',

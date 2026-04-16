@@ -8,6 +8,7 @@ import {
   compressAcceptedImageFiles,
   isAcceptedImageType,
 } from '@/ai/image/lib/image-compress';
+import { MAX_REFERENCE_IMAGES } from '@/ai/image/lib/input-images';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -19,8 +20,6 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useConversationSubmit } from './use-conversation-submit';
-
-const MAX_REFERENCE_IMAGES = 5;
 
 export function ConversationInput() {
   const t = useTranslations('ArchPage');
@@ -119,6 +118,12 @@ export function ConversationInput() {
   useEffect(() => {
     referenceImagesRef.current = referenceImages;
   }, [referenceImages]);
+
+  useEffect(() => {
+    setReferenceImages([]);
+    setShowImageUpload(false);
+    setImageError(null);
+  }, [currentProjectId]);
 
   // Apply draft reference image from edit action
   useEffect(() => {
@@ -284,7 +289,12 @@ export function ConversationInput() {
         {!showImageUpload && (
           <ReferenceImagesPreview
             images={referenceImages}
-            onRemove={() => setReferenceImages([])}
+            onRemove={(index) =>
+              setReferenceImages((current) =>
+                current.filter((_, currentIndex) => currentIndex !== index)
+              )
+            }
+            onClearAll={() => setReferenceImages([])}
           />
         )}
 

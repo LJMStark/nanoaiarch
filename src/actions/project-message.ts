@@ -1,8 +1,18 @@
 'use server';
 
 import { validateBase64Image } from '@/ai/image/lib/api-utils';
+import {
+  getPrimaryInputImage,
+  normalizeInputImages,
+  serializeInputImages,
+} from '@/ai/image/lib/input-images';
+import { hydrateProjectMessage } from '@/ai/image/lib/project-message-utils';
+import { validateReferenceImages } from '@/ai/image/lib/request-validation';
 import { generateProjectTitle } from '@/ai/image/lib/title-generator';
-import type { GeminiConversationPart } from '@/ai/image/lib/workspace-types';
+import type {
+  GeminiConversationPart,
+  ProjectMessageItem as SharedProjectMessageItem,
+} from '@/ai/image/lib/workspace-types';
 import { getDb } from '@/db';
 import { imageProject, projectMessage } from '@/db/schema';
 import { auth } from '@/lib/auth';
@@ -14,22 +24,7 @@ const generateId = () => crypto.randomUUID();
 
 export type MessageRole = 'user' | 'assistant';
 
-export type ProjectMessageItem = {
-  id: string;
-  projectId: string;
-  role: MessageRole;
-  content: string;
-  inputImage: string | null;
-  outputImage: string | null;
-  maskImage: string | null;
-  generationParams: string | null;
-  creditsUsed: number | null;
-  generationTime: number | null;
-  status: string;
-  errorMessage: string | null;
-  orderIndex: number;
-  createdAt: Date;
-};
+export type ProjectMessageItem = SharedProjectMessageItem;
 
 export type GenerationParams = {
   prompt: string;
@@ -39,6 +34,7 @@ export type GenerationParams = {
   aspectRatio?: string;
   model?: string;
   imageQuality?: string;
+  inputImages?: string[];
   modelResponseParts?: GeminiConversationPart[];
 };
 
@@ -129,7 +125,7 @@ export async function getProjectMessages(projectId: string) {
       .where(eq(projectMessage.projectId, projectId))
       .orderBy(asc(projectMessage.orderIndex), asc(projectMessage.createdAt));
 
-    return { success: true, data: messages as ProjectMessageItem[] };
+    return { success: true, data: messages.map(hydrateProjectMessage) };
   } catch (error) {
     logger.actions.error('Failed to get messages', error);
     return { success: false, error: 'Failed to get messages', data: [] };
@@ -187,7 +183,7 @@ export async function addUserMessage(
   projectId: string,
   data: {
     content: string;
-    inputImage?: string;
+    inputImages?: string[];
   }
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -195,12 +191,10 @@ export async function addUserMessage(
     return { success: false, error: 'Unauthorized' };
   }
 
-  // Validate image size before processing
-  if (data.inputImage) {
-    const imageValidation = validateBase64Image(data.inputImage);
-    if (!imageValidation.valid) {
-      return { success: false, error: imageValidation.error };
-    }
+  const inputImages = normalizeInputImages(data.inputImages ?? []);
+  const imageValidation = validateReferenceImages(undefined, inputImages);
+  if (!imageValidation.valid) {
+    return { success: false, error: imageValidation.error };
   }
 
   try {
@@ -226,7 +220,8 @@ export async function addUserMessage(
         userId: session.user.id,
         role: 'user',
         content: data.content,
-        inputImage: data.inputImage ?? null,
+        inputImage: getPrimaryInputImage(inputImages),
+        inputImages: serializeInputImages(inputImages),
         orderIndex: nextOrderIndex,
         status: 'completed',
         createdAt: now,
@@ -257,7 +252,8 @@ export async function addUserMessage(
       projectId,
       role: 'user',
       content: data.content,
-      inputImage: data.inputImage ?? null,
+      inputImage: getPrimaryInputImage(inputImages),
+      inputImages,
       outputImage: null,
       maskImage: null,
       generationParams: null,
@@ -344,6 +340,8 @@ export async function addAssistantMessage(
         userId: session.user.id,
         role: 'assistant',
         content: data.content,
+        inputImage: null,
+        inputImages: null,
         outputImage: data.outputImage ?? null,
         generationParams: data.generationParams
           ? JSON.stringify(data.generationParams)
@@ -373,6 +371,7 @@ export async function addAssistantMessage(
       role: 'assistant',
       content: data.content,
       inputImage: null,
+      inputImages: [],
       outputImage: data.outputImage ?? null,
       maskImage: null,
       generationParams: data.generationParams
@@ -397,7 +396,7 @@ export async function createPendingGeneration(
   projectId: string,
   data: {
     content: string;
-    inputImage?: string;
+    inputImages?: string[];
     generationParams: GenerationParams;
   }
 ) {
@@ -406,11 +405,13 @@ export async function createPendingGeneration(
     return { success: false, error: 'Unauthorized' };
   }
 
-  if (data.inputImage) {
-    const imageValidation = validateBase64Image(data.inputImage);
-    if (!imageValidation.valid) {
-      return { success: false, error: imageValidation.error };
-    }
+  const inputImages = normalizeInputImages([
+    ...(data.inputImages ?? []),
+    ...(data.generationParams.inputImages ?? []),
+  ]);
+  const imageValidation = validateReferenceImages(undefined, inputImages);
+  if (!imageValidation.valid) {
+    return { success: false, error: imageValidation.error };
   }
 
   try {
@@ -435,7 +436,8 @@ export async function createPendingGeneration(
         projectId,
         role: 'user',
         content: data.content,
-        inputImage: data.inputImage ?? null,
+        inputImage: getPrimaryInputImage(inputImages),
+        inputImages,
         outputImage: null,
         maskImage: null,
         generationParams: null,
@@ -453,9 +455,13 @@ export async function createPendingGeneration(
         role: 'assistant',
         content: '',
         inputImage: null,
+        inputImages: [],
         outputImage: null,
         maskImage: null,
-        generationParams: JSON.stringify(data.generationParams),
+        generationParams: JSON.stringify({
+          ...data.generationParams,
+          inputImages,
+        }),
         creditsUsed: null,
         generationTime: null,
         status: 'generating',
@@ -472,6 +478,7 @@ export async function createPendingGeneration(
           role: userMessage.role,
           content: userMessage.content,
           inputImage: userMessage.inputImage,
+          inputImages: serializeInputImages(userMessage.inputImages),
           outputImage: null,
           maskImage: null,
           generationParams: null,
@@ -490,6 +497,7 @@ export async function createPendingGeneration(
           role: assistantMessage.role,
           content: assistantMessage.content,
           inputImage: null,
+          inputImages: null,
           outputImage: null,
           maskImage: null,
           generationParams: assistantMessage.generationParams,
@@ -632,7 +640,7 @@ export async function updateAssistantMessage(
           .returning();
 
         if (result.length > 0) {
-          updatedMessage = result[0] as ProjectMessageItem;
+          updatedMessage = hydrateProjectMessage(result[0]);
           const projectUpdates: Record<string, unknown> = {
             generationCount: sql`${imageProject.generationCount} + 1`,
             lastActiveAt: new Date(),
@@ -658,7 +666,9 @@ export async function updateAssistantMessage(
             .where(eq(projectMessage.id, messageId))
             .limit(1);
 
-          updatedMessage = (existingMessage[0] as ProjectMessageItem) ?? null;
+          updatedMessage = existingMessage[0]
+            ? hydrateProjectMessage(existingMessage[0])
+            : null;
         }
       });
     } else {
@@ -667,7 +677,7 @@ export async function updateAssistantMessage(
         .set(updates)
         .where(eq(projectMessage.id, messageId))
         .returning();
-      updatedMessage = (result[0] as ProjectMessageItem) ?? null;
+      updatedMessage = result[0] ? hydrateProjectMessage(result[0]) : null;
     }
 
     return { success: true, data: updatedMessage };
@@ -775,7 +785,7 @@ export async function getLastGeneratedImage(projectId: string) {
       return { success: false, error: 'No generated image found' };
     }
 
-    return { success: true, data: message[0] as ProjectMessageItem };
+    return { success: true, data: hydrateProjectMessage(message[0]) };
   } catch (error) {
     logger.actions.error('Failed to get last image', error);
     return { success: false, error: 'Failed to get image' };

@@ -31,6 +31,7 @@ interface ConversationMessageLike {
   role: 'user' | 'model';
   content: string;
   image?: string;
+  images?: string[];
 }
 
 type ConversationTranslationKey =
@@ -158,14 +159,15 @@ function createTempMessage(
   projectId: string,
   role: 'user' | 'assistant',
   content: string,
-  inputImage: string | null
+  inputImages: string[]
 ): ProjectMessageItem {
   return {
     id: `temp-${crypto.randomUUID()}`,
     projectId,
     role,
     content,
-    inputImage,
+    inputImage: inputImages[0] ?? null,
+    inputImages,
     outputImage: null,
     maskImage: null,
     generationParams: null,
@@ -249,13 +251,13 @@ export function useConversationSubmit({
       currentProjectId,
       'user',
       prompt,
-      inputImages[0] || null
+      inputImages
     );
     const tempAssistantMsg = createTempMessage(
       currentProjectId,
       'assistant',
       '',
-      null
+      []
     );
 
     addMessage(tempUserMsg);
@@ -278,12 +280,13 @@ export function useConversationSubmit({
       currentProjectId,
       {
         content: prompt,
-        inputImage: inputImages[0] || undefined,
+        inputImages: inputImages.length > 0 ? inputImages : undefined,
         generationParams: {
           prompt,
           aspectRatio,
           model: selectedModel,
           imageQuality,
+          inputImages,
         },
       }
     );

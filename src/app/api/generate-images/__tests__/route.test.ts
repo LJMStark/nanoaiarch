@@ -136,6 +136,7 @@ describe('/api/generate-images POST', () => {
         role: 'assistant',
         content: '已生成',
         inputImage: null,
+        inputImages: [],
         outputImage: 'https://example.com/generated.png',
         maskImage: null,
         generationParams: JSON.stringify({
@@ -243,6 +244,7 @@ describe('/api/generate-images POST', () => {
         role: 'assistant',
         content: '已生成',
         inputImage: null,
+        inputImages: [],
         outputImage: 'https://example.com/generated.png',
         maskImage: null,
         generationParams: JSON.stringify({
@@ -292,7 +294,7 @@ describe('/api/generate-images POST', () => {
               ],
             },
           ],
-          referenceImages: ['new-reference'],
+          referenceImages: ['new-reference', 'second-reference'],
         }),
       }) as any
     );
@@ -304,6 +306,7 @@ describe('/api/generate-images POST', () => {
             role: 'user',
             content: '生成一个客厅',
             image: undefined,
+            images: undefined,
           },
           {
             role: 'model',
@@ -324,7 +327,8 @@ describe('/api/generate-images POST', () => {
           {
             role: 'user',
             content: '把沙发加进去',
-            image: 'new-reference',
+            image: undefined,
+            images: ['new-reference', 'second-reference'],
           },
         ],
       })

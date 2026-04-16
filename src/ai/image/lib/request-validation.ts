@@ -4,12 +4,12 @@ import {
   VALID_IMAGE_SIZES,
 } from '@/ai/image/lib/image-constants';
 import { validateBase64Image } from './api-utils';
+import { MAX_REFERENCE_IMAGES } from './input-images';
 import type {
   ConversationHistoryMessage,
   GeminiConversationPart,
 } from './workspace-types';
 
-const MAX_REFERENCE_IMAGES = 5;
 const MAX_CONVERSATION_MESSAGES = 10;
 const MAX_HISTORY_CONTENT_LENGTH = 4000;
 
@@ -200,6 +200,43 @@ export function validateConversationMessages(
             validation.error
           ),
         };
+      }
+    }
+
+    if (message.images !== undefined) {
+      if (!Array.isArray(message.images)) {
+        return {
+          valid: false,
+          error: `第 ${index + 1} 条对话消息图片列表格式错误`,
+        };
+      }
+
+      if (message.images.length > MAX_REFERENCE_IMAGES) {
+        return {
+          valid: false,
+          error: `第 ${index + 1} 条对话消息图片最多 ${MAX_REFERENCE_IMAGES} 张`,
+        };
+      }
+
+      for (const [imageIndex, image] of message.images.entries()) {
+        if (typeof image !== 'string') {
+          return {
+            valid: false,
+            error: `第 ${index + 1} 条对话消息第 ${imageIndex + 1} 张图片无效`,
+          };
+        }
+
+        const validation = validateBase64Image(image);
+        if (!validation.valid) {
+          return {
+            valid: false,
+            error: formatImageValidationError(
+              index,
+              'conversation',
+              validation.error
+            ),
+          };
+        }
       }
     }
 

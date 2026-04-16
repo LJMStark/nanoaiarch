@@ -8,6 +8,7 @@ export interface PersistedAssistantMessagePayload {
   role: 'assistant';
   content: string;
   inputImage: string | null;
+  inputImages: string[];
   outputImage: string | null;
   maskImage: string | null;
   generationParams: string | null;
@@ -26,7 +27,7 @@ export interface GenerateImageRequest {
   modelId: GeminiModelId;
   // 用于编辑模式的参考图像 (base64)
   referenceImage?: string;
-  // 多图参考 (base64 数组，最多 5 张)
+  // 多图参考 (base64 数组，最多 10 张)
   referenceImages?: string[];
   // Architectural enhancement options
   // 建筑增强选项

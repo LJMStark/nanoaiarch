@@ -38,6 +38,9 @@ describe('executeImageGeneration', () => {
     mocks.hasEnoughCredits.mockRejectedValue(new Error('db unavailable'));
 
     const result = await verifyCredits('user-1', 'forma', 'req-1');
+    if (!('status' in result)) {
+      throw new Error('Expected error response');
+    }
 
     expect(result.status).toBe(500);
     await expect(result.json()).resolves.toEqual({
@@ -49,6 +52,9 @@ describe('executeImageGeneration', () => {
     mocks.hasEnoughCredits.mockResolvedValue(false);
 
     const result = await verifyCredits('user-1', 'forma', 'req-1');
+    if (!('status' in result)) {
+      throw new Error('Expected error response');
+    }
 
     expect(result.status).toBe(402);
     await expect(result.json()).resolves.toEqual({

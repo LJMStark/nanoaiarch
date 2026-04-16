@@ -125,7 +125,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if any messages contain images
-    const hasImages = messages.some((m) => m.image);
+    const hasImages = messages.some(
+      (m) => m.image || (Array.isArray(m.images) && m.images.length > 0)
+    );
 
     let editPromise: ReturnType<typeof editImageWithConversationGemini>;
 
@@ -136,6 +138,7 @@ export async function POST(req: NextRequest) {
           role: m.role,
           content: m.content,
           image: m.image,
+          images: m.images,
         })),
         model: geminiModel,
         aspectRatio: 'auto',

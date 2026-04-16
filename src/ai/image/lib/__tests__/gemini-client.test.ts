@@ -189,4 +189,46 @@ describe('generateImageWithGemini', () => {
       ],
     });
   });
+
+  it('serializes multiple user reference images in a single conversation turn', async () => {
+    await editImageWithConversationGemini({
+      model: 'gemini-3-pro-image-preview',
+      messages: [
+        {
+          role: 'user',
+          content: '把这两张图混合成一个方案',
+          images: ['image-a-base64', 'image-b-base64'],
+        },
+      ],
+    });
+
+    const [, options] = vi.mocked(global.fetch).mock.calls[0];
+    const requestBody = JSON.parse(String(options?.body)) as {
+      contents: Array<{
+        role: string;
+        parts: Array<Record<string, unknown>>;
+      }>;
+    };
+
+    expect(requestBody.contents[0]).toEqual({
+      role: 'user',
+      parts: [
+        {
+          text: '把这两张图混合成一个方案',
+        },
+        {
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: 'image-a-base64',
+          },
+        },
+        {
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: 'image-b-base64',
+          },
+        },
+      ],
+    });
+  });
 });

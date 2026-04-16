@@ -219,7 +219,7 @@ export function validatePrompt(prompt: string): PromptValidationResult {
 export interface GenerateImageParams {
   prompt: string;
   referenceImage?: string;
-  referenceImages?: string[]; // Multi-image reference (base64 array, max 5 images)
+  referenceImages?: string[]; // Multi-image reference (base64 array, max 10 images)
   aspectRatio?: string;
   model?: string;
   imageSize?: ImageQuality;

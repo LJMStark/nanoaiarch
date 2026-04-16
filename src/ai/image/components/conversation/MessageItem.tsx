@@ -122,6 +122,12 @@ function clearFinishedGeneration(
 
 function UserMessage({ message }: { message: ProjectMessageItem }) {
   const t = useTranslations('ArchPage');
+  const userInputImages =
+    message.inputImages.length > 0
+      ? message.inputImages
+      : message.inputImage
+        ? [message.inputImage]
+        : [];
 
   return (
     <div className="flex w-full justify-end px-2 py-2">
@@ -129,15 +135,22 @@ function UserMessage({ message }: { message: ProjectMessageItem }) {
         <p className="break-words whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
           {message.content}
         </p>
-        {message.inputImage && (
-          <div className="relative aspect-square w-48 overflow-hidden rounded-lg border">
-            <Image
-              src={getImageSrc(message.inputImage)}
-              alt={t('canvas.referenceImageAlt')}
-              fill
-              sizes="192px"
-              className="object-cover"
-            />
+        {userInputImages.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {userInputImages.map((inputImage, index) => (
+              <div
+                key={`${message.id}-input-${index}`}
+                className="relative aspect-square w-24 overflow-hidden rounded-lg border sm:w-32"
+              >
+                <Image
+                  src={getImageSrc(inputImage)}
+                  alt={`${t('canvas.referenceImageAlt')} ${index + 1}`}
+                  fill
+                  sizes="128px"
+                  className="object-cover"
+                />
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -325,9 +338,12 @@ function AssistantMessage({
 
       const result = await generateImage({
         prompt,
-        referenceImages: userMessage.inputImage
-          ? [userMessage.inputImage]
-          : undefined,
+        referenceImages:
+          userMessage.inputImages.length > 0
+            ? userMessage.inputImages
+            : userMessage.inputImage
+              ? [userMessage.inputImage]
+              : undefined,
         aspectRatio,
         model,
         imageSize: imageQuality,
