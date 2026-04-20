@@ -1,6 +1,7 @@
 import { createMDX } from 'fumadocs-mdx/next';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
+import { imageRemoteHostPatterns } from './src/config/image-hosts';
 
 /**
  * https://nextjs.org/docs/app/api-reference/config/next-config-js
@@ -43,56 +44,10 @@ const nextConfig: NextConfig = {
     // Combined with deviceSizes for full srcset
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
 
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'avatars.githubusercontent.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'randomuser.me',
-      },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'ik.imagekit.io',
-      },
-      {
-        protocol: 'https',
-        hostname: 'html.tailus.io',
-      },
-      {
-        protocol: 'https',
-        hostname: 'service.firecrawl.dev',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.dmiapi.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.duomiapi.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.r2.dev',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.cloudfront.net',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.supabase.co',
-      },
-    ],
+    remotePatterns: imageRemoteHostPatterns.map((hostname) => ({
+      protocol: 'https',
+      hostname,
+    })),
   },
   async headers() {
     const securityHeaders = [

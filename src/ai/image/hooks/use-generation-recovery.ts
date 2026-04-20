@@ -53,7 +53,11 @@ export function useGenerationRecovery(projectId: string | null): void {
   );
 
   useEffect(() => {
-    if (!projectId || !generatingMessageId) {
+    if (
+      !projectId ||
+      !generatingMessageId ||
+      generatingMessageId.startsWith('temp-')
+    ) {
       stopPolling();
       return;
     }

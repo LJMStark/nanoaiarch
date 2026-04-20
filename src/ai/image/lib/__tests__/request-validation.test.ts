@@ -20,6 +20,22 @@ describe('validateBase64Image', () => {
       validateBase64Image('https://cdn.example.com/assets/generated/test.png')
     ).toEqual({ valid: true });
   });
+
+  it('accepts generated image URLs from default remote host allowlists', () => {
+    expect(
+      validateBase64Image(
+        'https://pub-example-assets.r2.dev/generated/test.png'
+      )
+    ).toEqual({ valid: true });
+  });
+
+  it('accepts generated image URLs from the app base url', () => {
+    process.env.NEXT_PUBLIC_BASE_URL = 'https://nano.example.com';
+
+    expect(
+      validateBase64Image('https://nano.example.com/uploads/generated/test.png')
+    ).toEqual({ valid: true });
+  });
 });
 
 describe('resolveRequestedImageSize', () => {

@@ -210,6 +210,8 @@ describe('useConversationSubmit', () => {
       title: '更新生成状态失败',
       description: 'db unavailable',
     });
+    expect(setGenerating).toHaveBeenCalledWith(true);
+    expect(setGenerating).toHaveBeenCalledWith(true, 'assistant-1');
     expect(setGenerating).toHaveBeenLastCalledWith(false);
     expect(storeState.generatingMessageId).toBeNull();
     expect(storeState.generationRequestToken).toBeNull();

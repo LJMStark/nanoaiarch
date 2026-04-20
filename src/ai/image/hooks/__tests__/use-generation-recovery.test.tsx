@@ -95,6 +95,17 @@ describe('useGenerationRecovery', () => {
     expect(setGeneratingMock).toHaveBeenCalledWith(false);
   });
 
+  it('skips polling while the optimistic temp message is waiting for a real id', async () => {
+    storeState.generatingMessageId = 'temp-assistant-1';
+
+    renderHook(() => useGenerationRecovery('project-1'));
+
+    await Promise.resolve();
+
+    expect(fetchMessageStatusMock).not.toHaveBeenCalled();
+    expect(updateAssistantMessageRequestMock).not.toHaveBeenCalled();
+  });
+
   it('ignores stale poll results after a newer generation starts', async () => {
     let resolveStatus:
       | ((value: { success: boolean; data: { status: string } | null }) => void)

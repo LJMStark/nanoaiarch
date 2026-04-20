@@ -2,6 +2,7 @@ import {
   DEFAULT_IMAGE_QUALITY,
   type ImageQuality,
 } from '@/ai/image/lib/image-constants';
+import { isAllowedImageHostname } from '@/config/image-hosts';
 import { logger } from '@/lib/logger';
 import type {
   GenerateImageResponse,
@@ -118,6 +119,7 @@ function getAllowedImageFetchHosts(): Set<string> {
   }
 
   for (const [envKey, envValue] of [
+    ['NEXT_PUBLIC_BASE_URL', process.env.NEXT_PUBLIC_BASE_URL],
     ['STORAGE_PUBLIC_URL', process.env.STORAGE_PUBLIC_URL],
     ['STORAGE_ENDPOINT', process.env.STORAGE_ENDPOINT],
   ] as const) {
@@ -158,8 +160,12 @@ export function validateBase64Image(
     try {
       const url = new URL(base64);
       const allowedHosts = getAllowedImageFetchHosts();
+      const normalizedHostname = url.hostname.toLowerCase();
 
-      if (!allowedHosts.has(url.hostname.toLowerCase())) {
+      if (
+        !allowedHosts.has(normalizedHostname) &&
+        !isAllowedImageHostname(normalizedHostname)
+      ) {
         return {
           valid: false,
           error: '图片来源未被允许',

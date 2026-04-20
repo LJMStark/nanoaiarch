@@ -272,7 +272,7 @@ export function useConversationSubmit({
 
     setAbortController(controller);
     setGenerationRequestToken(requestToken);
-    setGenerating(true, tempAssistantMsg.id);
+    setGenerating(true);
     setGenerationStage('submitting');
 
     // Bootstrap with server (user already sees loading UI)
@@ -322,6 +322,7 @@ export function useConversationSubmit({
     );
 
     const generatingMessageId = assistantMessage.id;
+    setGenerating(true, generatingMessageId);
     setGenerationStage('queued');
 
     try {
