@@ -31,6 +31,7 @@ export function ExploreCard({ generation, index, onClick }: ExploreCardProps) {
       className="group relative"
     >
       <button
+        type="button"
         onClick={onClick}
         className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
       >

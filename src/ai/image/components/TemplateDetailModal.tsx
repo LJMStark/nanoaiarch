@@ -192,10 +192,14 @@ export function TemplateDetailModal({
 
           {/* Prompt 编辑 */}
           <div>
-            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+            <label
+              htmlFor="template-detail-prompt"
+              className="text-sm font-medium text-muted-foreground mb-1.5 block"
+            >
               {t('ArchPage.modal.editPrompt')}
             </label>
             <Textarea
+              id="template-detail-prompt"
               value={editedPrompt}
               onChange={(e) => setEditedPrompt(e.target.value)}
               className={cn(
@@ -209,9 +213,9 @@ export function TemplateDetailModal({
 
           {/* 比例选择 */}
           <div>
-            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+            <div className="text-sm font-medium text-muted-foreground mb-1.5 block">
               {t('ArchPage.controls.aspectRatio')}
-            </label>
+            </div>
             <AspectRatioSelect
               value={selectedRatio}
               onChange={setSelectedRatio}

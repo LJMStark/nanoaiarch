@@ -1,4 +1,5 @@
 import type { AspectRatioId } from '@/ai/image/lib/arch-types';
+import { DEFAULT_ASPECT_RATIO } from '@/ai/image/lib/aspect-ratios';
 import {
   DEFAULT_IMAGE_QUALITY,
   type ImageQuality,
@@ -72,7 +73,7 @@ const initialState = {
   currentProjectId: null as string | null,
   isLoadingProjects: false,
   imageQuality: DEFAULT_IMAGE_QUALITY,
-  aspectRatio: 'auto' as AspectRatioId,
+  aspectRatio: DEFAULT_ASPECT_RATIO,
   selectedModel: 'forma' as GeminiModelId,
   draftPrompt: '',
   draftImage: null as string | null,
@@ -80,7 +81,7 @@ const initialState = {
 
 export const useProjectStore = create<ProjectState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       ...initialState,
 
       setProjects: (projects) => set({ projects }),
@@ -104,18 +105,22 @@ export const useProjectStore = create<ProjectState>()(
             state.currentProjectId === projectId
               ? null
               : state.currentProjectId,
+          aspectRatio:
+            state.currentProjectId === projectId
+              ? DEFAULT_ASPECT_RATIO
+              : state.aspectRatio,
         })),
 
       selectProject: (projectId) => {
-        const project = get().projects.find((p) => p.id === projectId);
-        set({
+        set((state) => ({
           currentProjectId: projectId,
-          // Restore project aspect ratio, keep user's quality preference
-          aspectRatio: (project?.aspectRatio as AspectRatioId) ?? 'auto',
+          // Workspace entry should always start from auto, and project records do
+          // not reflect live in-session ratio changes, so don't restore from them.
+          aspectRatio: projectId ? state.aspectRatio : DEFAULT_ASPECT_RATIO,
           // Clear draft when switching projects
           draftPrompt: '',
           draftImage: null,
-        });
+        }));
       },
 
       setLoadingProjects: (loading) => set({ isLoadingProjects: loading }),
@@ -135,7 +140,7 @@ export const useProjectStore = create<ProjectState>()(
       applyTemplate: (template) => {
         set({
           draftPrompt: template.promptTemplate,
-          aspectRatio: template.defaultAspectRatio ?? 'auto',
+          aspectRatio: template.defaultAspectRatio ?? DEFAULT_ASPECT_RATIO,
         });
       },
 
@@ -143,7 +148,7 @@ export const useProjectStore = create<ProjectState>()(
         set({
           currentProjectId: projectId,
           draftPrompt: template.promptTemplate,
-          aspectRatio: template.defaultAspectRatio ?? 'auto',
+          aspectRatio: template.defaultAspectRatio ?? DEFAULT_ASPECT_RATIO,
           draftImage: null,
         });
       },
@@ -152,32 +157,36 @@ export const useProjectStore = create<ProjectState>()(
     }),
     {
       name: 'project-store',
-      version: 2,
+      version: 3,
       partialize: (state) => ({
         currentProjectId: state.currentProjectId,
         imageQuality: state.imageQuality,
-        aspectRatio: state.aspectRatio,
         selectedModel: state.selectedModel,
       }),
       migrate: (persistedState: unknown, version: number) => {
-        if (
-          version < 2 &&
-          persistedState &&
-          typeof persistedState === 'object'
-        ) {
+        if (!persistedState || typeof persistedState !== 'object') {
+          return persistedState;
+        }
+
+        let nextState = persistedState as Record<string, unknown>;
+
+        if (version < 2) {
           // Migrate from v1: remove stylePreset, add imageQuality
           // Always use 'forma' as it's the only model now (gemini-3-pro-image-preview)
-          const { stylePreset, ...rest } = persistedState as Record<
-            string,
-            unknown
-          >;
-          return {
+          const { stylePreset, ...rest } = nextState;
+          nextState = {
             ...rest,
             imageQuality: DEFAULT_IMAGE_QUALITY,
             selectedModel: 'forma',
           };
         }
-        return persistedState;
+
+        if (version < 3) {
+          const { aspectRatio, ...rest } = nextState;
+          nextState = rest;
+        }
+
+        return nextState;
       },
     }
   )

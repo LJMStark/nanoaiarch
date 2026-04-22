@@ -177,7 +177,9 @@ describe('releaseHold', () => {
 
   it('silently succeeds when hold not found (admin case)', async () => {
     const db = createMockDb();
-    db.transaction.mockImplementation(async (fn: Function) => fn(db));
+    db.transaction.mockImplementation(async (fn: (tx: typeof db) => unknown) =>
+      fn(db)
+    );
     db.limit.mockResolvedValueOnce([]);
     mocks.getDb.mockResolvedValue(db);
 
@@ -186,7 +188,9 @@ describe('releaseHold', () => {
 
   it('is idempotent for already released holds', async () => {
     const db = createMockDb();
-    db.transaction.mockImplementation(async (fn: Function) => fn(db));
+    db.transaction.mockImplementation(async (fn: (tx: typeof db) => unknown) =>
+      fn(db)
+    );
     db.limit.mockResolvedValueOnce([
       {
         id: 'hold-1',
@@ -202,7 +206,9 @@ describe('releaseHold', () => {
 
   it('throws when hold is already confirmed', async () => {
     const db = createMockDb();
-    db.transaction.mockImplementation(async (fn: Function) => fn(db));
+    db.transaction.mockImplementation(async (fn: (tx: typeof db) => unknown) =>
+      fn(db)
+    );
     db.limit.mockResolvedValueOnce([
       {
         id: 'hold-1',

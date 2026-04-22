@@ -52,7 +52,7 @@ import { z } from 'zod';
 
 const GenerationParamsSchema = z.object({
   prompt: z.string(),
-  aspectRatio: z.string().default('1:1'),
+  aspectRatio: z.string().default('auto'),
   model: z.string().default('forma'),
   imageQuality: z.enum(['1K', '2K', '4K']).default('2K'),
 });
@@ -252,7 +252,7 @@ function AssistantMessage({
 
     let params: GenerationParams = {
       prompt: userMessage.content,
-      aspectRatio: '1:1',
+      aspectRatio: 'auto',
       model: 'forma',
       imageQuality: '2K',
     };
@@ -280,7 +280,7 @@ function AssistantMessage({
     }
 
     const prompt = params.prompt || userMessage.content;
-    const aspectRatio = params.aspectRatio || '1:1';
+    const aspectRatio = params.aspectRatio || 'auto';
     const model = params.model || 'forma';
     const imageQuality = (params.imageQuality as '1K' | '2K' | '4K') || '2K';
 

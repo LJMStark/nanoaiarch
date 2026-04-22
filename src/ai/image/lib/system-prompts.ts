@@ -65,8 +65,7 @@ export function buildArchPrompt(
 // 根据画幅比例获取构图上下文
 function getAspectRatioContext(aspectRatio: AspectRatioId): string {
   const contexts: Record<AspectRatioId, string> = {
-    auto:
-      'Auto-determined composition. The aspect ratio should match the user\'s explicit request or be inferred from the context of the generation.',
+    auto: "Auto-determined composition. The aspect ratio should match the user's explicit request or be inferred from the context of the generation.",
     '1:1':
       'Square composition. Centered subject, balanced framing, suitable for social media or detail shots.',
     '16:9':

@@ -134,6 +134,13 @@
       "when": 1776353400000,
       "tag": "0018_gemini_input_images",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1776790800000,
+      "tag": "0019_workbench_aspect_ratio_auto",
+      "breakpoints": true
     }
   ]
 }

@@ -199,7 +199,7 @@ export const imageProject = pgTable("image_project", {
 	// Project config
 	templateId: text("template_id"),
 	stylePreset: text("style_preset"),
-	aspectRatio: text("aspect_ratio").default("1:1"),
+	aspectRatio: text("aspect_ratio").default("auto"),
 	model: text("model").default("gemini-2.0-flash-exp"),
 
 	// Stats

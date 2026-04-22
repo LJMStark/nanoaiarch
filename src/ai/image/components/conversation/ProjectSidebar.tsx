@@ -98,7 +98,7 @@ export function ProjectSidebar() {
       coverImage: null,
       templateId: null,
       stylePreset: null,
-      aspectRatio: null,
+      aspectRatio: 'auto',
       model: null,
       messageCount: 0,
       generationCount: 0,

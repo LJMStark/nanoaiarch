@@ -122,7 +122,7 @@ describe('getConversationInitData', () => {
       coverImage: null,
       templateId: null,
       stylePreset: null,
-      aspectRatio: '1:1',
+      aspectRatio: 'auto',
       model: 'forma',
       messageCount: 0,
       generationCount: 0,

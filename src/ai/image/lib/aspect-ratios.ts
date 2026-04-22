@@ -2,11 +2,11 @@
 // 建筑可视化画幅比例配置
 
 import {
-  Wand2,
   RectangleHorizontal,
   RectangleVertical,
   Smartphone,
   Square,
+  Wand2,
 } from 'lucide-react';
 import type { AspectRatioConfig, AspectRatioId } from './arch-types';
 
