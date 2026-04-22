@@ -14,6 +14,7 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import type { ArchTemplate, AspectRatioId } from '../lib/arch-types';
+import { DEFAULT_ASPECT_RATIO } from '../lib/aspect-ratios';
 import { getTemplateCategory } from '../lib/template-categories';
 import { AspectRatioSelect } from './AspectRatioSelect';
 
@@ -38,7 +39,8 @@ export function TemplateDetailModal({
 
   // Local state
   const [editedPrompt, setEditedPrompt] = useState('');
-  const [selectedRatio, setSelectedRatio] = useState<AspectRatioId>('16:9');
+  const [selectedRatio, setSelectedRatio] =
+    useState<AspectRatioId>(DEFAULT_ASPECT_RATIO);
   const [previewImageError, setPreviewImageError] = useState(false);
   const [inputImageError, setInputImageError] = useState(false);
 
@@ -46,7 +48,7 @@ export function TemplateDetailModal({
   useEffect(() => {
     if (template) {
       setEditedPrompt(template.promptTemplate);
-      setSelectedRatio(template.defaultAspectRatio ?? '16:9');
+      setSelectedRatio(template.defaultAspectRatio ?? DEFAULT_ASPECT_RATIO);
       setPreviewImageError(false);
       setInputImageError(false);
     }
