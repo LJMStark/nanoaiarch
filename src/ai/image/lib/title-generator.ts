@@ -1,4 +1,8 @@
 import { logger } from '@/lib/logger';
+import {
+  getGeminiApiErrorMessage,
+  isGeminiLocationUnsupported,
+} from './gemini-error-utils';
 
 /**
  * Generate a short title (10-30 characters) from user message using AI
@@ -59,12 +63,19 @@ export async function generateProjectTitle(
 
     if (!response.ok) {
       const errorText = await response.text();
+      const reason = getGeminiApiErrorMessage(response.status, errorText);
       logger.ai.warn(
         `[Title Generator] Gemini API failed: ${response.status}`,
         {
           error: errorText,
+          reason,
         }
       );
+      if (isGeminiLocationUnsupported(errorText)) {
+        logger.ai.warn(
+          '[Title Generator] Falling back because Gemini is unavailable in the current server region'
+        );
+      }
       return fallbackTitle;
     }
 

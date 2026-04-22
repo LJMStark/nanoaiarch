@@ -86,6 +86,33 @@ describe('generateImageWithGemini', () => {
     ]);
   });
 
+  it('returns a clearer error when the deployment region is unsupported', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: async () =>
+        JSON.stringify({
+          error: {
+            code: 400,
+            message: 'User location is not supported for the API use.',
+            status: 'FAILED_PRECONDITION',
+          },
+        }),
+    }) as typeof fetch;
+
+    const result = await generateImageWithGemini({
+      prompt: 'Generate a test image',
+      aspectRatio: '1:1',
+      imageSize: '1K',
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error:
+        '当前服务器所在地区不支持 Gemini API，请切换到受支持地区部署或更换模型',
+    });
+  });
+
   it('replays stored thought signatures for conversational edits', async () => {
     await editImageWithConversationGemini({
       model: 'gemini-3-pro-image-preview',

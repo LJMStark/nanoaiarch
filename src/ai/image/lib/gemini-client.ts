@@ -1,5 +1,6 @@
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { getGeminiApiErrorMessage } from './gemini-error-utils';
 import type {
   ConversationHistoryMessage,
   GeminiConversationPart,
@@ -431,7 +432,7 @@ async function callGeminiApi(
       logger.ai.error(`[Gemini] API error: ${response.status} - ${errorText}`);
       return {
         success: false,
-        error: `Gemini API 错误 (${response.status})，请稍后重试`,
+        error: getGeminiApiErrorMessage(response.status, errorText),
       };
     }
 

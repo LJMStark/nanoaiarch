@@ -4,7 +4,7 @@ import { getDb } from '@/db';
 import { generationHistory } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 
 const generateId = () => crypto.randomUUID();
@@ -171,7 +171,7 @@ export async function getGenerationStats(): Promise<{
       .where(
         and(
           eq(generationHistory.userId, session.user.id),
-          sql`${generationHistory.createdAt} >= ${startOfMonth}`
+          gte(generationHistory.createdAt, startOfMonth)
         )
       );
 
