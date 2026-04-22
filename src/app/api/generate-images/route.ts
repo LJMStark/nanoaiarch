@@ -31,10 +31,38 @@ import { type NextRequest, NextResponse } from 'next/server';
 // Set maximum execution time for image generation (150 seconds)
 export const maxDuration = 150;
 
+async function persistFailedAssistantMessage(
+  assistantMessageId: string | undefined,
+  requestId: string,
+  data: {
+    content: string;
+    errorMessage: string;
+  }
+): Promise<void> {
+  if (!assistantMessageId) {
+    return;
+  }
+
+  const result = await updateAssistantMessage(assistantMessageId, {
+    content: data.content,
+    status: 'failed',
+    errorMessage: data.errorMessage,
+  });
+
+  if (!result.success) {
+    logger.api.error(
+      `Failed to persist assistant failure state [requestId=${requestId}, assistantMessageId=${assistantMessageId}]`,
+      result.error
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   const requestId = generateRequestId();
   let resolvedModelId = 'unknown';
   let payload: GenerateImageRequest;
+  let projectId: string | undefined;
+  let assistantMessageId: string | undefined;
 
   try {
     try {
@@ -55,9 +83,11 @@ export async function POST(req: NextRequest) {
       aspectRatio,
       imageSize,
       conversationHistory,
-      projectId,
-      assistantMessageId,
+      projectId: payloadProjectId,
+      assistantMessageId: payloadAssistantMessageId,
     } = payload;
+    projectId = payloadProjectId;
+    assistantMessageId = payloadAssistantMessageId;
     resolvedModelId = modelId;
 
     // Validate model ID
@@ -234,6 +264,10 @@ export async function POST(req: NextRequest) {
 
     if (projectId && assistantMessageId) {
       if (req.signal.aborted) {
+        await persistFailedAssistantMessage(assistantMessageId, requestId, {
+          content: '生成已取消',
+          errorMessage: 'Generation cancelled',
+        });
         return NextResponse.json(
           { error: '生成已取消' },
           { status: 499, headers: rateLimitHeaders }
@@ -310,6 +344,11 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error) {
+    await persistFailedAssistantMessage(assistantMessageId, requestId, {
+      content: '生成失败，请稍后重试',
+      errorMessage:
+        error instanceof Error ? error.message : '生成失败，请稍后重试',
+    });
     return createErrorResponse(error, requestId, resolvedModelId, 'generation');
   }
 }

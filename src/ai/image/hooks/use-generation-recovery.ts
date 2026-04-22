@@ -1,4 +1,5 @@
 import { GENERATION_RECOVERY_CONFIG } from '@/ai/image/config/generation-recovery';
+import { isTemporaryId } from '@/ai/image/lib/temp-ids';
 import {
   fetchMessageStatus,
   updateAssistantMessageRequest,
@@ -56,7 +57,7 @@ export function useGenerationRecovery(projectId: string | null): void {
     if (
       !projectId ||
       !generatingMessageId ||
-      generatingMessageId.startsWith('temp-')
+      isTemporaryId(generatingMessageId)
     ) {
       stopPolling();
       return;

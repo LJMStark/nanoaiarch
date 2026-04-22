@@ -5,6 +5,7 @@ import { useConversationInit } from '@/ai/image/hooks/use-conversation-init';
 import { useGenerationRecovery } from '@/ai/image/hooks/use-generation-recovery';
 import { useTemplateApply } from '@/ai/image/hooks/use-template-apply';
 import type { ArchTemplate, AspectRatioId } from '@/ai/image/lib/arch-types';
+import { isTemporaryId } from '@/ai/image/lib/temp-ids';
 import { ARCH_TEMPLATES } from '@/ai/image/lib/templates';
 import { fetchProjectMessages } from '@/ai/image/lib/workspace-client';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
@@ -13,7 +14,7 @@ import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
 import { useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ConversationArea } from './ConversationArea';
 import { ConversationHeader } from './ConversationHeader';
 import { ConversationInput } from './ConversationInput';
@@ -74,6 +75,21 @@ export function ConversationLayout() {
   // Enable generation recovery polling
   useGenerationRecovery(currentProjectId);
 
+  const clearTransientProjectState = useCallback(() => {
+    loadRequestIdRef.current += 1;
+    setCurrentProject(null);
+    setMessages([]);
+    setGenerating(false);
+    setGenerationStage(null);
+    setLoadingMessages(false);
+  }, [
+    setCurrentProject,
+    setGenerationStage,
+    setGenerating,
+    setLoadingMessages,
+    setMessages,
+  ]);
+
   // Handle template from URL - show modal instead of direct apply
   useEffect(() => {
     if (!templateId) return;
@@ -106,6 +122,9 @@ export function ConversationLayout() {
     // Skip if this is the initial load (handled by useConversationInit)
     if (prevProjectIdRef.current === null) {
       prevProjectIdRef.current = currentProjectId;
+      if (!currentProjectId || isTemporaryId(currentProjectId)) {
+        clearTransientProjectState();
+      }
       return;
     }
 
@@ -116,12 +135,8 @@ export function ConversationLayout() {
 
     prevProjectIdRef.current = currentProjectId;
 
-    if (!currentProjectId) {
-      loadRequestIdRef.current += 1;
-      setCurrentProject(null);
-      setGenerating(false);
-      setGenerationStage(null);
-      setLoadingMessages(false);
+    if (!currentProjectId || isTemporaryId(currentProjectId)) {
+      clearTransientProjectState();
       return;
     }
 
@@ -156,6 +171,7 @@ export function ConversationLayout() {
 
     loadMessages();
   }, [
+    clearTransientProjectState,
     currentProjectId,
     setMessages,
     setLoadingMessages,

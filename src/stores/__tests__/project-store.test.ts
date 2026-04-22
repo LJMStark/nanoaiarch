@@ -56,4 +56,14 @@ describe('project-store', () => {
     expect(nextState.aspectRatio).toBe('3:4');
     expect(nextState.draftPrompt).toBe('draw a chair');
   });
+
+  it('does not persist optimistic temp project ids', () => {
+    const store = useProjectStore.getState();
+
+    store.selectProject('temp-project-1');
+
+    const persisted = localStorage.getItem('project-store');
+    expect(persisted).not.toBeNull();
+    expect(JSON.parse(persisted!).state.currentProjectId).toBeNull();
+  });
 });

@@ -169,4 +169,20 @@ describe('ConversationLayout', () => {
     expect(setGeneratingMock).toHaveBeenCalledWith(false);
     expect(setGenerationStageMock).toHaveBeenCalledWith(null);
   });
+
+  it('skips loading messages for optimistic temp projects', async () => {
+    projectStoreState.currentProjectId = 'project-0';
+    const { rerender } = render(<ConversationLayout />);
+
+    projectStoreState.currentProjectId = 'temp-project-1';
+    rerender(<ConversationLayout />);
+
+    await waitFor(() => {
+      expect(setMessagesMock).toHaveBeenCalledWith([]);
+    });
+
+    expect(fetchProjectMessagesMock).not.toHaveBeenCalled();
+    expect(setCurrentProjectMock).toHaveBeenCalledWith(null);
+    expect(setLoadingMessagesMock).toHaveBeenCalledWith(false);
+  });
 });

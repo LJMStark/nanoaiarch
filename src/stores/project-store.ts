@@ -5,6 +5,7 @@ import {
   type ImageQuality,
 } from '@/ai/image/lib/image-constants';
 import type { GeminiModelId } from '@/ai/image/lib/provider-config';
+import { isTemporaryId } from '@/ai/image/lib/temp-ids';
 import type { ImageProjectItem } from '@/ai/image/lib/workspace-types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
@@ -159,7 +160,9 @@ export const useProjectStore = create<ProjectState>()(
       name: 'project-store',
       version: 3,
       partialize: (state) => ({
-        currentProjectId: state.currentProjectId,
+        currentProjectId: isTemporaryId(state.currentProjectId)
+          ? null
+          : state.currentProjectId,
         imageQuality: state.imageQuality,
         selectedModel: state.selectedModel,
       }),

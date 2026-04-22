@@ -9,6 +9,7 @@ import {
   isAcceptedImageType,
 } from '@/ai/image/lib/image-compress';
 import { MAX_REFERENCE_IMAGES } from '@/ai/image/lib/input-images';
+import { isTemporaryId } from '@/ai/image/lib/temp-ids';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -256,7 +257,13 @@ export function ConversationInput() {
   );
 
   const isDisabled =
-    !currentProjectId || !draftPrompt.trim() || isGenerating || isPastingImage;
+    !currentProjectId ||
+    isTemporaryId(currentProjectId) ||
+    !draftPrompt.trim() ||
+    isGenerating ||
+    isPastingImage;
+  const isProjectReady =
+    Boolean(currentProjectId) && !isTemporaryId(currentProjectId);
 
   return (
     <div className="border-t bg-background p-4 flex-shrink-0">
@@ -313,11 +320,11 @@ export function ConversationInput() {
               isComposingRef.current = false;
             }}
             placeholder={
-              currentProjectId
+              isProjectReady
                 ? t('controls.prompt')
                 : t('controls.promptNoProject')
             }
-            disabled={!currentProjectId}
+            disabled={!isProjectReady}
             className="min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent px-2 py-1.5 text-[15px] leading-relaxed placeholder:text-muted-foreground/70 focus-visible:ring-0"
             rows={1}
           />
@@ -332,7 +339,7 @@ export function ConversationInput() {
                   'h-9 w-9 flex-shrink-0',
                   showImageUpload && 'bg-accent'
                 )}
-                disabled={isPastingImage}
+                disabled={!isProjectReady || isPastingImage}
                 aria-label={t('upload.uploadToEdit')}
               >
                 <ImageIcon className="h-5 w-5" />

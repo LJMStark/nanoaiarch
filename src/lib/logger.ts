@@ -27,9 +27,17 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   error: 3,
 };
 
-// Minimum log level based on environment
-const MIN_LOG_LEVEL: LogLevel =
-  process.env.NODE_ENV === 'production' ? 'warn' : 'debug';
+function resolveMinLogLevel(): LogLevel {
+  const configuredLevel = process.env.LOG_LEVEL?.toLowerCase();
+
+  if (configuredLevel && Object.hasOwn(LOG_LEVEL_PRIORITY, configuredLevel)) {
+    return configuredLevel as LogLevel;
+  }
+
+  return process.env.NODE_ENV === 'production' ? 'warn' : 'debug';
+}
+
+const MIN_LOG_LEVEL = resolveMinLogLevel();
 
 function shouldLog(level: LogLevel): boolean {
   return LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[MIN_LOG_LEVEL];
@@ -61,6 +69,14 @@ function formatData(data: LogData): string {
   }
 }
 
+function writeServerLog(
+  message: string,
+  stream: 'stdout' | 'stderr' = 'stdout'
+): void {
+  const target = stream === 'stderr' ? process.stderr : process.stdout;
+  target.write(`${message}\n`);
+}
+
 class Logger {
   private prefix: string;
 
@@ -70,36 +86,75 @@ class Logger {
 
   debug(message: string, data?: LogData): void {
     if (!shouldLog('debug')) return;
-    console.log(formatMessage('debug', this.prefix, message));
-    if (data) console.log(formatData(data));
+    const formattedMessage = formatMessage('debug', this.prefix, message);
+    if (typeof window !== 'undefined') {
+      console.log(formattedMessage);
+      if (data) console.log(formatData(data));
+      return;
+    }
+
+    writeServerLog(formattedMessage);
+    if (data) writeServerLog(formatData(data));
   }
 
   info(message: string, data?: LogData): void {
     if (!shouldLog('info')) return;
-    console.log(formatMessage('info', this.prefix, message));
-    if (data) console.log(formatData(data));
+    const formattedMessage = formatMessage('info', this.prefix, message);
+    if (typeof window !== 'undefined') {
+      console.log(formattedMessage);
+      if (data) console.log(formatData(data));
+      return;
+    }
+
+    writeServerLog(formattedMessage);
+    if (data) writeServerLog(formatData(data));
   }
 
   warn(message: string, data?: LogData): void {
     if (!shouldLog('warn')) return;
-    console.warn(formatMessage('warn', this.prefix, message));
-    if (data) console.warn(formatData(data));
+    const formattedMessage = formatMessage('warn', this.prefix, message);
+    if (typeof window !== 'undefined') {
+      console.warn(formattedMessage);
+      if (data) console.warn(formatData(data));
+      return;
+    }
+
+    writeServerLog(formattedMessage, 'stderr');
+    if (data) writeServerLog(formatData(data), 'stderr');
   }
 
   error(message: string, error?: unknown, data?: LogData): void {
     if (!shouldLog('error')) return;
-    console.error(formatMessage('error', this.prefix, message));
+    const formattedMessage = formatMessage('error', this.prefix, message);
+
+    if (typeof window !== 'undefined') {
+      console.error(formattedMessage);
+      if (error) {
+        if (error instanceof Error) {
+          console.error(`  Error: ${error.message}`);
+          if (error.stack) {
+            console.error(`  Stack: ${error.stack}`);
+          }
+        } else {
+          console.error(`  Error: ${String(error)}`);
+        }
+      }
+      if (data) console.error(formatData(data));
+      return;
+    }
+
+    writeServerLog(formattedMessage, 'stderr');
     if (error) {
       if (error instanceof Error) {
-        console.error(`  Error: ${error.message}`);
+        writeServerLog(`  Error: ${error.message}`, 'stderr');
         if (error.stack) {
-          console.error(`  Stack: ${error.stack}`);
+          writeServerLog(`  Stack: ${error.stack}`, 'stderr');
         }
       } else {
-        console.error(`  Error: ${String(error)}`);
+        writeServerLog(`  Error: ${String(error)}`, 'stderr');
       }
     }
-    if (data) console.error(formatData(data));
+    if (data) writeServerLog(formatData(data), 'stderr');
   }
 }
 
