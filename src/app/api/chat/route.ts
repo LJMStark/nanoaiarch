@@ -110,7 +110,7 @@ export async function POST(req: Request) {
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     req.headers.get('x-real-ip') ||
     'unknown';
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: `api:chat:${session.user.id}:${clientAddress}`,
     limit: CHAT_RATE_LIMIT.limit,
     windowMs: CHAT_RATE_LIMIT.windowMs,

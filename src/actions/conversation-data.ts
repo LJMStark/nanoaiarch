@@ -1,6 +1,7 @@
 'use server';
 
 import { hydrateProjectMessage } from '@/ai/image/lib/project-message-utils';
+import { normalizeGeminiModelId } from '@/ai/image/lib/provider-config';
 import { getDb } from '@/db';
 import { imageProject, projectMessage } from '@/db/schema';
 import { auth } from '@/lib/auth';
@@ -20,6 +21,15 @@ export interface ConversationInitData {
 }
 
 export type ConversationInitMode = 'resume' | 'blank' | 'new-project';
+
+function normalizeConversationProject(
+  project: ImageProjectItem
+): ImageProjectItem {
+  return {
+    ...project,
+    model: normalizeGeminiModelId(project.model),
+  };
+}
 
 /**
  * Load initial conversation data in a single request
@@ -49,18 +59,20 @@ export async function getConversationInitData(
     const userId = session.user.id;
     const mode = options?.mode ?? 'resume';
 
-    const existingProjects = (await db
-      .select()
-      .from(imageProject)
-      .where(
-        and(
-          eq(imageProject.userId, userId),
-          sql`${imageProject.status} != 'deleted'`,
-          sql`${imageProject.messageCount} > 0`
+    const existingProjects = (
+      (await db
+        .select()
+        .from(imageProject)
+        .where(
+          and(
+            eq(imageProject.userId, userId),
+            sql`${imageProject.status} != 'deleted'`,
+            sql`${imageProject.messageCount} > 0`
+          )
         )
-      )
-      .orderBy(desc(imageProject.isPinned), desc(imageProject.lastActiveAt))
-      .limit(50)) as ImageProjectItem[];
+        .orderBy(desc(imageProject.isPinned), desc(imageProject.lastActiveAt))
+        .limit(50)) as ImageProjectItem[]
+    ).map(normalizeConversationProject);
 
     if (mode === 'blank') {
       return {

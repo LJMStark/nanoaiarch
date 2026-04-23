@@ -17,10 +17,8 @@ interface ExploreFiltersProps {
   templates: { id: string; name: string }[];
   selectedStyle: string | null;
   selectedTemplate: string | null;
-  sortBy: 'latest' | 'popular';
   onStyleChange: (style: string | null) => void;
   onTemplateChange: (template: string | null) => void;
-  onSortChange: (sort: 'latest' | 'popular') => void;
   onClear: () => void;
 }
 
@@ -29,10 +27,8 @@ export function ExploreFilters({
   templates,
   selectedStyle,
   selectedTemplate,
-  sortBy,
   onStyleChange,
   onTemplateChange,
-  onSortChange,
   onClear,
 }: ExploreFiltersProps) {
   const t = useTranslations('Explore');
@@ -82,20 +78,6 @@ export function ExploreFilters({
           </SelectContent>
         </Select>
       )}
-
-      {/* Sort */}
-      <Select
-        value={sortBy}
-        onValueChange={(v) => onSortChange(v as 'latest' | 'popular')}
-      >
-        <SelectTrigger className="w-[120px] h-9">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="latest">{t('sortLatest')}</SelectItem>
-          <SelectItem value="popular">{t('sortPopular')}</SelectItem>
-        </SelectContent>
-      </Select>
 
       {/* Clear filters */}
       {hasFilters && (

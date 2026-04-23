@@ -30,7 +30,6 @@ export default function ExplorePage() {
   // Filter state
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'latest' | 'popular'>('latest');
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -70,7 +69,6 @@ export default function ExplorePage() {
         pageSize: 20,
         style: selectedStyle || undefined,
         template: selectedTemplate || undefined,
-        sortBy,
       });
 
       if (result.success) {
@@ -83,7 +81,7 @@ export default function ExplorePage() {
       setIsLoading(false);
       setIsLoadingMore(false);
     },
-    [selectedStyle, selectedTemplate, sortBy]
+    [selectedStyle, selectedTemplate]
   );
 
   // Initial load and filter changes
@@ -132,10 +130,8 @@ export default function ExplorePage() {
             templates={templates}
             selectedStyle={selectedStyle}
             selectedTemplate={selectedTemplate}
-            sortBy={sortBy}
             onStyleChange={setSelectedStyle}
             onTemplateChange={setSelectedTemplate}
-            onSortChange={setSortBy}
             onClear={handleClearFilters}
           />
         </div>

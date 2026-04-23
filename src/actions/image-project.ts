@@ -1,5 +1,10 @@
 'use server';
 
+import {
+  DEFAULT_MODEL,
+  type GeminiModelId,
+  normalizeGeminiModelId,
+} from '@/ai/image/lib/provider-config';
 import { getDb } from '@/db';
 import { imageProject } from '@/db/schema';
 import { auth } from '@/lib/auth';
@@ -16,7 +21,7 @@ export type ImageProjectItem = {
   templateId: string | null;
   stylePreset: string | null;
   aspectRatio: string | null;
-  model: string | null;
+  model: GeminiModelId | null;
   messageCount: number;
   generationCount: number;
   totalCreditsUsed: number;
@@ -33,6 +38,15 @@ export type CreateImageProjectInput = {
   aspectRatio?: string;
 };
 
+function normalizeImageProjectRecord(
+  project: ImageProjectItem
+): ImageProjectItem {
+  return {
+    ...project,
+    model: normalizeGeminiModelId(project.model),
+  };
+}
+
 export async function createImageProjectRecord(params: {
   db: Awaited<ReturnType<typeof getDb>>;
   userId: string;
@@ -48,6 +62,7 @@ export async function createImageProjectRecord(params: {
     templateId: params.data?.templateId ?? null,
     stylePreset: params.data?.stylePreset ?? null,
     aspectRatio: params.data?.aspectRatio ?? 'auto',
+    model: DEFAULT_MODEL,
     lastActiveAt: now,
     createdAt: now,
     updatedAt: now,
@@ -60,7 +75,7 @@ export async function createImageProjectRecord(params: {
     templateId: params.data?.templateId ?? null,
     stylePreset: params.data?.stylePreset ?? null,
     aspectRatio: params.data?.aspectRatio ?? 'auto',
-    model: 'gemini-2.0-flash-exp',
+    model: DEFAULT_MODEL,
     messageCount: 0,
     generationCount: 0,
     totalCreditsUsed: 0,
@@ -141,7 +156,10 @@ export async function getImageProjects(options?: {
       .limit(limit)
       .offset(offset);
 
-    return { success: true, data: items as ImageProjectItem[] };
+    return {
+      success: true,
+      data: (items as ImageProjectItem[]).map(normalizeImageProjectRecord),
+    };
   } catch (error) {
     logger.actions.error('Failed to get projects', error);
     return { success: false, error: '获取项目列表失败', data: [] };
@@ -174,7 +192,10 @@ export async function getImageProject(projectId: string) {
       return { success: false, error: '项目未找到' };
     }
 
-    return { success: true, data: project[0] as ImageProjectItem };
+    return {
+      success: true,
+      data: normalizeImageProjectRecord(project[0] as ImageProjectItem),
+    };
   } catch (error) {
     logger.actions.error('Failed to get project', error);
     return { success: false, error: '获取项目失败' };
@@ -205,6 +226,9 @@ export async function updateImageProject(
       .update(imageProject)
       .set({
         ...data,
+        ...(data.model !== undefined
+          ? { model: normalizeGeminiModelId(data.model) }
+          : {}),
         updatedAt: new Date(),
       })
       .where(

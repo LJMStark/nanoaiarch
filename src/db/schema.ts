@@ -1,3 +1,4 @@
+import { DEFAULT_MODEL } from '@/ai/image/lib/provider-config';
 import { boolean, integer, pgTable, text, timestamp, index, unique } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
@@ -171,6 +172,35 @@ export const generationHistory = pgTable("generation_history", {
 	generationHistoryCreatedAtIdx: index("generation_history_created_at_idx").on(table.createdAt),
 	// Composite index for public gallery queries (isPublic + status + createdAt)
 	generationHistoryPublicGalleryIdx: index("generation_history_public_gallery_idx").on(table.isPublic, table.status, table.createdAt),
+	}));
+
+export const requestRateLimit = pgTable("request_rate_limit", {
+	key: text("key").primaryKey(),
+	count: integer("count").notNull().default(0),
+	resetAt: timestamp("reset_at").notNull(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+	requestRateLimitResetAtIdx: index("request_rate_limit_reset_at_idx").on(table.resetAt),
+}));
+
+export const newsletterJob = pgTable("newsletter_job", {
+	id: text("id").primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+	email: text("email").notNull(),
+	type: text("type").notNull().default("subscribe"),
+	status: text("status").notNull().default("pending"), // pending, processing, completed, failed
+	idempotencyKey: text("idempotency_key").notNull().unique(),
+	attempts: integer("attempts").notNull().default(0),
+	lastError: text("last_error"),
+	nextAttemptAt: timestamp("next_attempt_at").notNull().defaultNow(),
+	leaseExpiresAt: timestamp("lease_expires_at"),
+	completedAt: timestamp("completed_at"),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+	newsletterJobStatusNextAttemptIdx: index("newsletter_job_status_next_attempt_idx").on(table.status, table.nextAttemptAt),
+	newsletterJobUserIdIdx: index("newsletter_job_user_id_idx").on(table.userId),
 }));
 
 // Referral tracking table
@@ -200,7 +230,7 @@ export const imageProject = pgTable("image_project", {
 	templateId: text("template_id"),
 	stylePreset: text("style_preset"),
 	aspectRatio: text("aspect_ratio").default("auto"),
-	model: text("model").default("gemini-2.0-flash-exp"),
+	model: text("model").default(DEFAULT_MODEL),
 
 	// Stats
 	messageCount: integer("message_count").notNull().default(0),

@@ -101,7 +101,13 @@ describe('getConversationInitData', () => {
     expect(result).toEqual({
       success: true,
       data: {
-        projects: [{ id: 'project-1', title: 'Existing project' }],
+        projects: [
+          {
+            id: 'project-1',
+            title: 'Existing project',
+            model: 'forma',
+          },
+        ],
         messages: [],
         currentProjectId: null,
       },

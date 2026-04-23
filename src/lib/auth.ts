@@ -8,7 +8,7 @@ import { defaultMessages } from '@/i18n/messages';
 import { LOCALE_COOKIE_NAME, routing } from '@/i18n/routing';
 import { logger } from '@/lib/logger';
 import { sendEmail } from '@/mail';
-import { subscribe } from '@/newsletter';
+import { ensureNewsletterSignupSubscription } from '@/newsletter/signup';
 import { type User, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin } from 'better-auth/plugins';
@@ -164,30 +164,32 @@ export function getLocaleFromRequest(request?: Request): Locale {
  * @param user - The user to create
  */
 async function onCreateUser(user: User) {
-  // Auto subscribe user to newsletter after sign up if enabled in website config
-  // Add a delay to avoid hitting Resend's 1 email per second limit
   if (
     user.email &&
     websiteConfig.newsletter.enable &&
     websiteConfig.newsletter.autoSubscribeAfterSignUp
   ) {
-    // Delay newsletter subscription by 2 seconds to avoid rate limiting
-    // This ensures the email verification email is sent first
-    // Using 2 seconds instead of 1 to provide extra buffer for network delays
-    setTimeout(async () => {
-      try {
-        const subscribed = await subscribe(user.email);
-        if (!subscribed) {
-          logger.auth.error(
-            `Failed to subscribe user ${user.email} to newsletter`
-          );
-        } else {
-          logger.auth.debug(`User ${user.email} subscribed to newsletter`);
+    const result = await ensureNewsletterSignupSubscription({
+      userId: user.id,
+      email: user.email,
+    });
+
+    if (result.delivered) {
+      logger.auth.debug(`Subscribed user ${user.id} to newsletter`);
+    } else if (result.queued) {
+      logger.auth.debug(
+        `Queued newsletter subscribe retry for user ${user.id}`
+      );
+    } else {
+      logger.auth.error(
+        'Newsletter subscribe failed without queue fallback',
+        null,
+        {
+          userId: user.id,
+          email: user.email,
         }
-      } catch (error) {
-        logger.auth.error('Newsletter subscription error', error);
-      }
-    }, 2000);
+      );
+    }
   }
 
   // Add register gift credits to the user if enabled in website config

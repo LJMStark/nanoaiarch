@@ -34,7 +34,7 @@ export interface GetPublicGenerationsOptions {
   pageSize?: number;
   style?: string;
   template?: string;
-  sortBy?: 'latest' | 'popular';
+  sortBy?: string | null;
 }
 
 export interface GetPublicGenerationsResult {
@@ -45,6 +45,14 @@ export interface GetPublicGenerationsResult {
   error?: string;
 }
 
+export type PublicGallerySort = 'latest';
+
+export function normalizePublicGallerySort(
+  sortBy?: string | null
+): PublicGallerySort {
+  return sortBy === 'latest' ? 'latest' : 'latest';
+}
+
 /**
  * Internal function to fetch public generations from database
  */
@@ -53,13 +61,8 @@ async function fetchPublicGenerations(
 ): Promise<GetPublicGenerationsResult> {
   try {
     const db = await getDb();
-    const {
-      page = 1,
-      pageSize = 20,
-      style,
-      template,
-      sortBy = 'latest',
-    } = options;
+    const { page = 1, pageSize = 20, style, template, sortBy } = options;
+    const normalizedSortBy = normalizePublicGallerySort(sortBy);
     const offset = (page - 1) * pageSize;
 
     // Build where conditions
@@ -85,11 +88,10 @@ async function fetchPublicGenerations(
     const total = Number(countResult[0]?.count || 0);
     const totalPages = Math.ceil(total / pageSize);
 
-    // Determine sort order
-    // Note: 'popular' uses random ordering to showcase diversity
-    // TODO: Add viewCount field for true popularity sorting
     const orderClause =
-      sortBy === 'popular' ? sql`RANDOM()` : desc(generationHistory.createdAt);
+      normalizedSortBy === 'latest'
+        ? desc(generationHistory.createdAt)
+        : desc(generationHistory.createdAt);
 
     // Get generations with user info
     const generations = await db
@@ -153,24 +155,26 @@ async function fetchPublicGenerations(
 export async function getPublicGenerations(
   options: GetPublicGenerationsOptions = {}
 ): Promise<GetPublicGenerationsResult> {
-  const {
-    page = 1,
-    pageSize = 20,
-    style,
-    template,
-    sortBy = 'latest',
-  } = options;
+  const { page = 1, pageSize = 20, style, template, sortBy } = options;
+  const normalizedSortBy = normalizePublicGallerySort(sortBy);
 
   // Create cached version with unique key based on parameters
   const cachedFetch = unstable_cache(
-    () => fetchPublicGenerations({ page, pageSize, style, template, sortBy }),
+    () =>
+      fetchPublicGenerations({
+        page,
+        pageSize,
+        style,
+        template,
+        sortBy: normalizedSortBy,
+      }),
     [
       'public-generations',
       String(page),
       String(pageSize),
       style || '',
       template || '',
-      sortBy,
+      normalizedSortBy,
     ],
     {
       revalidate: CACHE_DURATIONS.SHORT,

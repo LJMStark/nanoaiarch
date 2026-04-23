@@ -22,7 +22,7 @@ function createErrorResponse(
 }
 
 export async function GET(request: Request): Promise<Response> {
-  const rateLimitResult = applyRateLimit({
+  const rateLimitResult = await applyRateLimit({
     key: `image-proxy:${getRateLimitIdentifier(request.headers)}`,
     limit: 120,
     windowMs: 60 * 1000,

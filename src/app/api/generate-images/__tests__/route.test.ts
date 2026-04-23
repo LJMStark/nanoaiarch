@@ -101,7 +101,7 @@ describe('/api/generate-images POST', () => {
       modelId: 'forma',
       creditCost: 1,
     });
-    vi.mocked(applyRateLimit).mockReturnValue({
+    vi.mocked(applyRateLimit).mockResolvedValue({
       success: true,
       limit: 10,
       remaining: 9,
@@ -216,7 +216,7 @@ describe('/api/generate-images POST', () => {
       modelId: 'forma',
       creditCost: 1,
     });
-    vi.mocked(applyRateLimit).mockReturnValue({
+    vi.mocked(applyRateLimit).mockResolvedValue({
       success: true,
       limit: 10,
       remaining: 9,
@@ -349,7 +349,7 @@ describe('/api/generate-images POST', () => {
       modelId: 'forma',
       creditCost: 1,
     });
-    vi.mocked(applyRateLimit).mockReturnValue({
+    vi.mocked(applyRateLimit).mockResolvedValue({
       success: true,
       limit: 10,
       remaining: 9,
@@ -413,7 +413,7 @@ describe('/api/generate-images POST', () => {
       modelId: 'forma',
       creditCost: 1,
     });
-    vi.mocked(applyRateLimit).mockReturnValue({
+    vi.mocked(applyRateLimit).mockResolvedValue({
       success: true,
       limit: 10,
       remaining: 9,

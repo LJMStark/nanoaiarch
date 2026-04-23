@@ -19,6 +19,14 @@ export function isGeminiModel(modelId: string): boolean {
   return GEMINI_MODELS.includes(modelId as GeminiModelId);
 }
 
+export function normalizeGeminiModelId(
+  modelId: string | null | undefined
+): GeminiModelId {
+  return isGeminiModel(modelId ?? '')
+    ? (modelId as GeminiModelId)
+    : DEFAULT_MODEL;
+}
+
 // Provider 配置
 export const PROVIDERS: Record<
   ProviderKey,

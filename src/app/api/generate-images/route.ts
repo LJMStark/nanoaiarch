@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
       return ctx;
     }
 
-    const rateLimitResult = applyRateLimit({
+    const rateLimitResult = await applyRateLimit({
       key: `generate-images:${ctx.userId}`,
       limit: 10,
       windowMs: 60 * 1000,

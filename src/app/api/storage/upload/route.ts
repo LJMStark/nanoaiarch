@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       return createUploadErrorResponse('Unauthorized', 401);
     }
 
-    const rateLimitResult = applyRateLimit({
+    const rateLimitResult = await applyRateLimit({
       key: `storage-upload:${session.user.id}:${getRateLimitIdentifier(request.headers, session.user.id)}`,
       limit: 10,
       windowMs: 60 * 1000,

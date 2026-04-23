@@ -10,10 +10,11 @@ import { NextResponse } from 'next/server';
  * You can use tools like Uptime Kuma to monitor this endpoint.
  */
 export async function GET(request: Request) {
-  const rateLimitResult = applyRateLimit({
+  const rateLimitResult = await applyRateLimit({
     key: `ping:${getRateLimitIdentifier(request.headers)}`,
     limit: 60,
     windowMs: 60 * 1000,
+    storage: 'memory',
   });
 
   if (!rateLimitResult.success) {

@@ -32,7 +32,7 @@ describe('/api/image/proxy GET', () => {
     vi.clearAllMocks();
     vi.stubGlobal('fetch', vi.fn());
 
-    vi.mocked(applyRateLimit).mockReturnValue({
+    vi.mocked(applyRateLimit).mockResolvedValue({
       success: true,
       limit: 120,
       remaining: 119,
