@@ -83,6 +83,40 @@ const nextConfig: NextConfig = {
   },
 };
 
+type NextConfigWithLegacyTurbo = NextConfig & {
+  experimental?: NonNullable<NextConfig['experimental']> & {
+    turbo?: NextConfig['turbopack'];
+  };
+};
+
+function migrateLegacyTurboConfig(
+  config: NextConfigWithLegacyTurbo
+): NextConfig {
+  const { experimental, turbopack, ...restConfig } = config;
+  const { turbo: legacyTurbo, ...experimentalConfig } = experimental ?? {};
+
+  if (!legacyTurbo) {
+    return config;
+  }
+
+  return {
+    ...restConfig,
+    experimental: experimentalConfig,
+    turbopack: {
+      ...legacyTurbo,
+      ...turbopack,
+      resolveAlias: {
+        ...legacyTurbo.resolveAlias,
+        ...turbopack?.resolveAlias,
+      },
+      rules: {
+        ...legacyTurbo.rules,
+        ...turbopack?.rules,
+      },
+    },
+  };
+}
+
 /**
  * You can specify the path to the request config file or use the default one (@/i18n/request.ts)
  *
@@ -96,4 +130,4 @@ const withNextIntl = createNextIntlPlugin();
  */
 const withMDX = createMDX();
 
-export default withMDX(withNextIntl(nextConfig));
+export default migrateLegacyTurboConfig(withMDX(withNextIntl(nextConfig)));

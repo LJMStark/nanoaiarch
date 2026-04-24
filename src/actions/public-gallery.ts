@@ -5,6 +5,7 @@ import { generationHistory, user } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { CACHE_DURATIONS, CACHE_TAGS } from '@/lib/cache';
 import { logger } from '@/lib/logger';
+import { normalizePublicGallerySort } from '@/lib/public-gallery';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { unstable_cache } from 'next/cache';
 import { headers } from 'next/headers';
@@ -43,14 +44,6 @@ export interface GetPublicGenerationsResult {
   total: number;
   totalPages: number;
   error?: string;
-}
-
-export type PublicGallerySort = 'latest';
-
-export function normalizePublicGallerySort(
-  sortBy?: string | null
-): PublicGallerySort {
-  return sortBy === 'latest' ? 'latest' : 'latest';
 }
 
 /**

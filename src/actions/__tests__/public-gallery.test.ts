@@ -1,5 +1,5 @@
+import { normalizePublicGallerySort } from '@/lib/public-gallery';
 import { describe, expect, it } from 'vitest';
-import { normalizePublicGallerySort } from '../public-gallery';
 
 describe('normalizePublicGallerySort', () => {
   it('keeps latest as the only supported sort order', () => {
