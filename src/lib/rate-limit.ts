@@ -104,40 +104,38 @@ export async function applyRateLimit({
 
   try {
     const db = await getDb();
-    const rows = (await db.execute(sql<RateLimitRow>`
-      INSERT INTO ${requestRateLimit} (
-        ${requestRateLimit.key},
-        ${requestRateLimit.count},
-        ${requestRateLimit.resetAt},
-        ${requestRateLimit.createdAt},
-        ${requestRateLimit.updatedAt}
-      )
-      VALUES (${key}, 1, ${resetAt}, ${now}, ${now})
-      ON CONFLICT (${requestRateLimit.key}) DO UPDATE SET
-        ${requestRateLimit.count} = CASE
-          WHEN ${requestRateLimit.resetAt} <= ${now} THEN 1
-          ELSE ${requestRateLimit.count} + 1
-        END,
-        ${requestRateLimit.resetAt} = CASE
-          WHEN ${requestRateLimit.resetAt} <= ${now} THEN ${resetAt}
-          ELSE ${requestRateLimit.resetAt}
-        END,
-        ${requestRateLimit.updatedAt} = ${now}
-      RETURNING
-        ${requestRateLimit.count} AS "count",
-        ${requestRateLimit.resetAt} AS "resetAt"
-    `)) as RateLimitRow[];
+    const rows = await db
+      .insert(requestRateLimit)
+      .values({
+        key,
+        count: 1,
+        resetAt,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: requestRateLimit.key,
+        set: {
+          count: sql`CASE WHEN ${requestRateLimit.resetAt} <= ${now} THEN 1 ELSE ${requestRateLimit.count} + 1 END`,
+          resetAt: sql`CASE WHEN ${requestRateLimit.resetAt} <= ${now} THEN ${resetAt} ELSE ${requestRateLimit.resetAt} END`,
+          updatedAt: now,
+        },
+      })
+      .returning({
+        count: requestRateLimit.count,
+        resetAt: requestRateLimit.resetAt,
+      });
 
-    const entry = rows[0];
+    const entry = rows[0] as RateLimitRow | undefined;
     if (!entry) {
       throw new Error('missing rate limit row');
     }
 
+    const count = Number(entry.count);
     return {
-      success: entry.count <= limit,
+      success: count <= limit,
       limit,
-      remaining:
-        entry.count >= limit ? 0 : Math.max(0, limit - Number(entry.count)),
+      remaining: count >= limit ? 0 : Math.max(0, limit - count),
       resetAt: normalizeResetAt(entry.resetAt),
     };
   } catch (error) {
