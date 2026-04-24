@@ -12,13 +12,20 @@ const DEFAULT_MODEL: GeminiImageModelId =
   (process.env.GEMINI_DEFAULT_MODEL as GeminiImageModelId) ||
   'gemini-3-pro-image-preview';
 const REQUEST_TIMEOUT_MS = 120_000; // 120s - synchronous API, no polling
-const LEGACY_GEMINI_THOUGHT_SIGNATURE_TEXT =
-  'context_engineering_is_the_way to_go';
-// The REST API serializes bytes fields as base64 strings, so the documented
-// legacy sentinel must be encoded before being sent as `thoughtSignature`.
-const LEGACY_GEMINI_THOUGHT_SIGNATURE = Buffer.from(
-  LEGACY_GEMINI_THOUGHT_SIGNATURE_TEXT
+// Older builds injected the documented dummy signature
+// "context_engineering_is_the_way to_go" (base64) as a fallback when the real
+// signature was missing. Gemini now rejects any signature that wasn't produced
+// by its own inference path with `Corrupted thought signature`, so we strip it
+// from stored history before replaying.
+const LEGACY_GEMINI_DUMMY_SIGNATURE = Buffer.from(
+  'context_engineering_is_the_way to_go'
 ).toString('base64');
+
+function sanitizeStoredSignature(signature?: string): string | undefined {
+  if (!signature) return undefined;
+  if (signature === LEGACY_GEMINI_DUMMY_SIGNATURE) return undefined;
+  return signature;
+}
 
 // Model types
 // Nano Banana Pro = gemini-3-pro-image-preview
@@ -293,7 +300,9 @@ async function buildModelMessageParts(
 
     for (const part of message.parts) {
       if (part.type === 'text') {
-        builtParts.push(createTextPart(part.text, part.thoughtSignature));
+        builtParts.push(
+          createTextPart(part.text, sanitizeStoredSignature(part.thoughtSignature))
+        );
         continue;
       }
 
@@ -306,8 +315,7 @@ async function buildModelMessageParts(
         builtParts.push(
           await createImagePart(message.image, signal, {
             mimeType: part.mimeType,
-            thoughtSignature:
-              part.thoughtSignature || LEGACY_GEMINI_THOUGHT_SIGNATURE,
+            thoughtSignature: sanitizeStoredSignature(part.thoughtSignature),
           })
         );
         imageUsed = true;
@@ -327,18 +335,12 @@ async function buildModelMessageParts(
   const legacyParts: Array<Record<string, unknown>> = [];
 
   if (message.content) {
-    legacyParts.push(
-      createTextPart(message.content, LEGACY_GEMINI_THOUGHT_SIGNATURE)
-    );
+    legacyParts.push(createTextPart(message.content));
   }
 
   if (message.image) {
     try {
-      legacyParts.push(
-        await createImagePart(message.image, signal, {
-          thoughtSignature: LEGACY_GEMINI_THOUGHT_SIGNATURE,
-        })
-      );
+      legacyParts.push(await createImagePart(message.image, signal));
     } catch (error) {
       logger.ai.warn(
         '[Gemini] Failed to resolve legacy model image, skipping',

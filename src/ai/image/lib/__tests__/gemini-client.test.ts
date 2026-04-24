@@ -4,7 +4,7 @@ import {
   generateImageWithGemini,
 } from '../gemini-client';
 
-const LEGACY_GEMINI_THOUGHT_SIGNATURE = Buffer.from(
+const LEGACY_GEMINI_DUMMY_SIGNATURE = Buffer.from(
   'context_engineering_is_the_way to_go'
 ).toString('base64');
 
@@ -171,7 +171,7 @@ describe('generateImageWithGemini', () => {
     });
   });
 
-  it('encodes the documented dummy signature for legacy model history', async () => {
+  it('omits thought signatures for legacy model history without stored parts', async () => {
     await editImageWithConversationGemini({
       model: 'gemini-3-pro-image-preview',
       messages: [
@@ -204,14 +204,66 @@ describe('generateImageWithGemini', () => {
       parts: [
         {
           text: '这是上一张结果',
-          thoughtSignature: LEGACY_GEMINI_THOUGHT_SIGNATURE,
         },
         {
           inlineData: {
             mimeType: 'image/jpeg',
             data: 'legacy-base64',
           },
-          thoughtSignature: LEGACY_GEMINI_THOUGHT_SIGNATURE,
+        },
+      ],
+    });
+  });
+
+  it('strips the documented dummy signature from previously stored model parts', async () => {
+    await editImageWithConversationGemini({
+      model: 'gemini-3-pro-image-preview',
+      messages: [
+        {
+          role: 'user',
+          content: '生成封面',
+        },
+        {
+          role: 'model',
+          content: '好的',
+          image: 'stored-base64',
+          parts: [
+            {
+              type: 'text',
+              text: '好的',
+              thoughtSignature: LEGACY_GEMINI_DUMMY_SIGNATURE,
+            },
+            {
+              type: 'image',
+              mimeType: 'image/png',
+              thoughtSignature: LEGACY_GEMINI_DUMMY_SIGNATURE,
+            },
+          ],
+        },
+        {
+          role: 'user',
+          content: '换个色调',
+        },
+      ],
+    });
+
+    const [, options] = vi.mocked(global.fetch).mock.calls[0];
+    const requestBody = JSON.parse(String(options?.body)) as {
+      contents: Array<{
+        role: string;
+        parts: Array<Record<string, unknown>>;
+      }>;
+    };
+
+    expect(requestBody.contents[1]).toEqual({
+      role: 'model',
+      parts: [
+        { text: '好的' },
+        {
+          inlineData: {
+            mimeType: 'image/png',
+            data: 'stored-base64',
+          },
         },
       ],
     });
