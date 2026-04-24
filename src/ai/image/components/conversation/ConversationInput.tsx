@@ -185,24 +185,16 @@ export function ConversationInput() {
     [handleSubmit]
   );
 
-  const handlePaste = useCallback(
-    async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      const clipboardFiles = [
-        ...Array.from(e.clipboardData.items)
-          .filter((item) => item.kind === 'file')
-          .map((item) => item.getAsFile())
-          .filter((file): file is File => Boolean(file)),
-        ...Array.from(e.clipboardData.files),
-      ];
-      const imageFiles = clipboardFiles.filter((file, index, files) => {
-        return isAcceptedImageType(file.type) && files.indexOf(file) === index;
+  const ingestImageFiles = useCallback(
+    async (files: File[]) => {
+      const imageFiles = files.filter((file, index, list) => {
+        return isAcceptedImageType(file.type) && list.indexOf(file) === index;
       });
 
       if (imageFiles.length === 0) {
         return;
       }
 
-      e.preventDefault();
       if (isPastingImageRef.current) {
         return;
       }
@@ -256,6 +248,26 @@ export function ConversationInput() {
     [handleImagesChange, t, toast]
   );
 
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const clipboardFiles = [
+        ...Array.from(e.clipboardData.items)
+          .filter((item) => item.kind === 'file')
+          .map((item) => item.getAsFile())
+          .filter((file): file is File => Boolean(file)),
+        ...Array.from(e.clipboardData.files),
+      ];
+
+      if (!clipboardFiles.some((file) => isAcceptedImageType(file.type))) {
+        return;
+      }
+
+      e.preventDefault();
+      await ingestImageFiles(clipboardFiles);
+    },
+    [ingestImageFiles]
+  );
+
   const isDisabled =
     !currentProjectId ||
     isTemporaryId(currentProjectId) ||
@@ -264,6 +276,73 @@ export function ConversationInput() {
     isPastingImage;
   const isProjectReady =
     Boolean(currentProjectId) && !isTemporaryId(currentProjectId);
+
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const dragCounterRef = useRef(0);
+
+  const hasImageFilesInDrag = useCallback(
+    (dataTransfer: DataTransfer | null) => {
+      if (!dataTransfer) return false;
+      if (Array.from(dataTransfer.types).includes('Files')) {
+        return true;
+      }
+      return Array.from(dataTransfer.items).some(
+        (item) => item.kind === 'file'
+      );
+    },
+    []
+  );
+
+  const handleDragEnter = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      if (!isProjectReady || isPastingImage) return;
+      if (!hasImageFilesInDrag(e.dataTransfer)) return;
+
+      e.preventDefault();
+      dragCounterRef.current += 1;
+      if (dragCounterRef.current === 1) {
+        setIsDraggingImage(true);
+      }
+    },
+    [hasImageFilesInDrag, isPastingImage, isProjectReady]
+  );
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      if (!isProjectReady || isPastingImage) return;
+      if (!hasImageFilesInDrag(e.dataTransfer)) return;
+
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    },
+    [hasImageFilesInDrag, isPastingImage, isProjectReady]
+  );
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (dragCounterRef.current > 0) {
+      dragCounterRef.current -= 1;
+    }
+    if (dragCounterRef.current === 0) {
+      setIsDraggingImage(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      dragCounterRef.current = 0;
+      setIsDraggingImage(false);
+
+      if (!isProjectReady || isPastingImage) return;
+
+      const files = Array.from(e.dataTransfer.files ?? []);
+      if (files.length === 0) return;
+
+      await ingestImageFiles(files);
+    },
+    [ingestImageFiles, isPastingImage, isProjectReady]
+  );
 
   return (
     <div className="border-t bg-background p-4 flex-shrink-0">
@@ -306,7 +385,24 @@ export function ConversationInput() {
         )}
 
         {/* Main input area */}
-        <div className="rounded-2xl border bg-muted/70 p-3 flex flex-col transition-all">
+        <div
+          className={cn(
+            'relative rounded-2xl border bg-muted/70 p-3 flex flex-col transition-all',
+            isDraggingImage && 'border-primary/70 ring-2 ring-primary/40'
+          )}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {isDraggingImage && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-primary/10 backdrop-blur-[1px]">
+              <div className="flex items-center gap-2 rounded-full border border-primary/50 bg-background/90 px-4 py-2 text-sm font-medium text-primary shadow">
+                <ImageIcon className="h-4 w-4" />
+                {t('upload.dropHere')}
+              </div>
+            </div>
+          )}
           <Textarea
             ref={textareaRef}
             value={draftPrompt}
