@@ -269,6 +269,84 @@ describe('generateImageWithGemini', () => {
     });
   });
 
+  it('drops user images that duplicate the preceding model turn image', async () => {
+    await editImageWithConversationGemini({
+      model: 'gemini-3-pro-image-preview',
+      messages: [
+        {
+          role: 'user',
+          content: '生成一个封面',
+        },
+        {
+          role: 'model',
+          content: '好的',
+          image: 'shared-output-base64',
+        },
+        {
+          role: 'user',
+          content: '动漫化',
+          images: ['shared-output-base64'],
+        },
+      ],
+    });
+
+    const [, options] = vi.mocked(global.fetch).mock.calls[0];
+    const requestBody = JSON.parse(String(options?.body)) as {
+      contents: Array<{
+        role: string;
+        parts: Array<Record<string, unknown>>;
+      }>;
+    };
+
+    expect(requestBody.contents[2]).toEqual({
+      role: 'user',
+      parts: [{ text: '动漫化' }],
+    });
+  });
+
+  it('keeps user images that do not match the preceding model turn', async () => {
+    await editImageWithConversationGemini({
+      model: 'gemini-3-pro-image-preview',
+      messages: [
+        {
+          role: 'user',
+          content: '生成一个封面',
+        },
+        {
+          role: 'model',
+          content: '好的',
+          image: 'first-output-base64',
+        },
+        {
+          role: 'user',
+          content: '叠加新元素',
+          images: ['brand-new-reference-base64'],
+        },
+      ],
+    });
+
+    const [, options] = vi.mocked(global.fetch).mock.calls[0];
+    const requestBody = JSON.parse(String(options?.body)) as {
+      contents: Array<{
+        role: string;
+        parts: Array<Record<string, unknown>>;
+      }>;
+    };
+
+    expect(requestBody.contents[2]).toEqual({
+      role: 'user',
+      parts: [
+        { text: '叠加新元素' },
+        {
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: 'brand-new-reference-base64',
+          },
+        },
+      ],
+    });
+  });
+
   it('serializes multiple user reference images in a single conversation turn', async () => {
     await editImageWithConversationGemini({
       model: 'gemini-3-pro-image-preview',

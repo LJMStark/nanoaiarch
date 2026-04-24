@@ -1,6 +1,7 @@
 'use client';
 
 import { generateImage } from '@/ai/image/lib/api-utils';
+import { preloadImage } from '@/ai/image/lib/image-display-utils';
 import {
   createPendingGenerationRequest,
   updateAssistantMessageRequest,
@@ -348,6 +349,9 @@ export function useConversationSubmit({
 
       if (result.message) {
         setGenerationStage('finishing');
+        if (result.message.outputImage) {
+          await preloadImage(result.message.outputImage);
+        }
         updateMessage(
           result.message.id,
           normalizePersistedAssistantMessage(result.message)

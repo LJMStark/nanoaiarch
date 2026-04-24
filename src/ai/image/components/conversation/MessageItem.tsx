@@ -6,6 +6,7 @@ import { parseErrorMessage } from '@/ai/image/lib/error-utils';
 import {
   downloadImage,
   getImageSrc,
+  preloadImage,
   shareImage,
 } from '@/ai/image/lib/image-display-utils';
 import {
@@ -360,6 +361,9 @@ function AssistantMessage({
 
       if (result.message) {
         setGenerationStage('finishing');
+        if (result.message.outputImage) {
+          await preloadImage(result.message.outputImage);
+        }
         updateMessage(
           message.id,
           normalizePersistedAssistantMessage(result.message)

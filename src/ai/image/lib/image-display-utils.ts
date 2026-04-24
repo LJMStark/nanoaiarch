@@ -16,6 +16,35 @@ export function getImageSrc(imageData: string): string {
   return `data:image/png;base64,${imageData}`;
 }
 
+/**
+ * Decode a freshly generated image into the browser's cache so the first
+ * on-screen paint doesn't expose the bg-muted placeholder while a large
+ * base64 data URI is still being decoded. Resolves on load/error/timeout so
+ * callers never block generation state flipping for long.
+ */
+export function preloadImage(imageData: string): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !imageData) {
+      resolve();
+      return;
+    }
+
+    const img = new window.Image();
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      resolve();
+    };
+
+    const timeoutId = window.setTimeout(done, 1500);
+    img.onload = done;
+    img.onerror = done;
+    img.src = getImageSrc(imageData);
+  });
+}
+
 export function buildImageProxyUrl(url: string): string {
   const searchParams = new URLSearchParams({ url });
   return `${IMAGE_PROXY_ROUTE}?${searchParams.toString()}`;

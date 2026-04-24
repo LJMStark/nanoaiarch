@@ -388,6 +388,49 @@ async function buildConversationMessageParts(
   return parts;
 }
 
+// Gemini rejects conversations where the same image appears back-to-back in
+// a model turn and the immediately following user turn. It happens when the
+// client auto-attaches the previous output as a "reference" while that same
+// output is already part of the replayed history. Strip the duplicates before
+// sending so the payload stays valid.
+function dedupeAdjacentTurnImages(
+  contents: Array<Record<string, unknown>>
+): void {
+  for (let i = 1; i < contents.length; i++) {
+    const prev = contents[i - 1];
+    const curr = contents[i];
+    if (prev.role !== 'model' || curr.role !== 'user') continue;
+
+    const prevParts = Array.isArray(prev.parts)
+      ? (prev.parts as Array<Record<string, unknown>>)
+      : [];
+    const currParts = Array.isArray(curr.parts)
+      ? (curr.parts as Array<Record<string, unknown>>)
+      : [];
+    if (currParts.length === 0) continue;
+
+    const prevImageData = new Set<string>();
+    for (const part of prevParts) {
+      const data = (part?.inlineData as { data?: unknown } | undefined)?.data;
+      if (typeof data === 'string') prevImageData.add(data);
+    }
+    if (prevImageData.size === 0) continue;
+
+    const filtered = currParts.filter((part) => {
+      const data = (part?.inlineData as { data?: unknown } | undefined)?.data;
+      if (typeof data !== 'string') return true;
+      return !prevImageData.has(data);
+    });
+
+    if (filtered.length !== currParts.length) {
+      logger.ai.info(
+        `[Gemini] Dropped ${currParts.length - filtered.length} duplicate user image(s) already present in preceding model turn`
+      );
+      curr.parts = filtered;
+    }
+  }
+}
+
 /**
  * Core API call to Gemini generateContent endpoint
  */
@@ -567,6 +610,8 @@ export async function editImageWithConversationGemini(
   if (!hasUserMessage) {
     return { success: false, error: '没有用户消息' };
   }
+
+  dedupeAdjacentTurnImages(contents);
 
   const requestBody: Record<string, unknown> = {
     contents,
