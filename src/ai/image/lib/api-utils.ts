@@ -96,13 +96,104 @@ export interface PromptValidationResult {
 /**
  * Image size validation
  */
-const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+export const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const MAX_IMAGE_SIZE_MB = 10;
+const DATA_URL_IMAGE_PREFIXES = [
+  'data:image/png;base64,',
+  'data:image/jpeg;base64,',
+  'data:image/webp;base64,',
+  'data:image/gif;base64,',
+] as const;
+export const MAX_BASE64_IMAGE_CHARS = Math.ceil(MAX_IMAGE_SIZE_BYTES / 3) * 4;
+export const MAX_IMAGE_PAYLOAD_CHARS =
+  MAX_BASE64_IMAGE_CHARS +
+  Math.max(...DATA_URL_IMAGE_PREFIXES.map((prefix) => prefix.length));
+const DATA_URL_IMAGE_PATTERN =
+  /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/]+={0,2})$/;
+const BASE64_IMAGE_PATTERN = /^[A-Za-z0-9+/]+={0,2}$/;
 
 export interface ImageValidationResult {
   valid: boolean;
   error?: string;
   sizeBytes?: number;
+}
+
+function getNormalizedBase64Image(
+  value: string
+): { data: string; mimeType?: string } | null {
+  const trimmed = value.trim();
+  const dataUrlMatch = DATA_URL_IMAGE_PATTERN.exec(trimmed);
+
+  if (dataUrlMatch) {
+    return {
+      mimeType: dataUrlMatch[1],
+      data: dataUrlMatch[2],
+    };
+  }
+
+  if (!BASE64_IMAGE_PATTERN.test(trimmed)) {
+    return null;
+  }
+
+  return { data: trimmed };
+}
+
+function decodeBase64Header(base64: string): Uint8Array | null {
+  try {
+    const headerSlice = base64.slice(0, 64);
+
+    if (typeof atob === 'function') {
+      const binary = atob(headerSlice);
+      return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    }
+
+    return Uint8Array.from(Buffer.from(headerSlice, 'base64'));
+  } catch {
+    return null;
+  }
+}
+
+function getAscii(bytes: Uint8Array, start: number, end: number): string {
+  return String.fromCharCode(...bytes.slice(start, end));
+}
+
+function hasSupportedImageMagicBytes(
+  base64: string,
+  mimeType?: string
+): boolean {
+  const header = decodeBase64Header(base64);
+
+  if (!header) {
+    return false;
+  }
+
+  const isJpeg =
+    header.length >= 3 &&
+    header[0] === 0xff &&
+    header[1] === 0xd8 &&
+    header[2] === 0xff;
+  const isPng =
+    header.length >= 8 &&
+    header[0] === 0x89 &&
+    header[1] === 0x50 &&
+    header[2] === 0x4e &&
+    header[3] === 0x47 &&
+    header[4] === 0x0d &&
+    header[5] === 0x0a &&
+    header[6] === 0x1a &&
+    header[7] === 0x0a;
+  const isGif = header.length >= 6 && getAscii(header, 0, 6).startsWith('GIF8');
+  const isWebp =
+    header.length >= 12 &&
+    getAscii(header, 0, 4) === 'RIFF' &&
+    getAscii(header, 8, 12) === 'WEBP';
+
+  if (mimeType === 'image/jpeg') return isJpeg;
+  if (mimeType === 'image/png') return isPng;
+  if (mimeType === 'image/gif') return isGif;
+  if (mimeType === 'image/webp') return isWebp;
+
+  return isJpeg || isPng || isGif || isWebp;
 }
 
 function getAllowedImageFetchHosts(): Set<string> {
@@ -181,16 +272,35 @@ export function validateBase64Image(
     }
   }
 
+  const normalizedImage = getNormalizedBase64Image(base64);
+  if (!normalizedImage) {
+    return {
+      valid: false,
+      error: '无效的图片数据',
+    };
+  }
+
   // Calculate approximate size from base64
   // Base64 encoded size is roughly 4/3 of original, so original = base64.length * 3/4
-  const paddingCount = (base64.match(/=/g) || []).length;
-  const sizeBytes = Math.floor((base64.length * 3) / 4) - paddingCount;
+  const paddingCount = (normalizedImage.data.match(/=/g) || []).length;
+  const sizeBytes =
+    Math.floor((normalizedImage.data.length * 3) / 4) - paddingCount;
 
   if (sizeBytes > MAX_IMAGE_SIZE_BYTES) {
     const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
     return {
       valid: false,
       error: `图片大小（${sizeMB}MB）超过最大限制 ${MAX_IMAGE_SIZE_MB}MB`,
+      sizeBytes,
+    };
+  }
+
+  if (
+    !hasSupportedImageMagicBytes(normalizedImage.data, normalizedImage.mimeType)
+  ) {
+    return {
+      valid: false,
+      error: '无效的图片数据',
       sizeBytes,
     };
   }

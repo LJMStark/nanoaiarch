@@ -6,6 +6,9 @@ import {
   validateReferenceImages,
 } from '../request-validation';
 
+const VALID_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
+
 describe('validateBase64Image', () => {
   beforeEach(() => {
     process.env.IMAGE_ALLOWED_FETCH_HOSTS = '';
@@ -35,6 +38,14 @@ describe('validateBase64Image', () => {
     expect(
       validateBase64Image('https://nano.example.com/uploads/generated/test.png')
     ).toEqual({ valid: true });
+  });
+
+  it('rejects syntactically valid base64 that is not an image', () => {
+    expect(validateBase64Image('A'.repeat(128))).toEqual({
+      valid: false,
+      error: '无效的图片数据',
+      sizeBytes: 96,
+    });
   });
 });
 
@@ -116,7 +127,7 @@ describe('validateConversationMessages', () => {
         {
           role: 'user',
           content: '把这两张图融合',
-          images: ['base64-a', 'base64-b'],
+          images: [VALID_PNG_BASE64, VALID_PNG_BASE64],
         },
       ])
     ).toEqual({ valid: true });

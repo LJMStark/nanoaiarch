@@ -50,6 +50,9 @@ vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
 }));
 
+const VALID_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
+
 describe('ConversationInput', () => {
   beforeEach(() => {
     submitMock.mockClear();
@@ -91,7 +94,7 @@ describe('ConversationInput', () => {
   });
 
   it('adds pasted clipboard images to the reference preview', async () => {
-    compressAcceptedImageFilesMock.mockResolvedValue(['pasted-image-base64']);
+    compressAcceptedImageFilesMock.mockResolvedValue([VALID_PNG_BASE64]);
 
     render(<ConversationInput />);
     const textarea = screen.getByPlaceholderText('controls.prompt');
@@ -156,7 +159,7 @@ describe('ConversationInput', () => {
 
     expect(submitMock).not.toHaveBeenCalled();
 
-    resolveCompression?.(['pasted-image-base64']);
+    resolveCompression?.([VALID_PNG_BASE64]);
     await waitFor(() => {
       expect(screen.getByAltText('Reference 1')).toBeInTheDocument();
     });
@@ -210,7 +213,7 @@ describe('ConversationInput', () => {
       firstImageFile,
     ]);
 
-    resolveCompression?.(['pasted-image-base64']);
+    resolveCompression?.([VALID_PNG_BASE64]);
     await waitFor(() => {
       expect(screen.getByAltText('Reference 1')).toBeInTheDocument();
     });

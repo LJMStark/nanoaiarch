@@ -50,7 +50,8 @@ export function useTemplateApply(): UseTemplateApplyReturn {
 
       try {
         if (currentProjectId) {
-          // Apply to existing project
+          // Temporary projects are atomically replaced by ProjectSidebar when
+          // the server record arrives, so keep draft state on the current row.
           applyTemplate({
             promptTemplate: prompt,
             defaultAspectRatio: ratio,

@@ -69,6 +69,7 @@ export function ProjectSidebar() {
     currentProjectId,
     isLoadingProjects,
     addProject,
+    replaceTemporaryProject,
     updateProject,
     removeProject,
     selectProject,
@@ -115,10 +116,7 @@ export function ProjectSidebar() {
     try {
       const result = await createImageProjectRequest();
       if (result.success && result.data) {
-        // Replace temp with real project
-        removeProject(tempId);
-        addProject(result.data);
-        selectProject(result.data.id);
+        replaceTemporaryProject(tempId, result.data);
         return;
       }
 

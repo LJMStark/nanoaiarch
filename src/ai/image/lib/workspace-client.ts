@@ -245,11 +245,10 @@ export async function updateAssistantMessageRequest(
   messageId: string,
   data: {
     content?: string;
-    outputImage?: string | null;
-    generationParams?: GenerationParams;
-    creditsUsed?: number | null;
-    generationTime?: number | null;
-    status?: 'generating' | 'completed' | 'failed';
+    outputImage?: null;
+    creditsUsed?: null;
+    generationTime?: null;
+    status?: 'generating' | 'failed';
     errorMessage?: string | null;
   }
 ): Promise<ItemResult<ProjectMessageItem | null>> {

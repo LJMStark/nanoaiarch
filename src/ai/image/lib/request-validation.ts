@@ -3,7 +3,7 @@ import {
   type ImageQuality,
   VALID_IMAGE_SIZES,
 } from '@/ai/image/lib/image-constants';
-import { validateBase64Image } from './api-utils';
+import { MAX_IMAGE_SIZE_BYTES, validateBase64Image } from './api-utils';
 import { MAX_REFERENCE_IMAGES } from './input-images';
 import type {
   ConversationHistoryMessage,
@@ -12,6 +12,8 @@ import type {
 
 const MAX_CONVERSATION_MESSAGES = 10;
 const MAX_HISTORY_CONTENT_LENGTH = 4000;
+const MAX_TOTAL_REFERENCE_IMAGE_BYTES = MAX_IMAGE_SIZE_BYTES * 3;
+const MAX_TOTAL_CONVERSATION_IMAGE_BYTES = MAX_IMAGE_SIZE_BYTES * 3;
 
 function formatImageValidationError(
   index: number,
@@ -119,6 +121,7 @@ export function validateReferenceImages(
     };
   }
 
+  let totalSizeBytes = 0;
   for (const [index, image] of images.entries()) {
     if (typeof image !== 'string') {
       return {
@@ -132,6 +135,14 @@ export function validateReferenceImages(
       return {
         valid: false,
         error: formatImageValidationError(index, 'reference', validation.error),
+      };
+    }
+
+    totalSizeBytes += validation.sizeBytes ?? 0;
+    if (totalSizeBytes > MAX_TOTAL_REFERENCE_IMAGE_BYTES) {
+      return {
+        valid: false,
+        error: `参考图总大小超过最大限制 ${Math.floor(MAX_TOTAL_REFERENCE_IMAGE_BYTES / 1024 / 1024)}MB`,
       };
     }
   }
@@ -159,6 +170,8 @@ export function validateConversationMessages(
       error: `对话消息最多 ${MAX_CONVERSATION_MESSAGES} 条`,
     };
   }
+
+  let totalImageSizeBytes = 0;
 
   for (const [index, message] of messages.entries()) {
     if (message.role !== 'user' && message.role !== 'model') {
@@ -201,6 +214,14 @@ export function validateConversationMessages(
           ),
         };
       }
+
+      totalImageSizeBytes += validation.sizeBytes ?? 0;
+      if (totalImageSizeBytes > MAX_TOTAL_CONVERSATION_IMAGE_BYTES) {
+        return {
+          valid: false,
+          error: `对话历史图片总大小超过最大限制 ${Math.floor(MAX_TOTAL_CONVERSATION_IMAGE_BYTES / 1024 / 1024)}MB`,
+        };
+      }
     }
 
     if (message.images !== undefined) {
@@ -235,6 +256,14 @@ export function validateConversationMessages(
               'conversation',
               validation.error
             ),
+          };
+        }
+
+        totalImageSizeBytes += validation.sizeBytes ?? 0;
+        if (totalImageSizeBytes > MAX_TOTAL_CONVERSATION_IMAGE_BYTES) {
+          return {
+            valid: false,
+            error: `对话历史图片总大小超过最大限制 ${Math.floor(MAX_TOTAL_CONVERSATION_IMAGE_BYTES / 1024 / 1024)}MB`,
           };
         }
       }

@@ -1,5 +1,6 @@
 'use server';
 
+import { validateBase64Image } from '@/ai/image/lib/api-utils';
 import {
   DEFAULT_MODEL,
   type GeminiModelId,
@@ -222,13 +223,34 @@ export async function updateImageProject(
 
   try {
     const db = await getDb();
-    await db
+
+    if (data.coverImage) {
+      const imageValidation = validateBase64Image(data.coverImage);
+      if (!imageValidation.valid) {
+        return { success: false, error: imageValidation.error };
+      }
+    }
+
+    const updates: Partial<{
+      title: string;
+      coverImage: string;
+      stylePreset: string;
+      aspectRatio: string;
+      model: GeminiModelId;
+    }> = {};
+
+    if (data.title !== undefined) updates.title = data.title;
+    if (data.coverImage !== undefined) updates.coverImage = data.coverImage;
+    if (data.stylePreset !== undefined) updates.stylePreset = data.stylePreset;
+    if (data.aspectRatio !== undefined) updates.aspectRatio = data.aspectRatio;
+    if (data.model !== undefined) {
+      updates.model = normalizeGeminiModelId(data.model);
+    }
+
+    const result = await db
       .update(imageProject)
       .set({
-        ...data,
-        ...(data.model !== undefined
-          ? { model: normalizeGeminiModelId(data.model) }
-          : {}),
+        ...updates,
         updatedAt: new Date(),
       })
       .where(
@@ -236,7 +258,12 @@ export async function updateImageProject(
           eq(imageProject.id, projectId),
           eq(imageProject.userId, session.user.id)
         )
-      );
+      )
+      .returning({ id: imageProject.id });
+
+    if (result.length === 0) {
+      return { success: false, error: '项目未找到' };
+    }
 
     return { success: true };
   } catch (error) {

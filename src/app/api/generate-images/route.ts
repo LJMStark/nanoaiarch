@@ -31,6 +31,24 @@ import { type NextRequest, NextResponse } from 'next/server';
 // Set maximum execution time for image generation (150 seconds)
 export const maxDuration = 150;
 
+const MAX_GENERATE_BODY_BYTES = 48 * 1024 * 1024;
+
+async function readLimitedJson(
+  req: NextRequest
+): Promise<GenerateImageRequest> {
+  const contentLength = Number(req.headers.get('content-length') ?? 0);
+  if (contentLength > MAX_GENERATE_BODY_BYTES) {
+    throw new Error('Request body too large');
+  }
+
+  const bodyText = await req.text();
+  if (Buffer.byteLength(bodyText, 'utf8') > MAX_GENERATE_BODY_BYTES) {
+    throw new Error('Request body too large');
+  }
+
+  return JSON.parse(bodyText) as GenerateImageRequest;
+}
+
 async function persistFailedAssistantMessage(
   assistantMessageId: string | undefined,
   requestId: string,
@@ -66,13 +84,21 @@ export async function POST(req: NextRequest) {
 
   try {
     try {
-      payload = (await req.json()) as GenerateImageRequest;
+      payload = await readLimitedJson(req);
     } catch (error) {
       logger.api.error(
         `Malformed JSON payload [requestId=${requestId}]`,
         error
       );
-      return NextResponse.json({ error: '请求体格式错误' }, { status: 400 });
+      return NextResponse.json(
+        {
+          error:
+            error instanceof Error && error.message === 'Request body too large'
+              ? '请求体过大'
+              : '请求体格式错误',
+        },
+        { status: 400 }
+      );
     }
 
     const {

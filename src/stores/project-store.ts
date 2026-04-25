@@ -32,6 +32,10 @@ interface ProjectState {
   // Actions
   setProjects: (projects: ImageProjectItem[]) => void;
   addProject: (project: ImageProjectItem) => void;
+  replaceTemporaryProject: (
+    temporaryProjectId: string,
+    project: ImageProjectItem
+  ) => void;
   updateProject: (
     projectId: string,
     updates: Partial<ImageProjectItem>
@@ -90,6 +94,17 @@ export const useProjectStore = create<ProjectState>()(
       addProject: (project) =>
         set((state) => ({
           projects: [project, ...state.projects],
+        })),
+
+      replaceTemporaryProject: (temporaryProjectId, project) =>
+        set((state) => ({
+          projects: state.projects.map((item) =>
+            item.id === temporaryProjectId ? project : item
+          ),
+          currentProjectId:
+            state.currentProjectId === temporaryProjectId
+              ? project.id
+              : state.currentProjectId,
         })),
 
       updateProject: (projectId, updates) =>

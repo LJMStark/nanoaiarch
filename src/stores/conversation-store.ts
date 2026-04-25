@@ -234,13 +234,6 @@ export const useConversationStore = create<ConversationState>()(
         if (abortController) {
           abortController.abort();
         }
-        set({
-          isGenerating: false,
-          generatingMessageId: null,
-          generationStage: null,
-          abortController: null,
-          generationRequestToken: null,
-        });
       },
 
       setCurrentProject: (projectId) => {

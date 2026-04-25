@@ -9,13 +9,13 @@ import {
 import type { ProjectMessageItem } from '@/ai/image/lib/workspace-types';
 import { logger } from '@/lib/logger';
 import { useConversationStore } from '@/stores/conversation-store';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 
 export interface MessageUpdateData {
-  outputImage?: string | null;
-  creditsUsed?: number | null;
-  generationTime?: number | null;
-  status: 'generating' | 'completed' | 'failed';
+  outputImage?: null;
+  creditsUsed?: null;
+  generationTime?: null;
+  status: 'generating' | 'failed';
   content?: string;
   errorMessage?: string | null;
 }
@@ -51,6 +51,7 @@ interface UseConversationSubmitParams {
   imageQuality: '1K' | '2K' | '4K';
   isGenerating: boolean;
   clearDraft: () => void;
+  setDraftPrompt: (prompt: string) => void;
   setReferenceImages: (images: string[]) => void;
   setShowImageUpload: (visible: boolean) => void;
   addMessage: (message: ProjectMessageItem) => void;
@@ -191,6 +192,7 @@ export function useConversationSubmit({
   imageQuality,
   isGenerating,
   clearDraft,
+  setDraftPrompt,
   setReferenceImages,
   setShowImageUpload,
   addMessage,
@@ -205,6 +207,8 @@ export function useConversationSubmit({
   setGenerationStage,
   onError,
 }: UseConversationSubmitParams): () => Promise<void> {
+  const inFlightRef = useRef(false);
+
   const persistFailureState = useCallback(
     async (messageId: string, data: MessageUpdateData): Promise<void> => {
       const updateResult = await updateAssistantMessageRequest(messageId, data);
@@ -240,159 +244,173 @@ export function useConversationSubmit({
   );
 
   return useCallback(async () => {
-    if (!draftPrompt.trim() || isGenerating || !currentProjectId) {
+    if (
+      !draftPrompt.trim() ||
+      isGenerating ||
+      inFlightRef.current ||
+      useConversationStore.getState().isGenerating ||
+      !currentProjectId
+    ) {
       return;
     }
 
+    inFlightRef.current = true;
     const prompt = draftPrompt.trim();
     const inputImages = getInputImages(referenceImages, getLastOutputImage);
-
-    // Optimistic: immediately show messages and loading state
-    const tempUserMsg = createTempMessage(
-      currentProjectId,
-      'user',
-      prompt,
-      inputImages
-    );
-    const tempAssistantMsg = createTempMessage(
-      currentProjectId,
-      'assistant',
-      '',
-      []
-    );
-
-    addMessage(tempUserMsg);
-    addMessage(tempAssistantMsg);
-
-    clearDraft();
-    setReferenceImages([]);
-    setShowImageUpload(false);
-
-    const controller = new AbortController();
-    const requestToken = crypto.randomUUID();
-
-    setAbortController(controller);
-    setGenerationRequestToken(requestToken);
-    setGenerating(true);
-    setGenerationStage('submitting');
-
-    // Bootstrap with server (user already sees loading UI)
-    const bootstrapResult = await createPendingGenerationRequest(
-      currentProjectId,
-      {
-        content: prompt,
-        inputImages: inputImages.length > 0 ? inputImages : undefined,
-        generationParams: {
-          prompt,
-          aspectRatio,
-          model: selectedModel,
-          imageQuality,
-          inputImages,
-        },
-      }
-    );
-
-    if (!bootstrapResult.success || !bootstrapResult.data) {
-      // Rollback: remove temp messages
-      removeMessage(tempUserMsg.id);
-      removeMessage(tempAssistantMsg.id);
-      setGenerating(false);
-      setGenerationStage(null);
-      setAbortController(null);
-      setGenerationRequestToken(null);
-
-      logger.ai.error('Failed to create pending generation', {
-        projectId: currentProjectId,
-        error: bootstrapResult.error,
-      });
-      onError?.({
-        title: '发送失败',
-        description: bootstrapResult.error || '创建生成任务失败，请重试',
-      });
-      return;
-    }
-
-    const { userMessage, assistantMessage } = bootstrapResult.data;
-
-    // Replace temp IDs with real server IDs
-    replaceMessageId(tempUserMsg.id, userMessage.id, userMessage);
-    replaceMessageId(
-      tempAssistantMsg.id,
-      assistantMessage.id,
-      assistantMessage
-    );
-
-    const generatingMessageId = assistantMessage.id;
-    setGenerating(true, generatingMessageId);
-    setGenerationStage('queued');
+    const referenceImagesSnapshot = referenceImages;
 
     try {
-      const conversationHistory = getConversationHistory();
-      setGenerationStage('generating');
-
-      const result = await generateImage({
+      // Optimistic: immediately show messages and loading state
+      const tempUserMsg = createTempMessage(
+        currentProjectId,
+        'user',
         prompt,
-        referenceImages: inputImages.length > 0 ? inputImages : undefined,
-        aspectRatio,
-        model: selectedModel,
-        imageSize: imageQuality,
-        signal: controller.signal,
-        conversationHistory:
-          conversationHistory.length > 0 ? conversationHistory : undefined,
-        projectId: currentProjectId,
-        assistantMessageId: generatingMessageId,
-      });
+        inputImages
+      );
+      const tempAssistantMsg = createTempMessage(
+        currentProjectId,
+        'assistant',
+        '',
+        []
+      );
 
-      if (!isActiveGenerationRequest(requestToken, generatingMessageId)) {
-        return;
-      }
+      addMessage(tempUserMsg);
+      addMessage(tempAssistantMsg);
 
-      if (result.message) {
-        setGenerationStage('finishing');
-        if (result.message.outputImage) {
-          await preloadImage(result.message.outputImage);
+      clearDraft();
+      setReferenceImages([]);
+      setShowImageUpload(false);
+
+      const controller = new AbortController();
+      const requestToken = crypto.randomUUID();
+
+      setAbortController(controller);
+      setGenerationRequestToken(requestToken);
+      setGenerating(true);
+      setGenerationStage('submitting');
+
+      // Bootstrap with server (user already sees loading UI)
+      const bootstrapResult = await createPendingGenerationRequest(
+        currentProjectId,
+        {
+          content: prompt,
+          inputImages: inputImages.length > 0 ? inputImages : undefined,
+          generationParams: {
+            prompt,
+            aspectRatio,
+            model: selectedModel,
+            imageQuality,
+          },
         }
-        updateMessage(
-          result.message.id,
-          normalizePersistedAssistantMessage(result.message)
-        );
-        return;
-      }
+      );
 
-      if (isGenerationCancelled(result.error)) {
-        await persistFailureState(generatingMessageId, {
-          content: t('loading.cancelled'),
-          status: 'failed',
-          errorMessage: 'Generation cancelled',
+      if (!bootstrapResult.success || !bootstrapResult.data) {
+        // Rollback: remove temp messages and restore the user's draft input.
+        removeMessage(tempUserMsg.id);
+        removeMessage(tempAssistantMsg.id);
+        setDraftPrompt(prompt);
+        setReferenceImages(referenceImagesSnapshot);
+        setShowImageUpload(false);
+        setGenerating(false);
+        setGenerationStage(null);
+        setAbortController(null);
+        setGenerationRequestToken(null);
+
+        logger.ai.error('Failed to create pending generation', {
+          projectId: currentProjectId,
+          error: bootstrapResult.error,
+        });
+        onError?.({
+          title: '发送失败',
+          description: bootstrapResult.error || '创建生成任务失败，请重试',
         });
         return;
       }
 
-      await persistFailureState(generatingMessageId, {
-        content: result.error || t('errors.generationFailed'),
-        status: 'failed',
-        errorMessage: result.error,
-      });
-    } catch (error) {
-      logger.ai.error('Generation error:', error);
+      const { userMessage, assistantMessage } = bootstrapResult.data;
 
-      if (!isActiveGenerationRequest(requestToken, generatingMessageId)) {
-        return;
+      // Replace temp IDs with real server IDs
+      replaceMessageId(tempUserMsg.id, userMessage.id, userMessage);
+      replaceMessageId(
+        tempAssistantMsg.id,
+        assistantMessage.id,
+        assistantMessage
+      );
+
+      const generatingMessageId = assistantMessage.id;
+      setGenerating(true, generatingMessageId);
+      setGenerationStage('queued');
+
+      try {
+        const conversationHistory = getConversationHistory();
+        setGenerationStage('generating');
+
+        const result = await generateImage({
+          prompt,
+          referenceImages: inputImages.length > 0 ? inputImages : undefined,
+          aspectRatio,
+          model: selectedModel,
+          imageSize: imageQuality,
+          signal: controller.signal,
+          conversationHistory:
+            conversationHistory.length > 0 ? conversationHistory : undefined,
+          projectId: currentProjectId,
+          assistantMessageId: generatingMessageId,
+        });
+
+        if (isGenerationCancelled(result.error)) {
+          await persistFailureState(generatingMessageId, {
+            content: t('loading.cancelled'),
+            status: 'failed',
+            errorMessage: 'Generation cancelled',
+          });
+          return;
+        }
+
+        if (!isActiveGenerationRequest(requestToken, generatingMessageId)) {
+          return;
+        }
+
+        if (result.message) {
+          setGenerationStage('finishing');
+          if (result.message.outputImage) {
+            await preloadImage(result.message.outputImage);
+          }
+          updateMessage(
+            result.message.id,
+            normalizePersistedAssistantMessage(result.message)
+          );
+          return;
+        }
+
+        await persistFailureState(generatingMessageId, {
+          content: result.error || t('errors.generationFailed'),
+          status: 'failed',
+          errorMessage: result.error,
+        });
+      } catch (error) {
+        logger.ai.error('Generation error:', error);
+
+        if (!isActiveGenerationRequest(requestToken, generatingMessageId)) {
+          return;
+        }
+
+        const failureState = getFailureState(error, t);
+        await persistFailureState(generatingMessageId, {
+          content: failureState.content,
+          status: 'failed',
+          errorMessage: failureState.errorMessage,
+        });
+      } finally {
+        clearFinishedGeneration(requestToken, generatingMessageId, {
+          setAbortController,
+          setGenerationRequestToken,
+          setGenerating,
+          setGenerationStage,
+        });
       }
-
-      const failureState = getFailureState(error, t);
-      await persistFailureState(generatingMessageId, {
-        content: failureState.content,
-        status: 'failed',
-        errorMessage: failureState.errorMessage,
-      });
     } finally {
-      clearFinishedGeneration(requestToken, generatingMessageId, {
-        setAbortController,
-        setGenerationRequestToken,
-        setGenerating,
-        setGenerationStage,
-      });
+      inFlightRef.current = false;
     }
   }, [
     addMessage,
@@ -411,6 +429,7 @@ export function useConversationSubmit({
     replaceMessageId,
     selectedModel,
     setAbortController,
+    setDraftPrompt,
     setGenerationRequestToken,
     setGenerating,
     setGenerationStage,

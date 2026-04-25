@@ -1,6 +1,6 @@
 'use server';
 
-import { validateBase64Image } from '@/ai/image/lib/api-utils';
+import { validateBase64Image, validatePrompt } from '@/ai/image/lib/api-utils';
 import {
   getPrimaryInputImage,
   resolveInputImages,
@@ -17,7 +17,7 @@ import { getDb } from '@/db';
 import { imageProject, projectMessage } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 
 function generateId(): string {
@@ -38,6 +38,15 @@ export type GenerationParams = {
   imageQuality?: string;
   inputImages?: string[];
   modelResponseParts?: GeminiConversationPart[];
+};
+
+type ClientAssistantMessageUpdate = {
+  content?: string;
+  outputImage?: null;
+  creditsUsed?: null;
+  generationTime?: null;
+  status?: 'generating' | 'failed';
+  errorMessage?: string | null;
 };
 
 type DbClient = Awaited<ReturnType<typeof getDb>>;
@@ -423,14 +432,41 @@ export async function createPendingGeneration(
     return { success: false, error: 'Unauthorized' };
   }
 
-  const inputImagesResult = getValidatedInputImages([
-    ...(data.inputImages ?? []),
-    ...(data.generationParams.inputImages ?? []),
-  ]);
+  const promptValidation = validatePrompt(data.content);
+  if (!promptValidation.valid) {
+    return { success: false, error: promptValidation.error };
+  }
+
+  const generationPromptValidation = validatePrompt(
+    data.generationParams.prompt
+  );
+  if (!generationPromptValidation.valid) {
+    return { success: false, error: generationPromptValidation.error };
+  }
+
+  const inputImagesResult = getValidatedInputImages(data.inputImages ?? []);
   if (!inputImagesResult.valid) {
     return { success: false, error: inputImagesResult.error };
   }
   const { inputImages } = inputImagesResult;
+  const generationParams: GenerationParams = {
+    prompt: data.generationParams.prompt,
+    ...(data.generationParams.enhancedPrompt
+      ? { enhancedPrompt: data.generationParams.enhancedPrompt }
+      : {}),
+    ...(data.generationParams.style
+      ? { style: data.generationParams.style }
+      : {}),
+    ...(data.generationParams.aspectRatio
+      ? { aspectRatio: data.generationParams.aspectRatio }
+      : {}),
+    ...(data.generationParams.model
+      ? { model: data.generationParams.model }
+      : {}),
+    ...(data.generationParams.imageQuality
+      ? { imageQuality: data.generationParams.imageQuality }
+      : {}),
+  };
 
   try {
     const db = await getDb();
@@ -477,7 +513,7 @@ export async function createPendingGeneration(
         outputImage: null,
         maskImage: null,
         generationParams: JSON.stringify({
-          ...data.generationParams,
+          ...generationParams,
           inputImages,
         }),
         creditsUsed: null,
@@ -701,6 +737,163 @@ export async function updateAssistantMessage(
     return { success: true, data: updatedMessage };
   } catch (error) {
     logger.actions.error('Failed to update message', error);
+    return { success: false, error: 'Failed to update message' };
+  }
+}
+
+/**
+ * Client-facing assistant message update.
+ *
+ * The browser may only mark a generation as failed/cancelled or reset a failed
+ * message before retrying. Completed results, output images, credits, and
+ * generation metadata are only written by the server-side generation route.
+ */
+export async function updateAssistantMessageFromClient(
+  messageId: string,
+  data: ClientAssistantMessageUpdate
+) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    const db = await getDb();
+    const currentMessage = await db
+      .select()
+      .from(projectMessage)
+      .where(
+        and(
+          eq(projectMessage.id, messageId),
+          eq(projectMessage.userId, session.user.id)
+        )
+      )
+      .limit(1);
+
+    if (!currentMessage.length) {
+      return { success: false, error: 'Message not found' };
+    }
+
+    if (currentMessage[0].role !== 'assistant') {
+      return {
+        success: false,
+        error: 'Only assistant messages can be updated',
+      };
+    }
+
+    const now = new Date();
+
+    if (data.status === 'generating') {
+      if (currentMessage[0].status !== 'failed') {
+        return {
+          success: true,
+          data: hydrateProjectMessage(currentMessage[0]),
+        };
+      }
+
+      const result = await db
+        .update(projectMessage)
+        .set({
+          content: data.content ?? '',
+          outputImage: null,
+          creditsUsed: null,
+          generationTime: null,
+          status: 'generating',
+          errorMessage: null,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(projectMessage.id, messageId),
+            eq(projectMessage.userId, session.user.id),
+            eq(projectMessage.status, 'failed')
+          )
+        )
+        .returning();
+
+      if (!result.length) {
+        const latestMessage = await db
+          .select()
+          .from(projectMessage)
+          .where(
+            and(
+              eq(projectMessage.id, messageId),
+              eq(projectMessage.userId, session.user.id)
+            )
+          )
+          .limit(1);
+
+        if (latestMessage.length) {
+          return {
+            success: true,
+            data: hydrateProjectMessage(latestMessage[0]),
+          };
+        }
+
+        return { success: false, error: 'Message state changed' };
+      }
+
+      return { success: true, data: hydrateProjectMessage(result[0]) };
+    }
+
+    if (data.status === 'failed') {
+      if (!['generating', 'failed'].includes(currentMessage[0].status)) {
+        return {
+          success: true,
+          data: hydrateProjectMessage(currentMessage[0]),
+        };
+      }
+
+      const updates: Record<string, unknown> = {
+        status: 'failed',
+        errorMessage: data.errorMessage ?? null,
+        updatedAt: now,
+      };
+
+      if (data.content !== undefined) {
+        updates.content = data.content;
+      }
+
+      const result = await db
+        .update(projectMessage)
+        .set(updates)
+        .where(
+          and(
+            eq(projectMessage.id, messageId),
+            eq(projectMessage.userId, session.user.id),
+            inArray(projectMessage.status, ['generating', 'failed'])
+          )
+        )
+        .returning();
+
+      if (!result.length) {
+        const latestMessage = await db
+          .select()
+          .from(projectMessage)
+          .where(
+            and(
+              eq(projectMessage.id, messageId),
+              eq(projectMessage.userId, session.user.id)
+            )
+          )
+          .limit(1);
+
+        if (latestMessage.length) {
+          return {
+            success: true,
+            data: hydrateProjectMessage(latestMessage[0]),
+          };
+        }
+
+        return { success: false, error: 'Message state changed' };
+      }
+
+      return { success: true, data: hydrateProjectMessage(result[0]) };
+    }
+
+    return { success: false, error: 'Invalid assistant message update' };
+  } catch (error) {
+    logger.actions.error('Failed to update client assistant message', error);
     return { success: false, error: 'Failed to update message' };
   }
 }

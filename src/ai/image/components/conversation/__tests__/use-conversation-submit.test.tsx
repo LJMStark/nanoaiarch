@@ -1,5 +1,5 @@
 import { renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useConversationSubmit } from '../use-conversation-submit';
 
 const {
@@ -11,6 +11,7 @@ const {
 } = vi.hoisted(() => {
   const storeState = {
     abortController: null as AbortController | null,
+    isGenerating: false,
     generatingMessageId: null as string | null,
     generationRequestToken: null as string | null,
   };
@@ -42,12 +43,21 @@ vi.mock('@/stores/conversation-store', () => ({
 }));
 
 describe('useConversationSubmit', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    storeState.abortController = null;
+    storeState.isGenerating = false;
+    storeState.generatingMessageId = null;
+    storeState.generationRequestToken = null;
+  });
+
   it('rolls back temp messages when bootstrapping the pending generation fails', async () => {
     const addMessageMock = vi.fn();
     const updateMessageMock = vi.fn();
     const removeMessageMock = vi.fn();
     const replaceMessageIdMock = vi.fn();
     const clearDraftMock = vi.fn();
+    const setDraftPromptMock = vi.fn();
     const setReferenceImagesMock = vi.fn();
     const setShowImageUploadMock = vi.fn();
     const setGeneratingMock = vi.fn();
@@ -69,6 +79,7 @@ describe('useConversationSubmit', () => {
         imageQuality: '2K',
         isGenerating: false,
         clearDraft: clearDraftMock,
+        setDraftPrompt: setDraftPromptMock,
         setReferenceImages: setReferenceImagesMock,
         setShowImageUpload: setShowImageUploadMock,
         addMessage: addMessageMock,
@@ -89,6 +100,8 @@ describe('useConversationSubmit', () => {
     // Optimistic: messages were added, then removed on failure
     expect(addMessageMock).toHaveBeenCalledTimes(2);
     expect(removeMessageMock).toHaveBeenCalledTimes(2);
+    expect(setDraftPromptMock).toHaveBeenCalledWith('draw a chair');
+    expect(setReferenceImagesMock).toHaveBeenLastCalledWith(['base64-image']);
     // Generation state was rolled back
     expect(setGeneratingMock).toHaveBeenLastCalledWith(false);
   });
@@ -97,10 +110,6 @@ describe('useConversationSubmit', () => {
     const addMessageMock = vi.fn();
     const updateMessageMock = vi.fn();
     const onErrorMock = vi.fn();
-
-    storeState.abortController = null;
-    storeState.generatingMessageId = null;
-    storeState.generationRequestToken = null;
 
     createPendingGenerationRequestMock.mockResolvedValue({
       success: true,
@@ -159,6 +168,7 @@ describe('useConversationSubmit', () => {
     const setGenerationStage = vi.fn();
     const setGenerating = vi.fn(
       (isGenerating: boolean, generatingMessageId?: string | null) => {
+        storeState.isGenerating = isGenerating;
         storeState.generatingMessageId = isGenerating
           ? (generatingMessageId ?? null)
           : null;
@@ -176,6 +186,7 @@ describe('useConversationSubmit', () => {
         imageQuality: '2K',
         isGenerating: false,
         clearDraft: vi.fn(),
+        setDraftPrompt: vi.fn(),
         setReferenceImages: vi.fn(),
         setShowImageUpload: vi.fn(),
         addMessage: addMessageMock,
@@ -215,5 +226,64 @@ describe('useConversationSubmit', () => {
     expect(setGenerating).toHaveBeenLastCalledWith(false);
     expect(storeState.generatingMessageId).toBeNull();
     expect(storeState.generationRequestToken).toBeNull();
+  });
+
+  it('ignores duplicate submits while the first bootstrap request is in flight', async () => {
+    const addMessageMock = vi.fn();
+    const removeMessageMock = vi.fn();
+    const setDraftPromptMock = vi.fn();
+    let resolveBootstrap:
+      | ((value: { success: false; error: string }) => void)
+      | undefined;
+
+    createPendingGenerationRequestMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveBootstrap = resolve;
+      })
+    );
+
+    const { result } = renderHook(() =>
+      useConversationSubmit({
+        t: (key) => key,
+        currentProjectId: 'project-1',
+        draftPrompt: 'draw a chair',
+        referenceImages: [],
+        aspectRatio: '1:1',
+        selectedModel: 'forma',
+        imageQuality: '2K',
+        isGenerating: false,
+        clearDraft: vi.fn(),
+        setDraftPrompt: setDraftPromptMock,
+        setReferenceImages: vi.fn(),
+        setShowImageUpload: vi.fn(),
+        addMessage: addMessageMock,
+        updateMessage: vi.fn(),
+        removeMessage: removeMessageMock,
+        replaceMessageId: vi.fn(),
+        setGenerating: vi.fn((isGenerating: boolean) => {
+          storeState.isGenerating = isGenerating;
+        }),
+        getLastOutputImage: () => null,
+        getConversationHistory: () => [],
+        setAbortController: vi.fn(),
+        setGenerationRequestToken: vi.fn(),
+        setGenerationStage: vi.fn(),
+      })
+    );
+
+    const firstSubmit = result.current();
+    const secondSubmit = result.current();
+
+    await waitFor(() => {
+      expect(createPendingGenerationRequestMock).toHaveBeenCalledTimes(1);
+    });
+
+    resolveBootstrap?.({ success: false, error: 'db unavailable' });
+    await firstSubmit;
+    await secondSubmit;
+
+    expect(addMessageMock).toHaveBeenCalledTimes(2);
+    expect(removeMessageMock).toHaveBeenCalledTimes(2);
+    expect(setDraftPromptMock).toHaveBeenCalledWith('draw a chair');
   });
 });

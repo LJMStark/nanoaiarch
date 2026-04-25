@@ -148,6 +148,7 @@ export function ConversationInput() {
     imageQuality,
     isGenerating,
     clearDraft,
+    setDraftPrompt,
     setReferenceImages,
     setShowImageUpload,
     addMessage,

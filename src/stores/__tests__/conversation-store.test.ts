@@ -79,6 +79,26 @@ describe('conversation-store', () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
+  it('keeps generation identifiers after cancel so submit can persist cancellation', () => {
+    const controller = new AbortController();
+    const abortSpy = vi.spyOn(controller, 'abort');
+    const store = useConversationStore.getState();
+
+    store.setAbortController(controller);
+    store.setGenerationRequestToken('request-1');
+    store.setGenerating(true, 'msg-1');
+    store.setGenerationStage('generating');
+
+    store.cancelGeneration();
+
+    const nextState = useConversationStore.getState();
+    expect(abortSpy).toHaveBeenCalledTimes(1);
+    expect(nextState.isGenerating).toBe(true);
+    expect(nextState.generatingMessageId).toBe('msg-1');
+    expect(nextState.generationRequestToken).toBe('request-1');
+    expect(nextState.generationStage).toBe('generating');
+  });
+
   it('includes stored model response parts in conversation history', () => {
     const store = useConversationStore.getState();
 

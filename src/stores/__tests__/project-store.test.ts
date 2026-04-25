@@ -66,4 +66,23 @@ describe('project-store', () => {
     expect(persisted).not.toBeNull();
     expect(JSON.parse(persisted!).state.currentProjectId).toBeNull();
   });
+
+  it('replaces a temporary project without clearing draft state', () => {
+    const store = useProjectStore.getState();
+
+    store.addProject(createProject('temp-project-1'));
+    store.selectProjectWithTemplate('temp-project-1', {
+      promptTemplate: 'make it glass and timber',
+      defaultAspectRatio: '16:9',
+    });
+    store.replaceTemporaryProject('temp-project-1', createProject('project-1'));
+
+    const nextState = useProjectStore.getState();
+    expect(nextState.currentProjectId).toBe('project-1');
+    expect(nextState.draftPrompt).toBe('make it glass and timber');
+    expect(nextState.aspectRatio).toBe('16:9');
+    expect(nextState.projects.map((project) => project.id)).toEqual([
+      'project-1',
+    ]);
+  });
 });

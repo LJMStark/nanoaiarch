@@ -87,6 +87,25 @@ describe('/api/generate-images POST', () => {
     });
   });
 
+  it('returns 400 before parsing oversized payloads', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/generate-images', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'content-length': String(49 * 1024 * 1024),
+        },
+        body: '{}',
+      }) as any
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: '请求体过大',
+    });
+    expect(validatePrompt).not.toHaveBeenCalled();
+  });
+
   it('persists model response parts on successful assistant messages', async () => {
     vi.mocked(validatePrompt).mockReturnValue({ valid: true });
     vi.mocked(resolveRequestedImageSize).mockReturnValue({

@@ -172,6 +172,7 @@ function AssistantMessage({
   const [isRetrying, setIsRetrying] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const isMountedRef = useRef(true);
+  const retryInFlightRef = useRef(false);
   const isFailed = message.status === 'failed';
   const isGeneratingNow = message.status === 'generating';
   const t = useTranslations('ArchPage');
@@ -241,13 +242,15 @@ function AssistantMessage({
   );
 
   const handleRetry = async () => {
-    if (isRetrying || isGenerating) {
+    if (isRetrying || retryInFlightRef.current || isGenerating) {
       return;
     }
+    retryInFlightRef.current = true;
 
     const userMessage = getPreviousUserMessage();
     if (!userMessage) {
       logger.ai.error('Cannot retry: no previous user message found');
+      retryInFlightRef.current = false;
       return;
     }
 
@@ -323,6 +326,7 @@ function AssistantMessage({
       if (isMountedRef.current) {
         setIsRetrying(false);
       }
+      retryInFlightRef.current = false;
       return;
     }
 
@@ -408,6 +412,7 @@ function AssistantMessage({
       if (isMountedRef.current) {
         setIsRetrying(false);
       }
+      retryInFlightRef.current = false;
     }
   };
 

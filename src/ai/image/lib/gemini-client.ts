@@ -301,7 +301,10 @@ async function buildModelMessageParts(
     for (const part of message.parts) {
       if (part.type === 'text') {
         builtParts.push(
-          createTextPart(part.text, sanitizeStoredSignature(part.thoughtSignature))
+          createTextPart(
+            part.text,
+            sanitizeStoredSignature(part.thoughtSignature)
+          )
         );
         continue;
       }
