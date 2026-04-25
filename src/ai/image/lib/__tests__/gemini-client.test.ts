@@ -171,7 +171,7 @@ describe('generateImageWithGemini', () => {
     });
   });
 
-  it('omits thought signatures for legacy model history without stored parts', async () => {
+  it('drops legacy model images that have no stored thought signature', async () => {
     await editImageWithConversationGemini({
       model: 'gemini-3-pro-image-preview',
       messages: [
@@ -201,17 +201,7 @@ describe('generateImageWithGemini', () => {
 
     expect(requestBody.contents[1]).toEqual({
       role: 'model',
-      parts: [
-        {
-          text: '这是上一张结果',
-        },
-        {
-          inlineData: {
-            mimeType: 'image/jpeg',
-            data: 'legacy-base64',
-          },
-        },
-      ],
+      parts: [{ text: '这是上一张结果' }],
     });
   });
 
@@ -257,15 +247,7 @@ describe('generateImageWithGemini', () => {
 
     expect(requestBody.contents[1]).toEqual({
       role: 'model',
-      parts: [
-        { text: '好的' },
-        {
-          inlineData: {
-            mimeType: 'image/png',
-            data: 'stored-base64',
-          },
-        },
-      ],
+      parts: [{ text: '好的' }],
     });
   });
 
@@ -281,6 +263,14 @@ describe('generateImageWithGemini', () => {
           role: 'model',
           content: '好的',
           image: 'shared-output-base64',
+          parts: [
+            { type: 'text', text: '好的', thoughtSignature: 'sig-text' },
+            {
+              type: 'image',
+              mimeType: 'image/png',
+              thoughtSignature: 'sig-image',
+            },
+          ],
         },
         {
           role: 'user',

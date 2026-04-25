@@ -311,11 +311,21 @@ async function buildModelMessageParts(
         continue;
       }
 
+      // Gemini rejects replayed model image parts that lack a real
+      // thoughtSignature ("Image part is missing a thought_signature"), so
+      // drop the image when no real signature is stored. The model turn's
+      // text parts still preserve conversational context.
+      const realSignature = sanitizeStoredSignature(part.thoughtSignature);
+      if (!realSignature) {
+        imageUsed = true;
+        continue;
+      }
+
       try {
         builtParts.push(
           await createImagePart(message.image, signal, {
             mimeType: part.mimeType,
-            thoughtSignature: sanitizeStoredSignature(part.thoughtSignature),
+            thoughtSignature: realSignature,
           })
         );
         imageUsed = true;
@@ -338,18 +348,9 @@ async function buildModelMessageParts(
     legacyParts.push(createTextPart(message.content));
   }
 
-  if (message.image) {
-    try {
-      legacyParts.push(await createImagePart(message.image, signal));
-    } catch (error) {
-      logger.ai.warn(
-        '[Gemini] Failed to resolve legacy model image, skipping',
-        {
-          error: error instanceof Error ? error.message : String(error),
-        }
-      );
-    }
-  }
+  // Legacy history has no stored signatures, and Gemini now rejects any
+  // model image without a real thoughtSignature. Skip the image entirely so
+  // the request stays valid.
 
   return legacyParts;
 }
