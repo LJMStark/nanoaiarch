@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const subscribeMock = vi.fn();
+const isNewsletterConfiguredMock = vi.fn();
 const scheduleNewsletterSubscribeJobMock = vi.fn();
 const loggerWarnMock = vi.fn();
 const loggerErrorMock = vi.fn();
 
 vi.mock('@/newsletter', () => ({
   subscribe: subscribeMock,
+  isNewsletterConfigured: isNewsletterConfiguredMock,
 }));
 
 vi.mock('../jobs', () => ({
@@ -25,6 +27,7 @@ vi.mock('@/lib/logger', () => ({
 describe('ensureNewsletterSignupSubscription', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    isNewsletterConfiguredMock.mockReturnValue(true);
   });
 
   it('subscribes immediately and skips queueing when provider succeeds', async () => {
@@ -38,7 +41,7 @@ describe('ensureNewsletterSignupSubscription', () => {
 
     expect(subscribeMock).toHaveBeenCalledWith('user@example.com');
     expect(scheduleNewsletterSubscribeJobMock).not.toHaveBeenCalled();
-    expect(result).toEqual({ delivered: true, queued: false });
+    expect(result).toEqual({ delivered: true, queued: false, skipped: false });
   });
 
   it('queues a retry when the immediate subscription attempt fails', async () => {
@@ -56,6 +59,22 @@ describe('ensureNewsletterSignupSubscription', () => {
       email: 'retry@example.com',
     });
     expect(loggerWarnMock).toHaveBeenCalled();
-    expect(result).toEqual({ delivered: false, queued: true });
+    expect(result).toEqual({ delivered: false, queued: true, skipped: false });
+  });
+
+  it('skips entirely when the newsletter provider is not configured', async () => {
+    isNewsletterConfiguredMock.mockReturnValue(false);
+
+    const { ensureNewsletterSignupSubscription } = await import('../signup');
+    const result = await ensureNewsletterSignupSubscription({
+      userId: 'user-3',
+      email: 'noconfig@example.com',
+    });
+
+    expect(subscribeMock).not.toHaveBeenCalled();
+    expect(scheduleNewsletterSubscribeJobMock).not.toHaveBeenCalled();
+    expect(loggerErrorMock).not.toHaveBeenCalled();
+    expect(loggerWarnMock).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ delivered: false, queued: false, skipped: true });
   });
 });

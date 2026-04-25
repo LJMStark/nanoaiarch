@@ -180,6 +180,9 @@ async function onCreateUser(user: User) {
       logger.auth.debug(
         `Queued newsletter subscribe retry for user ${user.id}`
       );
+    } else if (result.skipped) {
+      // Newsletter feature/provider is not configured — already warned
+      // inside ensureNewsletterSignupSubscription, no further action needed.
     } else {
       logger.auth.error(
         'Newsletter subscribe failed without queue fallback',

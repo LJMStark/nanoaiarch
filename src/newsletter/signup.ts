@@ -1,22 +1,39 @@
 import { logger } from '@/lib/logger';
-import { subscribe } from '@/newsletter';
+import { isNewsletterConfigured, subscribe } from '@/newsletter';
 import { scheduleNewsletterSubscribeJob } from './jobs';
 
 export type EnsureNewsletterSignupSubscriptionResult = {
   delivered: boolean;
   queued: boolean;
+  skipped: boolean;
 };
 
 export async function ensureNewsletterSignupSubscription(params: {
   userId: string;
   email: string;
 }): Promise<EnsureNewsletterSignupSubscriptionResult> {
+  if (!isNewsletterConfigured()) {
+    logger.newsletter.warn(
+      'Newsletter provider not configured, skipping signup subscribe',
+      {
+        userId: params.userId,
+        email: params.email,
+      }
+    );
+    return {
+      delivered: false,
+      queued: false,
+      skipped: true,
+    };
+  }
+
   try {
     const subscribed = await subscribe(params.email);
     if (subscribed) {
       return {
         delivered: true,
         queued: false,
+        skipped: false,
       };
     }
 
@@ -43,6 +60,7 @@ export async function ensureNewsletterSignupSubscription(params: {
     return {
       delivered: false,
       queued: true,
+      skipped: false,
     };
   } catch (error) {
     logger.newsletter.error(
@@ -57,6 +75,7 @@ export async function ensureNewsletterSignupSubscription(params: {
     return {
       delivered: false,
       queued: false,
+      skipped: false,
     };
   }
 }

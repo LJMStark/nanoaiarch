@@ -65,3 +65,19 @@ export const isSubscribed = async (email: string): Promise<boolean> => {
   const provider = getNewsletterProvider();
   return provider.checkSubscribeStatus({ email });
 };
+
+/**
+ * Check whether the newsletter feature is enabled and the active provider has
+ * the credentials it needs. Used by callers (e.g. the post-signup hook) that
+ * want to skip newsletter work gracefully instead of throwing when env vars
+ * are missing in a deployment.
+ */
+export const isNewsletterConfigured = (): boolean => {
+  if (!websiteConfig.newsletter.enable) return false;
+  if (websiteConfig.newsletter.provider === 'resend') {
+    return Boolean(
+      process.env.RESEND_API_KEY && process.env.RESEND_AUDIENCE_ID
+    );
+  }
+  return false;
+};

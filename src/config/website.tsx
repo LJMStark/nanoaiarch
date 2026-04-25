@@ -84,7 +84,7 @@ export const websiteConfig: WebsiteConfig = {
     supportEmail: 'Arch AI <support@nanoaiarch.com>',
   },
   newsletter: {
-    enable: true,
+    enable: false,
     provider: 'resend',
     autoSubscribeAfterSignUp: true,
   },
