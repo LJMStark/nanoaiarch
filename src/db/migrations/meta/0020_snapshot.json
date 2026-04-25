@@ -640,7 +640,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false,
-          "default": "'forma'"
+          "default": "'flash'"
         },
         "message_count": {
           "name": "message_count",

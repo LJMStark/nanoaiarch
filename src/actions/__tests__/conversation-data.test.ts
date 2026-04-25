@@ -105,7 +105,7 @@ describe('getConversationInitData', () => {
           {
             id: 'project-1',
             title: 'Existing project',
-            model: 'forma',
+            model: 'flash',
           },
         ],
         messages: [],

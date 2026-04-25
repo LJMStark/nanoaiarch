@@ -58,7 +58,7 @@ export const MODEL_DESCRIPTIONS: Record<GeminiModelId, string> = {
 };
 
 // 默认配置
-export const DEFAULT_MODEL: GeminiModelId = 'forma';
+export const DEFAULT_MODEL: GeminiModelId = 'flash';
 export const DEFAULT_PROVIDER: ProviderKey = 'gemini';
 
 // Provider 顺序
