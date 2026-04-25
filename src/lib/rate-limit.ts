@@ -101,6 +101,11 @@ export async function applyRateLimit({
 
   const now = new Date();
   const resetAt = new Date(now.getTime() + windowMs);
+  // Inline Dates as ISO-string literals with explicit ::timestamp casts.
+  // Drizzle's sql template has no column-type context for these params, so
+  // postgres-js fails to serialize the raw Date when prepare:false is set.
+  const nowSql = sql`${now.toISOString()}::timestamp`;
+  const resetAtSql = sql`${resetAt.toISOString()}::timestamp`;
 
   try {
     const db = await getDb();
@@ -116,8 +121,8 @@ export async function applyRateLimit({
       .onConflictDoUpdate({
         target: requestRateLimit.key,
         set: {
-          count: sql`CASE WHEN ${requestRateLimit.resetAt} <= ${now} THEN 1 ELSE ${requestRateLimit.count} + 1 END`,
-          resetAt: sql`CASE WHEN ${requestRateLimit.resetAt} <= ${now} THEN ${resetAt} ELSE ${requestRateLimit.resetAt} END`,
+          count: sql`CASE WHEN ${requestRateLimit.resetAt} <= ${nowSql} THEN 1 ELSE ${requestRateLimit.count} + 1 END`,
+          resetAt: sql`CASE WHEN ${requestRateLimit.resetAt} <= ${nowSql} THEN ${resetAtSql} ELSE ${requestRateLimit.resetAt} END`,
           updatedAt: now,
         },
       })
