@@ -1,9 +1,8 @@
 import FaqSection from '@/components/blocks/faqs/faqs';
 import Container from '@/components/layout/container';
-import { HeaderSection } from '@/components/layout/header-section';
 import { SubscriptionStylePricing } from '@/components/pricing/subscription-style-pricing';
 import { LOCALES } from '@/i18n/routing';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { setRequestLocale } from 'next-intl/server';
 
 /**
  * Generate static params for all locales
@@ -20,24 +19,12 @@ interface PricingPageProps {
 export default async function PricingPage({ params }: PricingPageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations('PricingPage');
 
   return (
     <Container className="mt-8 flex max-w-7xl flex-col gap-16 px-4">
-      <section className="space-y-12">
-        <HeaderSection
-          className="mx-auto items-center text-center"
-          subtitle={t('title')}
-          subtitleAs="h1"
-          subtitleClassName="text-4xl sm:text-5xl"
-          description={t('description')}
-          descriptionAs="p"
-        />
-
-        <div className="surface-panel rounded-[2rem] px-4 py-6 sm:px-6 sm:py-8">
-          <SubscriptionStylePricing />
-        </div>
-      </section>
+      <div className="surface-panel rounded-[2rem] px-4 py-6 sm:px-6 sm:py-8">
+        <SubscriptionStylePricing />
+      </div>
 
       <FaqSection />
     </Container>
