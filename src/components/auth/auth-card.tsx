@@ -8,7 +8,6 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { LocaleLink } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
@@ -40,9 +39,9 @@ export const AuthCard = ({
           <Logo className="mb-2 size-10 rounded-2xl" />
         </LocaleLink>
         <div className="space-y-2">
-          <CardTitle className="font-bricolage-grotesque text-3xl tracking-[-0.05em]">
+          <h1 className="font-bricolage-grotesque text-3xl font-semibold leading-none tracking-[-0.05em]">
             {headerLabel}
-          </CardTitle>
+          </h1>
           <CardDescription className="mx-auto max-w-sm text-sm leading-6">
             Continue with your account to access the studio workspace.
           </CardDescription>
