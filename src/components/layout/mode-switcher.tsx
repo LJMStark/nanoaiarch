@@ -29,7 +29,7 @@ export function ModeSwitcher() {
         <Button
           variant="ghost"
           size="sm"
-          className="size-8 p-0.5 border border-border rounded-full cursor-pointer"
+          className="size-11 rounded-full border border-border p-0 cursor-pointer"
         >
           <SunIcon className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <MoonIcon className="absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />

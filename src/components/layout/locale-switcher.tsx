@@ -62,9 +62,9 @@ export default function LocaleSwitcher() {
         <Button
           variant="ghost"
           size="sm"
-          className="size-8 p-0.5 border border-border rounded-full cursor-pointer"
+          className="size-11 rounded-full border border-border p-0 cursor-pointer"
         >
-          <Languages className="size-3" />
+          <Languages className="size-4" />
           <span className="sr-only">{t('language')}</span>
         </Button>
       </DropdownMenuTrigger>

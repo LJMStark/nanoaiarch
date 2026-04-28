@@ -15,7 +15,7 @@ export const BottomLink = ({ href, label }: BottomLinkProps) => {
       href={href}
       className={cn(
         buttonVariants({ variant: 'link', size: 'sm' }),
-        'font-normal w-full text-muted-foreground hover:underline underline-offset-4 hover:text-primary'
+        'min-h-11 w-full font-normal text-muted-foreground underline-offset-4 hover:text-primary hover:underline'
       )}
     >
       {label}

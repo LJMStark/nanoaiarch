@@ -91,7 +91,7 @@ export default async function HelpPage({ params }: Props) {
                         <li key={article.url}>
                           <Link
                             href={article.url}
-                            className="text-foreground hover:text-primary hover:underline transition-colors"
+                            className="flex min-h-11 items-center text-foreground transition-colors hover:text-primary hover:underline"
                           >
                             {article.data.title}
                           </Link>
@@ -113,7 +113,7 @@ export default async function HelpPage({ params }: Props) {
           </p>
           <a
             href="mailto:support@nanoaiarch.com"
-            className="text-primary hover:underline font-medium"
+            className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
           >
             support@nanoaiarch.com
           </a>
