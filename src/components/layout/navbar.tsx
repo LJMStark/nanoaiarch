@@ -76,7 +76,7 @@ export function Navbar({ scroll }: NavBarProps) {
           <nav className="hidden h-16 lg:flex">
             {/* logo and name */}
             <div className="flex items-center">
-              <LocaleLink href="/" className="flex items-center gap-3">
+              <LocaleLink href="/" className="flex min-h-11 items-center gap-3">
                 <Logo />
                 <span className="font-bricolage-grotesque text-xl font-semibold tracking-[-0.04em]">
                   {t('Metadata.name')}
@@ -234,7 +234,7 @@ export function Navbar({ scroll }: NavBarProps) {
                   <LoginWrapper mode="modal" asChild>
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="lg"
                       className="cursor-pointer"
                     >
                       {t('Common.login')}
@@ -246,7 +246,7 @@ export function Navbar({ scroll }: NavBarProps) {
                     className={cn(
                       buttonVariants({
                         variant: 'default',
-                        size: 'sm',
+                        size: 'lg',
                       })
                     )}
                   >

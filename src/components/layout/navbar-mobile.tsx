@@ -83,7 +83,10 @@ export function NavbarMobile({
         {...other}
       >
         {/* navbar left shows logo */}
-        <LocaleLink href={Routes.Root} className="flex items-center gap-2">
+        <LocaleLink
+          href={Routes.Root}
+          className="flex min-h-11 items-center gap-2"
+        >
           <Logo />
           <span className="font-bricolage-grotesque text-xl font-semibold tracking-[-0.04em]">
             {t('Metadata.name')}
@@ -108,7 +111,7 @@ export function NavbarMobile({
             aria-expanded={open}
             aria-label="Toggle Mobile Menu"
             onClick={handleToggleMobileMenu}
-            className="size-10 cursor-pointer border border-border/70 bg-background/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] backdrop-blur-sm"
+            className="size-11 cursor-pointer border border-border/70 bg-background/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] backdrop-blur-sm"
           >
             {open ? (
               <XIcon className="size-4" />

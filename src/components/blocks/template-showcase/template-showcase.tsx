@@ -69,7 +69,7 @@ export default function TemplateShowcaseSection() {
             variant="outline"
             size="icon"
             onClick={scrollLeft}
-            className="absolute left-0 top-1/2 z-10 hidden -translate-y-1/2 md:flex"
+            className="absolute left-0 top-1/2 z-10 hidden size-11 -translate-y-1/2 md:flex"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -78,7 +78,7 @@ export default function TemplateShowcaseSection() {
             variant="outline"
             size="icon"
             onClick={scrollRight}
-            className="absolute right-0 top-1/2 z-10 hidden -translate-y-1/2 md:flex"
+            className="absolute right-0 top-1/2 z-10 hidden size-11 -translate-y-1/2 md:flex"
           >
             <ChevronRight className="h-5 w-5" />
           </Button>
