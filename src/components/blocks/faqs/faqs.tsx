@@ -60,9 +60,9 @@ export default function FaqSection() {
         <HeaderSection
           className="max-w-xl"
           title={t('title')}
-          titleAs="h2"
+          titleAs="p"
           subtitle={t('subtitle')}
-          subtitleAs="p"
+          subtitleAs="h2"
         />
 
         <div className="surface-panel mx-auto w-full rounded-[2rem] p-4 sm:p-6">

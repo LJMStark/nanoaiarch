@@ -53,6 +53,7 @@ export default function FeaturesSection() {
       <div className="mx-auto max-w-6xl space-y-8 lg:space-y-20 dark:[--color-border:color-mix(in_oklab,var(--color-white)_10%,transparent)]">
         <HeaderSection
           title={t('title')}
+          titleAs="p"
           subtitle={t('subtitle')}
           subtitleAs="h2"
           description={t('description')}

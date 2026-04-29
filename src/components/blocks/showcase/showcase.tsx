@@ -64,6 +64,7 @@ export default function ShowcaseSection() {
         <HeaderSection
           className="mx-auto items-center text-center"
           title={t('title')}
+          titleAs="p"
           subtitle={t('subtitle')}
           subtitleAs="h2"
           description={t('description')}

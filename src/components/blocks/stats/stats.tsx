@@ -11,6 +11,7 @@ export default function StatsSection() {
           <HeaderSection
             className="mx-auto items-center text-center"
             title={t('title')}
+            titleAs="p"
             subtitle={t('subtitle')}
             subtitleAs="h2"
             description={t('description')}
