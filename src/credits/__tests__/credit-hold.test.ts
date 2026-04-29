@@ -19,7 +19,7 @@ vi.mock('@/lib/admin', () => ({
 
 vi.mock('@/lib/logger', () => ({
   logger: {
-    credits: { debug: vi.fn(), info: vi.fn(), error: vi.fn() },
+    credits: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
   },
 }));
 
@@ -196,6 +196,46 @@ describe('holdCredits', () => {
       allocations: [
         { transactionId: 'grant-1', amount: 3 },
         { transactionId: 'grant-2', amount: 2 },
+      ],
+    });
+  });
+
+  it('creates a reconciled ledger entry when legacy balance has no transactions', async () => {
+    const db = createMockDb();
+    const tx = createMockTx();
+
+    db.limit.mockResolvedValueOnce([]);
+    db.transaction.mockImplementation(
+      async (fn: (value: typeof tx) => unknown) => fn(tx)
+    );
+    tx.__updateReturning.mockResolvedValueOnce([{ id: 'credit-row-1' }]);
+    tx.__selectOrderBy.mockResolvedValueOnce([]);
+
+    mocks.getDb.mockResolvedValue(db);
+
+    await holdCredits({
+      userId: 'user-1',
+      amount: 1,
+      idempotencyKey: 'legacy-balance-hold',
+      description: 'test hold',
+    });
+
+    expect(tx.__insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        type: CREDIT_TRANSACTION_TYPE.BALANCE_RECONCILIATION,
+        amount: 1,
+        remainingAmount: 0,
+      })
+    );
+
+    const holdRecord = tx.__insertValues.mock.calls.at(-1)?.[0];
+    expect(JSON.parse(holdRecord.metadata)).toEqual({
+      allocations: [
+        {
+          transactionId: expect.any(String),
+          amount: 1,
+        },
       ],
     });
   });

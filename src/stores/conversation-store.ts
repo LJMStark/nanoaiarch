@@ -85,10 +85,27 @@ const initialState = {
 };
 
 // Custom storage with error handling for localStorage operations
+function getBrowserStorage(): Storage | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    return window.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const customStorage = {
   getItem(name: string): string | null {
+    const storage = getBrowserStorage();
+    if (!storage) {
+      return null;
+    }
+
     try {
-      return localStorage.getItem(name);
+      return storage.getItem(name);
     } catch (error) {
       logger.general.error('Failed to get from localStorage:', error);
       return null;
@@ -96,8 +113,13 @@ const customStorage = {
   },
 
   setItem(name: string, value: string): void {
+    const storage = getBrowserStorage();
+    if (!storage) {
+      return;
+    }
+
     try {
-      localStorage.setItem(name, value);
+      storage.setItem(name, value);
     } catch (error) {
       logger.general.error('Failed to set localStorage:', error);
 
@@ -105,8 +127,8 @@ const customStorage = {
       if (error instanceof Error && error.name === 'QuotaExceededError') {
         logger.general.warn('localStorage quota exceeded, attempting cleanup');
         try {
-          localStorage.removeItem(name);
-          localStorage.setItem(name, value);
+          storage.removeItem(name);
+          storage.setItem(name, value);
         } catch (retryError) {
           logger.general.error('Failed to cleanup and retry:', retryError);
         }
@@ -115,8 +137,13 @@ const customStorage = {
   },
 
   removeItem(name: string): void {
+    const storage = getBrowserStorage();
+    if (!storage) {
+      return;
+    }
+
     try {
-      localStorage.removeItem(name);
+      storage.removeItem(name);
     } catch (error) {
       logger.general.error('Failed to remove from localStorage:', error);
     }

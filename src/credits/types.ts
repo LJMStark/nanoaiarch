@@ -10,6 +10,7 @@ export enum CREDIT_TRANSACTION_TYPE {
   USAGE = 'USAGE',                            // Credits spent by usage
   EXPIRE = 'EXPIRE',                          // Credits expired
   HOLD = 'HOLD',                              // Credits held (pre-deducted, pending confirmation)
+  BALANCE_RECONCILIATION = 'BALANCE_RECONCILIATION', // Ledger row created from legacy balance
   // Referral rewards
   REFERRAL_SIGNUP_BONUS = 'REFERRAL_SIGNUP_BONUS',  // Credits earned by being referred (new user bonus)
   REFERRAL_COMMISSION = 'REFERRAL_COMMISSION',      // Credits earned by referring someone (commission)

@@ -123,6 +123,28 @@ function parseHoldAllocations(metadata?: string | null): HoldAllocation[] {
   }
 }
 
+function buildBalanceReconciliationTransaction({
+  userId,
+  amount,
+  now,
+}: {
+  userId: string;
+  amount: number;
+  now: Date;
+}) {
+  return {
+    id: randomUUID(),
+    userId,
+    type: CREDIT_TRANSACTION_TYPE.BALANCE_RECONCILIATION,
+    amount,
+    remainingAmount: 0,
+    description: `Reconciled legacy credit balance: ${amount}`,
+    metadata: JSON.stringify({ reason: 'legacy_balance_without_ledger' }),
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 async function reserveUserCreditBalance({
   tx,
   userId,
@@ -224,13 +246,27 @@ async function allocateCreditLedgerEntries({
   }
 
   if (remainingToDeduct > 0) {
-    logger.credits.error('allocateCreditLedgerEntries ledger mismatch', null, {
+    const reconciledTransaction = buildBalanceReconciliationTransaction({
       userId,
-      amount,
-      remainingToDeduct,
-      availableTransactions: transactions.length,
+      amount: remainingToDeduct,
+      now,
     });
-    throw new Error('Credit ledger is inconsistent');
+
+    await tx.insert(creditTransaction).values(reconciledTransaction);
+    allocations.push({
+      transactionId: reconciledTransaction.id,
+      amount: remainingToDeduct,
+    });
+
+    logger.credits.warn(
+      'allocateCreditLedgerEntries reconciled legacy balance',
+      {
+        userId,
+        amount,
+        remainingToDeduct,
+        availableTransactions: transactions.length,
+      }
+    );
   }
 
   return allocations;
