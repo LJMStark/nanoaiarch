@@ -11,9 +11,6 @@ const mocks = vi.hoisted(() => ({
   findPlanByPlanId: vi.fn(),
   findPlanByPriceId: vi.fn(),
   sendNotification: vi.fn(),
-}));
-
-vi.mock('@/config/website', () => ({
   websiteConfig: {
     referral: {
       enable: false,
@@ -22,6 +19,10 @@ vi.mock('@/config/website', () => ({
       enableCredits: true,
     },
   },
+}));
+
+vi.mock('@/config/website', () => ({
+  websiteConfig: mocks.websiteConfig,
 }));
 
 vi.mock('@/credits/credits', () => ({
@@ -106,6 +107,7 @@ function createSignedPayload(
 describe('ZpayProvider webhook hardening', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.websiteConfig.referral.enable = false;
     process.env.ZPAY_PID = 'test-pid';
     process.env.ZPAY_KEY = 'test-key';
     process.env.ZPAY_NOTIFY_URL = 'https://example.com/notify';
@@ -174,5 +176,28 @@ describe('ZpayProvider webhook hardening', () => {
         '9.90'
       )
     ).rejects.toThrow('Lifetime payment amount mismatch');
+  });
+
+  it('retries referral reward when payment was already marked paid', async () => {
+    mocks.websiteConfig.referral.enable = true;
+    const paymentRecord = {
+      id: 'payment-1',
+      invoiceId: 'invoice-1',
+      paid: true,
+      scene: PaymentScenes.CREDIT,
+      priceId: 'price-basic',
+      userId: 'user-1',
+    };
+    const db = createDbMock(paymentRecord);
+    mocks.getDb.mockResolvedValue(db);
+
+    const provider = new ZpayProvider();
+
+    await expect(
+      provider.handleWebhookEvent(createSignedPayload(provider), '')
+    ).resolves.toBeUndefined();
+
+    expect(mocks.completeReferral).toHaveBeenCalledWith('user-1');
+    expect(db.update).not.toHaveBeenCalled();
   });
 });

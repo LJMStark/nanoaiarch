@@ -12,6 +12,16 @@ import {
   type UploadFileResult,
 } from '../types';
 
+type S3MiniSignedRequest = (
+  method: 'PUT',
+  key: string,
+  options: {
+    body?: string | Buffer;
+    headers?: Record<string, string | number | undefined>;
+    tolerated?: number[];
+  }
+) => Promise<Response>;
+
 /**
  * Amazon S3 storage provider implementation using s3mini
  *
@@ -89,6 +99,49 @@ export class S3Provider implements StorageProvider {
   }
 
   /**
+   * s3mini's public putObject API doesn't expose object headers yet.
+   * Use its signed request helper so immutable uploads carry CDN cache metadata.
+   */
+  private async putObjectWithHeaders(
+    s3: s3mini,
+    key: string,
+    fileContent: Buffer | string,
+    contentType: string,
+    cacheControl?: string
+  ): Promise<Response> {
+    if (!cacheControl) {
+      return s3.putObject(key, fileContent, contentType);
+    }
+
+    const signedRequest = (
+      s3 as unknown as {
+        _signedRequest?: S3MiniSignedRequest;
+      }
+    )._signedRequest;
+
+    if (!signedRequest) {
+      logger.storage.warn(
+        's3mini signed request helper unavailable; uploading without cache-control',
+        { key }
+      );
+      return s3.putObject(key, fileContent, contentType);
+    }
+
+    return signedRequest.call(s3, 'PUT', key, {
+      body: fileContent,
+      headers: {
+        'Content-Length':
+          typeof fileContent === 'string'
+            ? Buffer.byteLength(fileContent)
+            : fileContent.length,
+        'Content-Type': contentType,
+        'Cache-Control': cacheControl,
+      },
+      tolerated: [200],
+    });
+  }
+
+  /**
    * Upload a file to S3
    */
   public async uploadFile(params: UploadFileParams): Promise<UploadFileResult> {
@@ -109,7 +162,13 @@ export class S3Provider implements StorageProvider {
       }
 
       // Upload the file using s3mini
-      const response = await s3.putObject(key, fileContent, contentType);
+      const response = await this.putObjectWithHeaders(
+        s3,
+        key,
+        fileContent,
+        contentType,
+        params.cacheControl ?? this.config.cacheControl
+      );
 
       if (!response.ok) {
         throw new UploadError(`Failed to upload file: ${response.statusText}`);

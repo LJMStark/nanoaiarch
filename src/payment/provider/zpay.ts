@@ -403,6 +403,9 @@ export class ZpayProvider implements PaymentProvider {
 
     if (paymentRecord.paid) {
       logger.payment.info('Payment already processed', { outTradeNo });
+      if (websiteConfig.referral?.enable) {
+        await completeReferral(paymentRecord.userId);
+      }
       return;
     }
 

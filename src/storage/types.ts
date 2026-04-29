@@ -9,6 +9,7 @@ export interface StorageConfig {
   bucketName: string;
   publicUrl?: string;
   forcePathStyle?: boolean;
+  cacheControl?: string;
 }
 
 /**
@@ -43,6 +44,7 @@ export interface UploadFileParams {
   filename: string;
   contentType: string;
   folder?: string;
+  cacheControl?: string;
 }
 
 /**

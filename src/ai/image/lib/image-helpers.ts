@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger';
+import { fetchImageBlob } from './image-display-utils';
 
 // 将 base64 转换为 Blob
 export function base64ToBlob(base64Data: string, type = 'image/png'): Blob {
@@ -13,6 +14,18 @@ export function base64ToBlob(base64Data: string, type = 'image/png'): Blob {
   return new Blob([uint8Array], { type });
 }
 
+function isRemoteImage(imageData: string): boolean {
+  return imageData.startsWith('http://') || imageData.startsWith('https://');
+}
+
+async function getImageBlob(imageData: string): Promise<Blob> {
+  if (isRemoteImage(imageData)) {
+    return fetchImageBlob(imageData);
+  }
+
+  return base64ToBlob(imageData);
+}
+
 // 生成图片文件名
 export function generateImageFileName(prefix: string): string {
   const uniqueId = Math.random().toString(36).substring(2, 8);
@@ -25,7 +38,7 @@ export async function downloadImage(
   prefix = 'image'
 ): Promise<void> {
   const fileName = generateImageFileName(prefix);
-  const blob = base64ToBlob(imageData);
+  const blob = await getImageBlob(imageData);
   const blobUrl = URL.createObjectURL(blob);
 
   const link = document.createElement('a');
@@ -43,7 +56,7 @@ export async function shareImage(
   title?: string
 ): Promise<void> {
   const fileName = generateImageFileName('forma');
-  const blob = base64ToBlob(imageData);
+  const blob = await getImageBlob(imageData);
   const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
 
   try {
@@ -70,8 +83,7 @@ export function formatModelId(modelId: string): string {
 
 // URL 图片转 base64（用于 Gallery 分享）
 export async function urlToBase64(url: string): Promise<string> {
-  const response = await fetch(url);
-  const blob = await response.blob();
+  const blob = await fetchImageBlob(url);
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -95,7 +107,7 @@ export const imageHelpers = {
 
     // 如果是 URL 格式，先转换为 base64
     let blob: Blob;
-    if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
+    if (isRemoteImage(imageData)) {
       const base64Data = await urlToBase64(imageData);
       blob = base64ToBlob(base64Data);
     } else {

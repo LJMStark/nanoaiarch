@@ -18,6 +18,7 @@ import { motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useCallback, useState } from 'react';
+import { getImageSrc } from '../lib/image-display-utils';
 import { downloadImage, shareImage } from '../lib/image-helpers';
 import type {
   ImageError,
@@ -120,9 +121,11 @@ export function GenerationCanvas({
   }
 
   // No image state
-  if (!image) {
+  if (!image?.image) {
     return null;
   }
+
+  const imageSrc = getImageSrc(image.image);
 
   // Image display
   return (
@@ -137,7 +140,7 @@ export function GenerationCanvas({
       {/* Image container */}
       <div className="relative rounded-2xl overflow-hidden bg-muted border border-border/50">
         <Image
-          src={`data:image/png;base64,${image.image}`}
+          src={imageSrc}
           alt={activePrompt}
           width={1024}
           height={768}

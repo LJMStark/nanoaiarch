@@ -3,7 +3,7 @@ import { websiteConfig } from '@/config/website';
 import { getDb } from '@/db';
 import { referral, user } from '@/db/schema';
 import { logger } from '@/lib/logger';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 import { addCredits } from './credits';
 import { CREDIT_TRANSACTION_TYPE } from './types';
 
@@ -162,14 +162,15 @@ export async function completeReferral(
 
   const db = await getDb();
 
-  // Find pending referral for this user
+  // Find pending or qualified referral for this user. Qualified referrals may
+  // need a retry if a previous reward attempt failed after qualification.
   const [pendingReferral] = await db
     .select()
     .from(referral)
     .where(
       and(
         eq(referral.referredId, referredUserId),
-        eq(referral.status, 'pending')
+        or(eq(referral.status, 'pending'), eq(referral.status, 'qualified'))
       )
     )
     .limit(1);
@@ -181,14 +182,16 @@ export async function completeReferral(
 
   const now = new Date();
 
-  // Update referral status to qualified
-  await db
-    .update(referral)
-    .set({
-      status: 'qualified',
-      qualifiedAt: now,
-    })
-    .where(eq(referral.id, pendingReferral.id));
+  // Update referral status to qualified before awarding commission
+  if (pendingReferral.status === 'pending') {
+    await db
+      .update(referral)
+      .set({
+        status: 'qualified',
+        qualifiedAt: now,
+      })
+      .where(eq(referral.id, pendingReferral.id));
+  }
 
   // Award commission to referrer if enabled
   if (websiteConfig.referral.commission?.enable) {
@@ -199,6 +202,7 @@ export async function completeReferral(
       type: CREDIT_TRANSACTION_TYPE.REFERRAL_COMMISSION,
       description: `Referral commission: ${amount} credits`,
       expireDays: expireDays || undefined,
+      idempotencyKey: `referral-commission:${pendingReferral.id}`,
     });
 
     // Mark as rewarded

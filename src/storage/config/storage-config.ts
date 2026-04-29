@@ -13,4 +13,6 @@ export const storageConfig: StorageConfig = {
   bucketName: process.env.STORAGE_BUCKET_NAME || '',
   publicUrl: process.env.STORAGE_PUBLIC_URL,
   forcePathStyle: process.env.STORAGE_FORCE_PATH_STYLE !== 'false',
+  cacheControl:
+    process.env.STORAGE_CACHE_CONTROL || 'public, max-age=31536000, immutable',
 };

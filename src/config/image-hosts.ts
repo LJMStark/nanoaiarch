@@ -17,7 +17,49 @@ function normalizeHostname(hostname: string): string {
   return hostname.trim().toLowerCase();
 }
 
-export const imageRemoteHostPatterns = DEFAULT_IMAGE_HOST_PATTERNS;
+function parseImageHostPattern(value: string): string | null {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  if (trimmedValue.startsWith('*.')) {
+    return normalizeHostname(trimmedValue);
+  }
+
+  try {
+    const url = new URL(
+      trimmedValue.includes('://') ? trimmedValue : `https://${trimmedValue}`
+    );
+    return normalizeHostname(url.hostname);
+  } catch {
+    return null;
+  }
+}
+
+function getConfiguredImageHostPatterns(): string[] {
+  const values = [
+    process.env.STORAGE_PUBLIC_URL,
+    process.env.IMAGE_REMOTE_HOSTS,
+    process.env.NEXT_PUBLIC_IMAGE_HOSTS,
+  ];
+
+  return values.flatMap((rawValue) => {
+    if (!rawValue) {
+      return [];
+    }
+
+    return rawValue
+      .split(',')
+      .map(parseImageHostPattern)
+      .filter((value): value is string => Boolean(value));
+  });
+}
+
+export const imageRemoteHostPatterns = Array.from(
+  new Set([...DEFAULT_IMAGE_HOST_PATTERNS, ...getConfiguredImageHostPatterns()])
+);
 
 export function isAllowedImageHostname(hostname: string): boolean {
   const normalizedHostname = normalizeHostname(hostname);

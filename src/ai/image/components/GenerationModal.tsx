@@ -26,6 +26,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useCallback, useState } from 'react';
+import { getImageSrc } from '../lib/image-display-utils';
 import { downloadImage, shareImage } from '../lib/image-helpers';
 import type {
   ImageError,
@@ -123,7 +124,7 @@ export function GenerationModal({
               <ErrorState key="error" error={error} onRetry={onRegenerate} />
             )}
 
-            {image && !isLoading && !error && (
+            {image?.image && !isLoading && !error && (
               <ResultState
                 key="result"
                 image={image}
@@ -254,6 +255,11 @@ function ResultState({
 }) {
   const t = useTranslations('ArchPage');
   const [isHovering, setIsHovering] = useState(false);
+  if (!image.image) {
+    return null;
+  }
+
+  const imageSrc = getImageSrc(image.image);
 
   return (
     <motion.div
@@ -269,7 +275,7 @@ function ResultState({
         onMouseLeave={() => setIsHovering(false)}
       >
         <Image
-          src={`data:image/png;base64,${image.image}`}
+          src={imageSrc}
           alt={activePrompt}
           width={1024}
           height={768}

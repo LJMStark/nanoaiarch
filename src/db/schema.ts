@@ -130,6 +130,7 @@ export const creditTransaction = pgTable("credit_transaction", {
 	paymentId: text("payment_id"), // field name is paymentId, but actually it's invoiceId
 	expirationDate: timestamp("expiration_date"),
 	expirationDateProcessedAt: timestamp("expiration_date_processed_at"),
+	metadata: text("metadata"),
 	// Hold system fields
 	holdStatus: text("hold_status"), // 'pending' | 'confirmed' | 'released' - null for legacy transactions
 	idempotencyKey: text("idempotency_key").unique(), // prevents duplicate holds

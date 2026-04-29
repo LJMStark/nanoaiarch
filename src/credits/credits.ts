@@ -6,7 +6,18 @@ import { isAdminUser } from '@/lib/admin';
 import { logger } from '@/lib/logger';
 import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
 import { addDays } from 'date-fns';
-import { and, asc, eq, gt, inArray, isNull, not, or, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNull,
+  not,
+  or,
+  sql,
+} from 'drizzle-orm';
 import {
   CREDIT_TRANSACTION_TYPE,
   CreditBalanceReadError,
@@ -59,6 +70,242 @@ function buildCreditTransactionPayload({
     createdAt: now,
     updatedAt: now,
   };
+}
+
+type HoldAllocation = {
+  transactionId: string;
+  amount: number;
+};
+
+type RestoredHoldAllocations = {
+  restoredAmount: number;
+  expiredAmount: number;
+};
+
+function serializeHoldMetadata(allocations: HoldAllocation[]): string {
+  return JSON.stringify({ allocations });
+}
+
+function parseHoldAllocations(metadata?: string | null): HoldAllocation[] {
+  if (!metadata) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(metadata) as {
+      allocations?: Array<{ transactionId?: unknown; amount?: unknown }>;
+    };
+
+    if (!Array.isArray(parsed.allocations)) {
+      return [];
+    }
+
+    return parsed.allocations.flatMap((allocation) => {
+      if (
+        typeof allocation.transactionId !== 'string' ||
+        typeof allocation.amount !== 'number' ||
+        !Number.isFinite(allocation.amount) ||
+        allocation.amount <= 0
+      ) {
+        return [];
+      }
+
+      return [
+        {
+          transactionId: allocation.transactionId,
+          amount: allocation.amount,
+        },
+      ];
+    });
+  } catch (error) {
+    logger.credits.error('Failed to parse hold metadata', error);
+    return [];
+  }
+}
+
+async function reserveUserCreditBalance({
+  tx,
+  userId,
+  amount,
+  now,
+}: {
+  tx: any;
+  userId: string;
+  amount: number;
+  now: Date;
+}): Promise<void> {
+  const updatedRows = await tx
+    .update(userCredit)
+    .set({
+      currentCredits: sql`${userCredit.currentCredits} - ${amount}`,
+      updatedAt: now,
+    })
+    .where(
+      and(eq(userCredit.userId, userId), gte(userCredit.currentCredits, amount))
+    )
+    .returning({ id: userCredit.id });
+
+  if (updatedRows.length === 0) {
+    throw new Error('Insufficient credits');
+  }
+}
+
+async function allocateCreditLedgerEntries({
+  tx,
+  userId,
+  amount,
+  now,
+}: {
+  tx: any;
+  userId: string;
+  amount: number;
+  now: Date;
+}): Promise<HoldAllocation[]> {
+  const transactions = await tx
+    .select({
+      id: creditTransaction.id,
+      remainingAmount: creditTransaction.remainingAmount,
+    })
+    .from(creditTransaction)
+    .where(
+      and(
+        eq(creditTransaction.userId, userId),
+        not(eq(creditTransaction.type, CREDIT_TRANSACTION_TYPE.USAGE)),
+        not(eq(creditTransaction.type, CREDIT_TRANSACTION_TYPE.EXPIRE)),
+        gt(creditTransaction.remainingAmount, 0),
+        or(
+          isNull(creditTransaction.expirationDate),
+          gt(creditTransaction.expirationDate, now)
+        )
+      )
+    )
+    .orderBy(
+      sql`${creditTransaction.expirationDate} asc nulls last`,
+      asc(creditTransaction.createdAt)
+    );
+
+  let remainingToDeduct = amount;
+  const allocations: HoldAllocation[] = [];
+
+  for (const transaction of transactions) {
+    if (remainingToDeduct <= 0) {
+      break;
+    }
+
+    const remainingAmount = transaction.remainingAmount || 0;
+    if (remainingAmount <= 0) {
+      continue;
+    }
+
+    const deductFromThis = Math.min(remainingAmount, remainingToDeduct);
+    const updatedRows = await tx
+      .update(creditTransaction)
+      .set({
+        remainingAmount: sql`${creditTransaction.remainingAmount} - ${deductFromThis}`,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(creditTransaction.id, transaction.id),
+          gte(creditTransaction.remainingAmount, deductFromThis)
+        )
+      )
+      .returning({ id: creditTransaction.id });
+
+    if (updatedRows.length === 0) {
+      throw new Error('Credit ledger is inconsistent');
+    }
+
+    allocations.push({
+      transactionId: transaction.id,
+      amount: deductFromThis,
+    });
+    remainingToDeduct -= deductFromThis;
+  }
+
+  if (remainingToDeduct > 0) {
+    logger.credits.error('allocateCreditLedgerEntries ledger mismatch', null, {
+      userId,
+      amount,
+      remainingToDeduct,
+      availableTransactions: transactions.length,
+    });
+    throw new Error('Credit ledger is inconsistent');
+  }
+
+  return allocations;
+}
+
+async function restoreCreditLedgerAllocations({
+  tx,
+  allocations,
+  now,
+}: {
+  tx: any;
+  allocations: HoldAllocation[];
+  now: Date;
+}): Promise<RestoredHoldAllocations> {
+  let restoredAmount = 0;
+  let expiredAmount = 0;
+
+  for (const allocation of allocations) {
+    const updatedRows = await tx
+      .update(creditTransaction)
+      .set({
+        remainingAmount: sql`${creditTransaction.remainingAmount} + ${allocation.amount}`,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(creditTransaction.id, allocation.transactionId),
+          isNull(creditTransaction.expirationDateProcessedAt),
+          or(
+            isNull(creditTransaction.expirationDate),
+            gt(creditTransaction.expirationDate, now)
+          )
+        )
+      )
+      .returning({ id: creditTransaction.id });
+
+    if (updatedRows.length > 0) {
+      restoredAmount += allocation.amount;
+      continue;
+    }
+
+    expiredAmount += allocation.amount;
+  }
+
+  return { restoredAmount, expiredAmount };
+}
+
+async function recordExpiredHeldCredits({
+  tx,
+  userId,
+  amount,
+  holdId,
+  now,
+}: {
+  tx: any;
+  userId: string;
+  amount: number;
+  holdId: string;
+  now: Date;
+}): Promise<void> {
+  if (amount <= 0) {
+    return;
+  }
+
+  await tx.insert(creditTransaction).values({
+    id: randomUUID(),
+    userId,
+    type: CREDIT_TRANSACTION_TYPE.EXPIRE,
+    amount: -amount,
+    remainingAmount: null,
+    description: `Expire held credits: ${amount}`,
+    metadata: JSON.stringify({ holdId }),
+    createdAt: now,
+    updatedAt: now,
+  });
 }
 
 async function grantMonthlyCreditsIfEligible({
@@ -406,81 +653,8 @@ export async function consumeCredits({
 
   // Use transaction to ensure atomicity
   await db.transaction(async (tx) => {
-    // Check balance within transaction
-    const currentRecord = await tx
-      .select({ currentCredits: userCredit.currentCredits })
-      .from(userCredit)
-      .where(eq(userCredit.userId, userId))
-      .limit(1);
-
-    const currentBalance = currentRecord[0]?.currentCredits || 0;
-    if (currentBalance < amount) {
-      logger.credits.error('consumeCredits insufficient credits', null, {
-        userId,
-        required: amount,
-        available: currentBalance,
-      });
-      throw new Error('Insufficient credits');
-    }
-
-    // FIFO consumption: consume from the earliest unexpired credits first
-    const transactions = await tx
-      .select()
-      .from(creditTransaction)
-      .where(
-        and(
-          eq(creditTransaction.userId, userId),
-          // Exclude usage and expire records (these are consumption/expiration logs)
-          not(eq(creditTransaction.type, CREDIT_TRANSACTION_TYPE.USAGE)),
-          not(eq(creditTransaction.type, CREDIT_TRANSACTION_TYPE.EXPIRE)),
-          // Only include transactions with remaining amount > 0
-          gt(creditTransaction.remainingAmount, 0),
-          // Only include unexpired credits (either no expiration date or not yet expired)
-          or(
-            isNull(creditTransaction.expirationDate),
-            gt(creditTransaction.expirationDate, now)
-          )
-        )
-      )
-      .orderBy(
-        asc(creditTransaction.expirationDate),
-        asc(creditTransaction.createdAt)
-      );
-
-    // Consume credits
-    let remainingToDeduct = amount;
-    for (const transaction of transactions) {
-      if (remainingToDeduct <= 0) break;
-      const remainingAmount = transaction.remainingAmount || 0;
-      if (remainingAmount <= 0) continue;
-      // credits to consume at most in this transaction
-      const deductFromThis = Math.min(remainingAmount, remainingToDeduct);
-      await tx
-        .update(creditTransaction)
-        .set({
-          remainingAmount: remainingAmount - deductFromThis,
-          updatedAt: new Date(),
-        })
-        .where(eq(creditTransaction.id, transaction.id));
-      remainingToDeduct -= deductFromThis;
-    }
-
-    if (remainingToDeduct > 0) {
-      logger.credits.error('consumeCredits ledger mismatch', null, {
-        userId,
-        amount,
-        remainingToDeduct,
-        availableTransactions: transactions.length,
-      });
-      throw new Error('Credit ledger is inconsistent');
-    }
-
-    // Update balance
-    const newBalance = currentBalance - amount;
-    await tx
-      .update(userCredit)
-      .set({ currentCredits: newBalance, updatedAt: new Date() })
-      .where(eq(userCredit.userId, userId));
+    await reserveUserCreditBalance({ tx, userId, amount, now });
+    await allocateCreditLedgerEntries({ tx, userId, amount, now });
 
     // Write usage record
     await tx.insert(creditTransaction).values({
@@ -490,8 +664,8 @@ export async function consumeCredits({
       amount: -amount,
       remainingAmount: null,
       description,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     });
   });
 }
@@ -780,25 +954,14 @@ export async function holdCredits({
   const holdId = randomUUID();
 
   await db.transaction(async (tx) => {
-    const currentRecord = await tx
-      .select({ currentCredits: userCredit.currentCredits })
-      .from(userCredit)
-      .where(eq(userCredit.userId, userId))
-      .limit(1);
-
-    const currentBalance = currentRecord[0]?.currentCredits || 0;
-    if (currentBalance < amount) {
-      throw new Error('Insufficient credits');
-    }
-
-    // Deduct from balance atomically
-    await tx
-      .update(userCredit)
-      .set({
-        currentCredits: sql`${userCredit.currentCredits} - ${amount}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(userCredit.userId, userId));
+    const now = new Date();
+    await reserveUserCreditBalance({ tx, userId, amount, now });
+    const allocations = await allocateCreditLedgerEntries({
+      tx,
+      userId,
+      amount,
+      now,
+    });
 
     // Create hold transaction record
     await tx.insert(creditTransaction).values({
@@ -808,10 +971,11 @@ export async function holdCredits({
       amount: -amount,
       remainingAmount: null,
       description,
+      metadata: serializeHoldMetadata(allocations),
       holdStatus: HOLD_STATUS.PENDING,
       idempotencyKey,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     });
   });
 
@@ -899,6 +1063,7 @@ export async function releaseHold(holdId: string): Promise<void> {
         userId: creditTransaction.userId,
         holdStatus: creditTransaction.holdStatus,
         amount: creditTransaction.amount,
+        metadata: creditTransaction.metadata,
       })
       .from(creditTransaction)
       .where(eq(creditTransaction.id, holdId))
@@ -924,23 +1089,44 @@ export async function releaseHold(holdId: string): Promise<void> {
       );
     }
 
-    const refundAmount = Math.abs(record.amount);
+    const now = new Date();
+    let refundAmount = Math.abs(record.amount);
 
-    // Return credits to user balance
-    await tx
-      .update(userCredit)
-      .set({
-        currentCredits: sql`${userCredit.currentCredits} + ${refundAmount}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(userCredit.userId, record.userId));
+    if (record.metadata) {
+      const { restoredAmount, expiredAmount } =
+        await restoreCreditLedgerAllocations({
+          tx,
+          allocations: parseHoldAllocations(record.metadata),
+          now,
+        });
+
+      refundAmount = restoredAmount;
+      await recordExpiredHeldCredits({
+        tx,
+        userId: record.userId,
+        amount: expiredAmount,
+        holdId,
+        now,
+      });
+    }
+
+    if (refundAmount > 0) {
+      // Return only credits that are still usable to the user balance.
+      await tx
+        .update(userCredit)
+        .set({
+          currentCredits: sql`${userCredit.currentCredits} + ${refundAmount}`,
+          updatedAt: now,
+        })
+        .where(eq(userCredit.userId, record.userId));
+    }
 
     // Mark hold as released
     await tx
       .update(creditTransaction)
       .set({
         holdStatus: HOLD_STATUS.RELEASED,
-        updatedAt: new Date(),
+        updatedAt: now,
       })
       .where(eq(creditTransaction.id, holdId));
   });

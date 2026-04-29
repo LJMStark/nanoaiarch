@@ -148,6 +148,13 @@
       "when": 1776933383562,
       "tag": "0020_pale_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1777435014719,
+      "tag": "0021_open_night_thrasher",
+      "breakpoints": true
     }
   ]
 }

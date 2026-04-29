@@ -56,7 +56,8 @@ export const uploadFile = async (
   file: Buffer | Blob,
   filename: string,
   contentType: string,
-  folder?: string
+  folder?: string,
+  cacheControl?: string
 ): Promise<UploadFileResult> => {
   const provider = getStorageProvider();
   return provider.uploadFile({
@@ -64,6 +65,7 @@ export const uploadFile = async (
     filename: resolveSafeUploadFilename(filename, contentType),
     contentType,
     folder: sanitizeStorageFolder(folder),
+    cacheControl,
   });
 };
 

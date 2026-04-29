@@ -1,6 +1,7 @@
+import { creditTransaction, userCredit } from '@/db/schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { confirmHold, holdCredits, releaseHold } from '../credits';
-import { HOLD_STATUS } from '../types';
+import { CREDIT_TRANSACTION_TYPE, HOLD_STATUS } from '../types';
 
 // Mock dependencies
 const mocks = vi.hoisted(() => ({
@@ -25,6 +26,9 @@ vi.mock('@/lib/logger', () => ({
 // Helper to create a mock transaction/db
 function createMockDb() {
   const mockResult: { rows: Record<string, unknown>[] } = { rows: [] };
+  const returning = vi.fn().mockResolvedValue([{ id: 'updated-row' }]);
+  const updateWhere = vi.fn().mockReturnValue({ returning });
+  const updateSet = vi.fn().mockReturnValue({ where: updateWhere });
   const chainable = {
     select: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
@@ -35,8 +39,43 @@ function createMockDb() {
     update: vi.fn().mockReturnThis(),
     set: vi.fn().mockReturnThis(),
     transaction: vi.fn(),
+    returning,
+    __updateSet: updateSet,
+    __updateWhere: updateWhere,
+    __updateReturning: returning,
   };
   return chainable;
+}
+
+function createMockTx() {
+  const selectLimit = vi.fn();
+  const selectOrderBy = vi.fn();
+  const selectChain = {
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    limit: selectLimit,
+    orderBy: selectOrderBy,
+  };
+
+  const updateReturning = vi.fn().mockResolvedValue([{ id: 'updated-row' }]);
+  const updateWhere = vi.fn().mockReturnValue({ returning: updateReturning });
+  const updateSet = vi.fn().mockReturnValue({ where: updateWhere });
+  const update = vi.fn().mockReturnValue({ set: updateSet });
+
+  const insertValues = vi.fn().mockResolvedValue(undefined);
+  const insert = vi.fn().mockReturnValue({ values: insertValues });
+
+  return {
+    select: vi.fn().mockReturnValue(selectChain),
+    update,
+    insert,
+    __selectLimit: selectLimit,
+    __selectOrderBy: selectOrderBy,
+    __updateSet: updateSet,
+    __updateWhere: updateWhere,
+    __updateReturning: updateReturning,
+    __insertValues: insertValues,
+  };
 }
 
 describe('holdCredits', () => {
@@ -115,6 +154,73 @@ describe('holdCredits', () => {
         description: 'test',
       })
     ).rejects.toThrow('idempotency key already used');
+  });
+
+  it('deducts credit ledger entries and stores allocations for release', async () => {
+    const db = createMockDb();
+    const tx = createMockTx();
+
+    db.limit.mockResolvedValueOnce([]);
+    db.transaction.mockImplementation(
+      async (fn: (value: typeof tx) => unknown) => fn(tx)
+    );
+    tx.__updateReturning.mockResolvedValueOnce([{ id: 'credit-row-1' }]);
+    tx.__selectOrderBy.mockResolvedValueOnce([
+      {
+        id: 'grant-1',
+        remainingAmount: 3,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+      {
+        id: 'grant-2',
+        remainingAmount: 5,
+        createdAt: new Date('2026-01-02T00:00:00.000Z'),
+      },
+    ]);
+
+    mocks.getDb.mockResolvedValue(db);
+
+    await holdCredits({
+      userId: 'user-1',
+      amount: 5,
+      idempotencyKey: 'hold-key-1',
+      description: 'test hold',
+    });
+
+    expect(tx.update).toHaveBeenCalledWith(userCredit);
+    expect(tx.update).toHaveBeenCalledWith(creditTransaction);
+    expect(tx.update).toHaveBeenCalledTimes(3);
+
+    const holdRecord = tx.__insertValues.mock.calls[0][0];
+    expect(JSON.parse(holdRecord.metadata)).toEqual({
+      allocations: [
+        { transactionId: 'grant-1', amount: 3 },
+        { transactionId: 'grant-2', amount: 2 },
+      ],
+    });
+  });
+
+  it('throws when atomic balance reservation does not update a row', async () => {
+    const db = createMockDb();
+    const tx = createMockTx();
+
+    db.limit.mockResolvedValueOnce([]);
+    db.transaction.mockImplementation(
+      async (fn: (value: typeof tx) => unknown) => fn(tx)
+    );
+    tx.__updateReturning.mockResolvedValueOnce([]);
+
+    mocks.getDb.mockResolvedValue(db);
+
+    await expect(
+      holdCredits({
+        userId: 'user-1',
+        amount: 5,
+        idempotencyKey: 'hold-key-2',
+        description: 'test hold',
+      })
+    ).rejects.toThrow('Insufficient credits');
+    expect(tx.insert).not.toHaveBeenCalled();
   });
 });
 
@@ -220,5 +326,69 @@ describe('releaseHold', () => {
     mocks.getDb.mockResolvedValue(db);
 
     await expect(releaseHold('hold-1')).rejects.toThrow('invalid hold status');
+  });
+
+  it('restores allocated credit ledger entries before marking hold released', async () => {
+    const db = createMockDb();
+    const tx = createMockTx();
+    db.transaction.mockImplementation(
+      async (fn: (value: typeof tx) => unknown) => fn(tx)
+    );
+    tx.__selectLimit.mockResolvedValueOnce([
+      {
+        id: 'hold-1',
+        userId: 'user-1',
+        holdStatus: HOLD_STATUS.PENDING,
+        amount: -5,
+        metadata: JSON.stringify({
+          allocations: [
+            { transactionId: 'grant-1', amount: 3 },
+            { transactionId: 'grant-2', amount: 2 },
+          ],
+        }),
+      },
+    ]);
+    mocks.getDb.mockResolvedValue(db);
+
+    await releaseHold('hold-1');
+
+    expect(tx.update).toHaveBeenCalledWith(userCredit);
+    expect(tx.update).toHaveBeenCalledWith(creditTransaction);
+    expect(tx.update).toHaveBeenCalledTimes(4);
+  });
+
+  it('expires held credits instead of refunding when allocations cannot be restored', async () => {
+    const db = createMockDb();
+    const tx = createMockTx();
+    db.transaction.mockImplementation(
+      async (fn: (value: typeof tx) => unknown) => fn(tx)
+    );
+    tx.__selectLimit.mockResolvedValueOnce([
+      {
+        id: 'hold-1',
+        userId: 'user-1',
+        holdStatus: HOLD_STATUS.PENDING,
+        amount: -5,
+        metadata: JSON.stringify({
+          allocations: [{ transactionId: 'grant-1', amount: 5 }],
+        }),
+      },
+    ]);
+    tx.__updateReturning.mockResolvedValueOnce([]);
+    mocks.getDb.mockResolvedValue(db);
+
+    await releaseHold('hold-1');
+
+    expect(tx.update).not.toHaveBeenCalledWith(userCredit);
+    expect(tx.__insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        type: CREDIT_TRANSACTION_TYPE.EXPIRE,
+        amount: -5,
+        remainingAmount: null,
+        description: 'Expire held credits: 5',
+      })
+    );
+    expect(tx.update).toHaveBeenCalledTimes(2);
   });
 });
