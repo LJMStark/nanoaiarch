@@ -58,7 +58,7 @@ export function CreditPricingTable({
               <ToggleGroupItem
                 value="year"
                 className={cn(
-                  'relative rounded-full px-6 py-2 text-sm font-medium cursor-pointer',
+                  'relative min-h-11 cursor-pointer rounded-full px-6 py-2 text-sm font-medium',
                   'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground',
                   'data-[state=off]:hover:bg-muted'
                 )}
@@ -75,7 +75,7 @@ export function CreditPricingTable({
               <ToggleGroupItem
                 value="quarter"
                 className={cn(
-                  'rounded-full px-6 py-2 text-sm font-medium cursor-pointer',
+                  'min-h-11 cursor-pointer rounded-full px-6 py-2 text-sm font-medium',
                   'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground',
                   'data-[state=off]:hover:bg-muted'
                 )}
@@ -87,7 +87,7 @@ export function CreditPricingTable({
               <ToggleGroupItem
                 value="month"
                 className={cn(
-                  'rounded-full px-6 py-2 text-sm font-medium cursor-pointer',
+                  'min-h-11 cursor-pointer rounded-full px-6 py-2 text-sm font-medium',
                   'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground',
                   'data-[state=off]:hover:bg-muted'
                 )}

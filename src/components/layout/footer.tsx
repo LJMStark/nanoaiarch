@@ -45,7 +45,7 @@ export function Footer({ className }: React.HTMLAttributes<HTMLElement>) {
                     target="_blank"
                     rel="noreferrer"
                     aria-label={link.title}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-background/55 text-muted-foreground hover:border-primary/20 hover:bg-accent/60 hover:text-foreground"
+                    className="inline-flex size-11 items-center justify-center rounded-2xl border border-border/70 bg-background/55 text-muted-foreground hover:border-primary/20 hover:bg-accent/60 hover:text-foreground"
                   >
                     <span className="sr-only">{link.title}</span>
                     {link.icon ? link.icon : null}
@@ -68,7 +68,7 @@ export function Footer({ className }: React.HTMLAttributes<HTMLElement>) {
                           <LocaleLink
                             href={item.href || '#'}
                             target={item.external ? '_blank' : undefined}
-                            className="text-sm leading-6 text-muted-foreground transition-colors hover:text-foreground"
+                            className="inline-flex min-h-11 items-center text-sm leading-6 text-muted-foreground transition-colors hover:text-foreground"
                           >
                             {item.title}
                           </LocaleLink>

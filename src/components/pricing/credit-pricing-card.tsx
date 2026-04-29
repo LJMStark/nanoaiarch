@@ -128,6 +128,7 @@ export function CreditPricingCard({
             userId={currentUser.id}
             packageId={pkg.id}
             priceId={pkg.price.priceId}
+            size="lg"
             className="mt-4 w-full cursor-pointer"
             variant={isPopular ? 'default' : 'outline'}
           >
@@ -137,6 +138,7 @@ export function CreditPricingCard({
           <LoginWrapper mode="modal" asChild callbackUrl={currentPath}>
             <Button
               variant={isPopular ? 'default' : 'outline'}
+              size="lg"
               className="mt-4 w-full cursor-pointer"
             >
               {t('subscribe')}

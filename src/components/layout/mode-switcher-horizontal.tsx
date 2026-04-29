@@ -28,9 +28,9 @@ export function ModeSwitcherHorizontal() {
   if (!mounted) {
     return (
       <div className="flex items-center gap-2 rounded-full border p-1">
-        <div className="size-6 px-0 rounded-full" />
-        <div className="size-6 px-0 rounded-full" />
-        <div className="size-6 px-0 rounded-full" />
+        <div className="size-11 rounded-full px-0" />
+        <div className="size-11 rounded-full px-0" />
+        <div className="size-11 rounded-full px-0" />
       </div>
     );
   }
@@ -41,7 +41,7 @@ export function ModeSwitcherHorizontal() {
         variant="ghost"
         size="icon"
         className={cn(
-          'size-6 px-0 rounded-full cursor-pointer',
+          'size-11 cursor-pointer rounded-full px-0',
           theme === 'light' && 'bg-muted text-foreground'
         )}
         onClick={() => setTheme('light')}
@@ -54,7 +54,7 @@ export function ModeSwitcherHorizontal() {
         variant="ghost"
         size="icon"
         className={cn(
-          'size-6 px-0 rounded-full cursor-pointer',
+          'size-11 cursor-pointer rounded-full px-0',
           theme === 'dark' && 'bg-muted text-foreground'
         )}
         onClick={() => setTheme('dark')}
@@ -67,7 +67,7 @@ export function ModeSwitcherHorizontal() {
         variant="ghost"
         size="icon"
         className={cn(
-          'size-6 px-0 rounded-full cursor-pointer',
+          'size-11 cursor-pointer rounded-full px-0',
           theme === 'system' && 'bg-muted text-foreground'
         )}
         onClick={() => setTheme('system')}
