@@ -30,9 +30,6 @@ interface ConversationState {
   generationRequestToken: string | null;
   generationStage: GenerationStage;
 
-  // Current project context
-  currentProjectId: string | null;
-
   // Actions
   setMessages: (messages: ProjectMessageItem[]) => void;
   addMessage: (message: ProjectMessageItem) => void;
@@ -57,8 +54,12 @@ interface ConversationState {
   setGenerationStage: (stage: GenerationStage) => void;
   cancelGeneration: () => void;
 
-  // Project context
-  setCurrentProject: (projectId: string | null) => void;
+  // Project context — wipes conversation state when switching projects.
+  // Does not store the project id; useProjectStore.currentProjectId is the
+  // single source of truth. Callers detect the project change and invoke
+  // this to clear messages, generation flags, and any in-flight abort
+  // controller.
+  resetForProject: () => void;
 
   // Clear for new project
   clearMessages: () => void;
@@ -78,7 +79,6 @@ const initialState = {
   isLoadingMessages: false,
   isGenerating: false,
   generatingMessageId: null as string | null,
-  currentProjectId: null as string | null,
   abortController: null as AbortController | null,
   generationRequestToken: null as string | null,
   generationStage: null as GenerationStage,
@@ -263,23 +263,20 @@ export const useConversationStore = create<ConversationState>()(
         }
       },
 
-      setCurrentProject: (projectId) => {
-        if (projectId !== get().currentProjectId) {
-          const { abortController } = get();
-          if (abortController) {
-            abortController.abort();
-          }
-
-          set({
-            currentProjectId: projectId,
-            messages: [],
-            isGenerating: false,
-            generatingMessageId: null,
-            abortController: null,
-            generationRequestToken: null,
-            generationStage: null,
-          });
+      resetForProject: () => {
+        const { abortController } = get();
+        if (abortController) {
+          abortController.abort();
         }
+
+        set({
+          messages: [],
+          isGenerating: false,
+          generatingMessageId: null,
+          abortController: null,
+          generationRequestToken: null,
+          generationStage: null,
+        });
       },
 
       clearMessages: () => {
@@ -361,24 +358,19 @@ export const useConversationStore = create<ConversationState>()(
     {
       name: 'conversation-storage',
       storage: persistStorage,
-      version: 2,
-      // Only persist project selection. Generation state is recovered from
-      // server-side messages to avoid reviving stale "generating" sessions.
-      partialize: (state) => ({
-        currentProjectId: state.currentProjectId,
-      }),
-      migrate: (persistedState: unknown, version: number) => {
-        const state = (persistedState ?? {}) as Partial<ConversationState>;
-
-        if (version < 2) {
+      version: 3,
+      // Nothing in this store needs to survive a reload: messages come from
+      // the server, generation state is hydrated by the recovery hook, and
+      // currentProjectId now lives solely in useProjectStore. We keep the
+      // persist wrapper for future fields, but partialize to an empty object.
+      partialize: () => ({}),
+      migrate: (_persistedState: unknown, version: number) => {
+        if (version < 3) {
           logger.general.info(
-            `Migrating conversation store from v${version} to v2`
+            `Migrating conversation store from v${version} to v3 (drop currentProjectId)`
           );
         }
-
-        return {
-          currentProjectId: state.currentProjectId ?? null,
-        } as Partial<ConversationState>;
+        return {};
       },
       onRehydrateStorage: () => {
         logger.general.info('Hydrating conversation store');

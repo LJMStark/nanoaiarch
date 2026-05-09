@@ -67,7 +67,7 @@ export function ConversationLayout() {
   const {
     setMessages,
     setLoadingMessages,
-    setCurrentProject,
+    resetForProject,
     setGenerating,
     setGenerationStage,
   } = useConversationStore();
@@ -77,18 +77,9 @@ export function ConversationLayout() {
 
   const clearTransientProjectState = useCallback(() => {
     loadRequestIdRef.current += 1;
-    setCurrentProject(null);
-    setMessages([]);
-    setGenerating(false);
-    setGenerationStage(null);
+    resetForProject();
     setLoadingMessages(false);
-  }, [
-    setCurrentProject,
-    setGenerationStage,
-    setGenerating,
-    setLoadingMessages,
-    setMessages,
-  ]);
+  }, [resetForProject, setLoadingMessages]);
 
   // Handle template from URL - show modal instead of direct apply
   useEffect(() => {
@@ -143,9 +134,11 @@ export function ConversationLayout() {
     const requestId = loadRequestIdRef.current + 1;
     loadRequestIdRef.current = requestId;
 
-    // Load messages for the new project
+    // Load messages for the new project. resetForProject() wipes the prior
+    // project's transient conversation state (messages, generation flags,
+    // abort controllers) before we hydrate from the server.
     const loadMessages = async () => {
-      setCurrentProject(currentProjectId);
+      resetForProject();
       setLoadingMessages(true);
       const result = await fetchProjectMessages(currentProjectId);
 
@@ -175,7 +168,7 @@ export function ConversationLayout() {
     currentProjectId,
     setMessages,
     setLoadingMessages,
-    setCurrentProject,
+    resetForProject,
     setGenerationStage,
     setGenerating,
   ]);

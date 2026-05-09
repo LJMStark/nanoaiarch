@@ -41,7 +41,7 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
   const {
     setMessages,
     setLoadingMessages,
-    setCurrentProject,
+    resetForProject,
     setGenerating,
     setGenerationStage,
   } = useConversationStore();
@@ -75,10 +75,7 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
 
         if (!resolvedProjectId) {
           selectProject(null);
-          setCurrentProject(null);
-          setMessages([]);
-          setGenerating(false);
-          setGenerationStage(null);
+          resetForProject();
           setLoadingProjects(false);
           setLoadingMessages(false);
           return;
@@ -89,16 +86,15 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
           selectProject(resolvedProjectId);
         }
 
-        // Update messages
-        if (resolvedProjectId) {
-          setCurrentProject(resolvedProjectId);
-          setMessages(messages);
-          syncRecoveredGenerationState(
-            messages,
-            setGenerating,
-            setGenerationStage
-          );
-        }
+        // Update messages — reset transient conversation state for the new
+        // project before populating with server data.
+        resetForProject();
+        setMessages(messages);
+        syncRecoveredGenerationState(
+          messages,
+          setGenerating,
+          setGenerationStage
+        );
       } else {
         setGenerating(false);
         setGenerationStage(null);
@@ -114,19 +110,19 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
     setLoadingProjects,
     setMessages,
     setLoadingMessages,
-    setCurrentProject,
+    resetForProject,
     setGenerationStage,
     setGenerating,
     selectProject,
     mode,
   ]);
 
-  // Load messages when project changes (after initial load)
+  // Load messages when project changes (after initial load).
   const loadMessagesForProject = useCallback(
     async (projectId: string) => {
       if (!projectId) return;
 
-      setCurrentProject(projectId);
+      resetForProject();
       setLoadingMessages(true);
 
       const result = await fetchProjectMessages(projectId);
@@ -148,7 +144,7 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
       setGenerationStage,
       setMessages,
       setLoadingMessages,
-      setCurrentProject,
+      resetForProject,
       setGenerating,
     ]
   );

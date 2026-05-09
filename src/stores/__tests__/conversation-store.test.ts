@@ -43,7 +43,7 @@ describe('conversation-store', () => {
     store.setGenerating(true, 'msg-1');
     store.setGenerationStage('generating');
 
-    store.setCurrentProject('project-1');
+    store.resetForProject();
 
     const nextState = useConversationStore.getState();
     expect(abortSpy).toHaveBeenCalledTimes(1);

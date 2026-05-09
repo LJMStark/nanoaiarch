@@ -10,7 +10,7 @@ const {
   setLoadingProjectsMock,
   setMessagesMock,
   setLoadingMessagesMock,
-  setCurrentProjectMock,
+  resetForProjectMock,
   setGenerationStageMock,
   setGeneratingMock,
   projectStoreState,
@@ -39,7 +39,7 @@ const {
     setLoadingProjectsMock: vi.fn(),
     setMessagesMock: vi.fn(),
     setLoadingMessagesMock: vi.fn(),
-    setCurrentProjectMock: vi.fn(),
+    resetForProjectMock: vi.fn(),
     setGenerationStageMock: vi.fn(),
     setGeneratingMock: vi.fn(),
     projectStoreState,
@@ -66,7 +66,7 @@ vi.mock('@/stores/conversation-store', () => ({
   useConversationStore: () => ({
     setMessages: setMessagesMock,
     setLoadingMessages: setLoadingMessagesMock,
-    setCurrentProject: setCurrentProjectMock,
+    resetForProject: resetForProjectMock,
     setGenerationStage: setGenerationStageMock,
     setGenerating: setGeneratingMock,
   }),
@@ -97,8 +97,10 @@ describe('useConversationInit', () => {
     });
 
     expect(selectProjectMock).toHaveBeenCalledWith(null);
-    expect(setCurrentProjectMock).toHaveBeenCalledWith(null);
-    expect(setMessagesMock).toHaveBeenCalledWith([]);
+    // resetForProject() is invoked without arguments — it always wipes the
+    // transient conversation state regardless of which project (or null) we
+    // are switching to.
+    expect(resetForProjectMock).toHaveBeenCalledWith();
   });
 
   it('hydrates the newly created project from the bootstrap response', async () => {
@@ -120,7 +122,7 @@ describe('useConversationInit', () => {
     });
 
     expect(selectProjectMock).toHaveBeenCalledWith('project-new');
-    expect(setCurrentProjectMock).toHaveBeenCalledWith('project-new');
+    expect(resetForProjectMock).toHaveBeenCalledWith();
     expect(setMessagesMock).toHaveBeenCalledWith([]);
   });
 

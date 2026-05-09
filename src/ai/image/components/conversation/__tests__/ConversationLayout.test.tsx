@@ -11,7 +11,7 @@ const {
   projectStoreState,
   setMessagesMock,
   setLoadingMessagesMock,
-  setCurrentProjectMock,
+  resetForProjectMock,
   setGenerationStageMock,
   setGeneratingMock,
 } = vi.hoisted(() => ({
@@ -26,7 +26,7 @@ const {
   },
   setMessagesMock: vi.fn(),
   setLoadingMessagesMock: vi.fn(),
-  setCurrentProjectMock: vi.fn(),
+  resetForProjectMock: vi.fn(),
   setGenerationStageMock: vi.fn(),
   setGeneratingMock: vi.fn(),
 }));
@@ -68,7 +68,7 @@ vi.mock('@/stores/conversation-store', () => ({
   useConversationStore: () => ({
     setMessages: setMessagesMock,
     setLoadingMessages: setLoadingMessagesMock,
-    setCurrentProject: setCurrentProjectMock,
+    resetForProject: resetForProjectMock,
     setGenerationStage: setGenerationStageMock,
     setGenerating: setGeneratingMock,
   }),
@@ -178,11 +178,14 @@ describe('ConversationLayout', () => {
     rerender(<ConversationLayout />);
 
     await waitFor(() => {
-      expect(setMessagesMock).toHaveBeenCalledWith([]);
+      expect(resetForProjectMock).toHaveBeenCalled();
     });
 
+    // Layout no longer fetches messages for a temp project, and clearing
+    // transient state is now a single resetForProject() call (which itself
+    // wipes messages internally — we don't need a separate setMessages([])).
     expect(fetchProjectMessagesMock).not.toHaveBeenCalled();
-    expect(setCurrentProjectMock).toHaveBeenCalledWith(null);
+    expect(resetForProjectMock).toHaveBeenCalledWith();
     expect(setLoadingMessagesMock).toHaveBeenCalledWith(false);
   });
 });
