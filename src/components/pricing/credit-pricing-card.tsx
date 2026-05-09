@@ -26,7 +26,10 @@ interface CreditPricingCardProps {
  * In Chinese commercial UX, 折扣 represents the multiplier of original price:
  * 8.5折 = pay 85% = 15% off.
  */
-function computeDiscountLabel(amount: number, originalPrice?: number): string | null {
+function computeDiscountLabel(
+  amount: number,
+  originalPrice?: number
+): string | null {
   if (!originalPrice || originalPrice <= amount) return null;
   const tenths = Math.round((amount / originalPrice) * 100) / 10;
   // Drop trailing .0 (e.g. 5.0折 → 5折) for cleaner display.
@@ -38,10 +41,7 @@ function computeDiscountLabel(amount: number, originalPrice?: number): string | 
  * Per-100-credit unit price for the "X¥/100积分" subtext.
  * Returns the amount in CNY (not cents) with appropriate decimals.
  */
-function computeUnitPricePer100(
-  priceInCents: number,
-  credits: number
-): string {
+function computeUnitPricePer100(priceInCents: number, credits: number): string {
   const yuan = priceInCents / 100;
   const per100 = (yuan / credits) * 100;
   // Show 1-2 decimals depending on magnitude
@@ -88,7 +88,6 @@ export function CreditPricingCard({
     pkg.price.originalPrice
   );
   const unitPrice = computeUnitPricePer100(pkg.price.amount, pkg.amount);
-
 
   return (
     <div

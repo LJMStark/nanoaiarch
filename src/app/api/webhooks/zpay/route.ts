@@ -1,8 +1,5 @@
 import { logger } from '@/lib/logger';
-import {
-  applyStrictRateLimit,
-  getRateLimitIdentifier,
-} from '@/lib/rate-limit';
+import { applyStrictRateLimit, getRateLimitIdentifier } from '@/lib/rate-limit';
 import { handleWebhookEvent } from '@/payment';
 import { type NextRequest, NextResponse } from 'next/server';
 

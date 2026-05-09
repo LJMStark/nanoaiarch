@@ -7,8 +7,6 @@ import {
   isGenerationCancelled,
   normalizePersistedAssistantMessage,
 } from '@/ai/image/lib/generation-utils';
-import { useConversationStore } from '@/stores/conversation-store';
-import { useCreditsModalStore } from '@/stores/credits-modal-store';
 import { preloadImage } from '@/ai/image/lib/image-display-utils';
 import {
   createPendingGenerationRequest,
@@ -16,6 +14,8 @@ import {
 } from '@/ai/image/lib/workspace-client';
 import type { ProjectMessageItem } from '@/ai/image/lib/workspace-types';
 import { logger } from '@/lib/logger';
+import { useConversationStore } from '@/stores/conversation-store';
+import { useCreditsModalStore } from '@/stores/credits-modal-store';
 import { useCallback, useRef } from 'react';
 
 export interface MessageUpdateData {

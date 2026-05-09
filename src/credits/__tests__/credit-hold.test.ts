@@ -66,9 +66,7 @@ function createMockTx() {
   // and the holdCredits race-safe chain
   // (insert().values().onConflictDoNothing().returning() -> [{id}]).
   // The recorded args remain accessible via __insertValues for assertions.
-  const insertReturning = vi
-    .fn()
-    .mockResolvedValue([{ id: 'inserted-hold' }]);
+  const insertReturning = vi.fn().mockResolvedValue([{ id: 'inserted-hold' }]);
   const insertOnConflict = vi
     .fn()
     .mockReturnValue({ returning: insertReturning });

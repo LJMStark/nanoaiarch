@@ -21,7 +21,13 @@ export function FreeTierCard({ className }: FreeTierCardProps) {
   const t = useTranslations('CreditPricing');
   const messages = useMessages();
   const freeTier = (messages as Record<string, unknown>).CreditPricing as
-    | { FreeTier?: { tierName?: string; currentPlan?: string; features?: Record<string, string> } }
+    | {
+        FreeTier?: {
+          tierName?: string;
+          currentPlan?: string;
+          features?: Record<string, string>;
+        };
+      }
     | undefined;
   const features = freeTier?.FreeTier?.features
     ? Object.values(freeTier.FreeTier.features)

@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   push:
@@ -6,46 +6,102 @@ on:
   pull_request:
     branches: [main, dev]
 
+# Cancel superseded runs on the same branch — saves CI minutes when devs push
+# multiple commits in quick succession.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20.x'
+  PNPM_VERSION: '10'
+
 jobs:
-  test:
-    name: Run Tests
+  # Lint with Biome. Uses lint:ci which runs the non-fixing variant so the
+  # job genuinely fails on style/correctness issues rather than silently
+  # rewriting committer's code in CI.
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [20.x]
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
-          version: 9
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint:ci
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+  # Strict TypeScript check. Catches type errors before they hit production
+  # — this was missing from CI before Week 3.1.
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      # Some types come from the `fumadocs-mdx` postinstall step; running
+      # postinstall manually here keeps typecheck reproducible.
+      - run: pnpm postinstall
+      - run: pnpm typecheck
 
-      - name: Run tests
-        run: pnpm test run
-
-      - name: Generate coverage report
-        run: pnpm test:coverage
-        continue-on-error: true
-
+  # Unit tests. Removed the previous `continue-on-error: true` on coverage —
+  # we now want the job to fail when a PR drops below the threshold defined
+  # in vitest.config.ts.
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:coverage
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
         if: always()
+        uses: codecov/codecov-action@v4
         with:
           files: ./coverage/coverage-final.json
           flags: unittests
           fail_ci_if_error: false
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # Production build. Catches Next.js build-time errors that lint+typecheck
+  # cannot (route conflicts, MDX issues, image optimization config, etc.).
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+        env:
+          # Build-time env stubs so Next.js can complete static analysis
+          # without a real .env file. Replace with actual secrets via
+          # repository settings if specific routes need them.
+          DATABASE_URL: 'postgresql://stub:stub@localhost:5432/stub'
+          BETTER_AUTH_SECRET: 'ci-build-stub-secret'
+          NEXT_PUBLIC_APP_URL: 'http://localhost:3000'

@@ -1203,10 +1203,13 @@ export async function holdCredits({
 
     const record = winner[0];
     if (record.holdStatus === HOLD_STATUS.PENDING) {
-      logger.credits.info('holdCredits: lost idempotency race, returning winner hold', {
-        holdId: record.id,
-        idempotencyKey,
-      });
+      logger.credits.info(
+        'holdCredits: lost idempotency race, returning winner hold',
+        {
+          holdId: record.id,
+          idempotencyKey,
+        }
+      );
       return { holdId: record.id, userId, amount };
     }
 
