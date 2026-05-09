@@ -57,7 +57,25 @@ export function ProjectSidebar() {
   const t = useTranslations('ArchPage');
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
-  const [busyProjectId, setBusyProjectId] = useState<string | null>(null);
+  // Tracks which project ids have an in-flight pin/archive/delete request so
+  // we can disable their controls and ignore reentrant clicks. A Set rather
+  // than a single id allows two unrelated projects to be busy at once
+  // (e.g. archiving one while pinning another).
+  const [busyProjectIds, setBusyProjectIds] = useState<Set<string>>(new Set());
+
+  const markProjectBusy = (id: string) =>
+    setBusyProjectIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  const clearProjectBusy = (id: string) =>
+    setBusyProjectIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   const [renameProject, setRenameProject] = useState<ImageProjectItem | null>(
     null
   );
@@ -145,8 +163,9 @@ export function ProjectSidebar() {
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    if (busyProjectId === project.id) return;
+    if (busyProjectIds.has(project.id)) return;
 
+    markProjectBusy(project.id);
     // Optimistic: toggle immediately
     const prevPinned = project.isPinned;
     updateProject(project.id, { isPinned: !prevPinned });
@@ -159,6 +178,8 @@ export function ProjectSidebar() {
       }
     } catch {
       updateProject(project.id, { isPinned: prevPinned });
+    } finally {
+      clearProjectBusy(project.id);
     }
   };
 
@@ -167,8 +188,9 @@ export function ProjectSidebar() {
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    if (busyProjectId === project.id) return;
+    if (busyProjectIds.has(project.id)) return;
 
+    markProjectBusy(project.id);
     // Optimistic: remove immediately
     removeProject(project.id);
 
@@ -185,6 +207,8 @@ export function ProjectSidebar() {
       }
     } catch {
       addProject(project);
+    } finally {
+      clearProjectBusy(project.id);
     }
   };
 
@@ -193,8 +217,9 @@ export function ProjectSidebar() {
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    if (busyProjectId === project.id) return;
+    if (busyProjectIds.has(project.id)) return;
 
+    markProjectBusy(project.id);
     // Optimistic: remove immediately
     removeProject(project.id);
 
@@ -211,6 +236,8 @@ export function ProjectSidebar() {
       }
     } catch {
       addProject(project);
+    } finally {
+      clearProjectBusy(project.id);
     }
   };
 
@@ -301,7 +328,7 @@ export function ProjectSidebar() {
                         onRename={(e) => handleRename(project, e)}
                         onArchive={(e) => handleArchive(project, e)}
                         onDelete={(e) => handleDelete(project, e)}
-                        isBusy={busyProjectId === project.id}
+                        isBusy={busyProjectIds.has(project.id)}
                       />
                     ))
                   )}
@@ -328,7 +355,7 @@ export function ProjectSidebar() {
                           onRename={(e) => handleRename(project, e)}
                           onArchive={(e) => handleArchive(project, e)}
                           onDelete={(e) => handleDelete(project, e)}
-                          isBusy={busyProjectId === project.id}
+                          isBusy={busyProjectIds.has(project.id)}
                         />
                       ))}
                     </SidebarMenu>
@@ -359,7 +386,7 @@ export function ProjectSidebar() {
                           onRename={(e) => handleRename(project, e)}
                           onArchive={(e) => handleArchive(project, e)}
                           onDelete={(e) => handleDelete(project, e)}
-                          isBusy={busyProjectId === project.id}
+                          isBusy={busyProjectIds.has(project.id)}
                         />
                       ))
                     )}
