@@ -1,5 +1,3 @@
-'use client';
-
 // Showcase section for Arch AI templates
 // 建筑 AI 模版展示区
 
@@ -13,7 +11,7 @@ import {
   LayoutGrid,
   PenTool,
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import Image from 'next/image';
 
 const SHOWCASE_ITEMS = [
@@ -55,8 +53,8 @@ const SHOWCASE_ITEMS = [
   },
 ];
 
-export default function ShowcaseSection() {
-  const t = useTranslations('HomePage.showcase');
+export default async function ShowcaseSection() {
+  const t = await getTranslations('HomePage.showcase');
 
   return (
     <section id="showcase" className="px-4 py-16">
@@ -75,9 +73,6 @@ export default function ShowcaseSection() {
         <div className="grid gap-5 xl:grid-cols-12">
           {SHOWCASE_ITEMS.map((item) => {
             const Icon = item.icon;
-            // Use generated image if available, otherwise fall back to original path or logic
-            // Use generated image for all items
-            const isGenerated = true;
             const imagePath = `/images/generated/${item.id}.png`;
 
             return (
@@ -101,25 +96,13 @@ export default function ShowcaseSection() {
                       : 'aspect-[4/5]'
                   )}
                 >
-                  {/* Image or Placeholder */}
-                  {isGenerated ? (
-                    <Image
-                      src={imagePath}
-                      alt={t(`items.${item.id}.title` as any)}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                          <Icon className="h-10 w-10 text-primary/50" />
-                        </div>
-                      </div>
-                    </>
-                  )}
+                  <Image
+                    src={imagePath}
+                    alt={t(`items.${item.id}.title` as any)}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
 
                   {/* Content overlay */}
                   <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
