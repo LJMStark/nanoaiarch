@@ -89,3 +89,48 @@ describe('applyRateLimit', () => {
     expect(result.remaining).toBe(1);
   });
 });
+
+describe('applyStrictRateLimit', () => {
+  beforeEach(() => {
+    returningMock.mockReset();
+    onConflictDoUpdateMock.mockClear();
+    valuesMock.mockClear();
+    insertMock.mockClear();
+    getDbMock.mockClear();
+  });
+
+  it('returns success on a healthy DB just like the regular limiter', async () => {
+    returningMock.mockResolvedValueOnce([
+      {
+        count: 1,
+        resetAt: new Date('2026-04-23T16:30:00.000Z'),
+      },
+    ]);
+
+    const { applyStrictRateLimit } = await import('../rate-limit');
+    const result = await applyStrictRateLimit({
+      key: 'zpay-webhook:1.2.3.4',
+      limit: 100,
+      windowMs: 60_000,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.remaining).toBe(99);
+  });
+
+  it('fails closed (no memory fallback) when the database rejects', async () => {
+    // The whole point of the strict variant: a DB outage must not become
+    // an attacker's bypass via the per-instance memory store.
+    returningMock.mockRejectedValueOnce(new Error('db down'));
+
+    const { applyStrictRateLimit } = await import('../rate-limit');
+    const result = await applyStrictRateLimit({
+      key: 'zpay-webhook:1.2.3.4',
+      limit: 100,
+      windowMs: 60_000,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.remaining).toBe(0);
+  });
+});

@@ -163,3 +163,84 @@ export function getRateLimitHeaders(result: RateLimitResult): HeadersInit {
 
 export const checkRateLimit = applyRateLimit;
 export const createRateLimitHeaders = getRateLimitHeaders;
+
+/**
+ * Strict rate limiter for security-sensitive endpoints (webhooks, login,
+ * password reset). Differs from {@link applyRateLimit} in that it does NOT
+ * fall back to the in-process memory store when the database is unavailable.
+ *
+ * Why: the memory store is per-instance, so on a multi-instance serverless
+ * deployment an attacker can defeat it by spreading requests across instances.
+ * Worse, when the DB is the choke point under load, falling back to memory
+ * means we accept all webhook traffic at full rate while DB queries pile up.
+ *
+ * Behavior on DB failure: returns `{ success: false }` so the caller can
+ * respond with 503 Service Unavailable; legitimate clients (zpay) will retry
+ * the webhook later.
+ */
+export async function applyStrictRateLimit({
+  key,
+  limit,
+  windowMs,
+}: {
+  key: string;
+  limit: number;
+  windowMs: number;
+}): Promise<RateLimitResult> {
+  const now = new Date();
+  const resetAt = new Date(now.getTime() + windowMs);
+  const nowSql = sql`${now.toISOString()}::timestamp`;
+  const resetAtSql = sql`${resetAt.toISOString()}::timestamp`;
+
+  try {
+    const db = await getDb();
+    const rows = await db
+      .insert(requestRateLimit)
+      .values({
+        key,
+        count: 1,
+        resetAt,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: requestRateLimit.key,
+        set: {
+          count: sql`CASE WHEN ${requestRateLimit.resetAt} <= ${nowSql} THEN 1 ELSE ${requestRateLimit.count} + 1 END`,
+          resetAt: sql`CASE WHEN ${requestRateLimit.resetAt} <= ${nowSql} THEN ${resetAtSql} ELSE ${requestRateLimit.resetAt} END`,
+          updatedAt: now,
+        },
+      })
+      .returning({
+        count: requestRateLimit.count,
+        resetAt: requestRateLimit.resetAt,
+      });
+
+    const entry = rows[0] as RateLimitRow | undefined;
+    if (!entry) {
+      throw new Error('missing rate limit row');
+    }
+
+    const count = Number(entry.count);
+    return {
+      success: count <= limit,
+      limit,
+      remaining: count >= limit ? 0 : Math.max(0, limit - count),
+      resetAt: normalizeResetAt(entry.resetAt),
+    };
+  } catch (error) {
+    // Fail closed: refuse the request. Memory fallback would be a security
+    // hole here — see function-level docs for rationale.
+    logger.api.error(
+      'Strict rate limit DB unavailable, failing closed',
+      error instanceof Error ? error : new Error(String(error)),
+      { key }
+    );
+    return {
+      success: false,
+      limit,
+      remaining: 0,
+      resetAt: Date.now() + windowMs,
+    };
+  }
+}
