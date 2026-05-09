@@ -106,6 +106,63 @@ jobs:
           BETTER_AUTH_SECRET: 'ci-build-stub-secret'
           NEXT_PUBLIC_APP_URL: 'http://localhost:3000'
 
+  # Migration health check (Week 3.4 — lightweight variant).
+  # Boots a real Postgres container via Actions services, runs the full
+  # Drizzle migration sequence against a fresh DB. Catches:
+  #   - Migration files that don't apply cleanly (typos, ordering issues,
+  #     dropped columns still referenced, etc.)
+  #   - Schema drift between schema.ts and the migrations folder
+  #
+  # Does NOT replace true integration tests (those would assert business
+  # logic against the real DB) — that scope stays deferred to Week 8 when
+  # staging is up. This job is the cheap "did our schema break?" gate.
+  migrations:
+    name: Migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: arch_ai_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Apply migrations to fresh DB
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: 'postgresql://ci:ci@localhost:5432/arch_ai_ci'
+      - name: Verify schema is consistent with migrations
+        # `drizzle-kit generate` is a no-op when schema.ts matches the
+        # migrations exactly. Anything else means the schema drifted —
+        # likely a developer modified schema.ts but forgot to run
+        # `pnpm db:generate` to commit the migration. Fail the job to
+        # force the discipline.
+        run: |
+          pnpm db:generate
+          if [ -n "$(git status --porcelain src/db/migrations)" ]; then
+            echo "::error::Schema drift detected — run 'pnpm db:generate' and commit the resulting migration."
+            git --no-pager diff src/db/migrations
+            exit 1
+          fi
+        env:
+          DATABASE_URL: 'postgresql://ci:ci@localhost:5432/arch_ai_ci'
+
   # Playwright smoke tests — verify public routes render without console
   # errors (Week 3.6). Uses production build to match what users actually hit.
   e2e:
