@@ -8,6 +8,7 @@ import {
   normalizePersistedAssistantMessage,
 } from '@/ai/image/lib/generation-utils';
 import { useConversationStore } from '@/stores/conversation-store';
+import { useCreditsModalStore } from '@/stores/credits-modal-store';
 import { preloadImage } from '@/ai/image/lib/image-display-utils';
 import {
   createPendingGenerationRequest,
@@ -310,6 +311,15 @@ export function useConversationSubmit({
 
         if (!isActiveGenerationRequest(requestToken, generatingMessageId)) {
           return;
+        }
+
+        // 402 INSUFFICIENT_CREDITS: surface the upgrade modal instead of
+        // (or in addition to) a flat error toast. The assistant message still
+        // gets persisted as failed so the user has a record in the timeline.
+        if (result.errorCode === 'INSUFFICIENT_CREDITS') {
+          useCreditsModalStore.getState().open({
+            requiredCredits: result.requiredCredits,
+          });
         }
 
         if (result.message) {

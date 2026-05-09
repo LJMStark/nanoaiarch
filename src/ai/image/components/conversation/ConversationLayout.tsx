@@ -1,5 +1,6 @@
 'use client';
 
+import { InsufficientCreditsModal } from '@/ai/image/components/credits/InsufficientCreditsModal';
 import { LazyTemplateDetailModal } from '@/ai/image/components/lazy';
 import { useConversationInit } from '@/ai/image/hooks/use-conversation-init';
 import { useGenerationRecovery } from '@/ai/image/hooks/use-generation-recovery';
@@ -193,6 +194,13 @@ export function ConversationLayout() {
         onOpenChange={setIsTemplateModalOpen}
         onApply={handleApplyUrlTemplate}
       />
+
+      {/*
+       * Insufficient-credits upgrade nudge. Triggered globally via
+       * useCreditsModalStore.open(...) — see useConversationSubmit's catch
+       * block when the API returns 402 INSUFFICIENT_CREDITS.
+       */}
+      <InsufficientCreditsModal />
     </>
   );
 }

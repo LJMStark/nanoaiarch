@@ -57,8 +57,12 @@ describe('executeImageGeneration', () => {
     }
 
     expect(result.status).toBe(402);
+    // Response now carries a structured error code + required-credits hint
+    // so the client InsufficientCreditsModal can render specifics.
     await expect(result.json()).resolves.toEqual({
       error: '积分不足，请购买更多积分后继续',
+      errorCode: 'INSUFFICIENT_CREDITS',
+      required: expect.any(Number),
     });
   });
 

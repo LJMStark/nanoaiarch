@@ -1848,5 +1848,17 @@
       "editDescription": "上传图片后，描述您希望如何修改",
       "generateDescription": "在上方输入提示词，让 AI 为您生成图像"
     }
+  },
+  "CreditsModal": {
+    "title": "积分不足",
+    "description": "本次生成所需积分超出当前余额。补充积分后即可继续创作。",
+    "currentBalance": "当前余额",
+    "required": "本次需要",
+    "creditsAmount": "{amount} 积分",
+    "recommendedTitle": "为你推荐",
+    "recommendedAmount": "送 {amount} 积分 / 月",
+    "cancel": "稍后再说",
+    "viewAllPlans": "查看全部套餐",
+    "quickUpgrade": "立即开通"
   }
 }

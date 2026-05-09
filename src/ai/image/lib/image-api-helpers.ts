@@ -104,6 +104,8 @@ export async function verifyCredits(
     return NextResponse.json(
       {
         error: '积分不足，请购买更多积分后继续',
+        errorCode: 'INSUFFICIENT_CREDITS',
+        required: creditCost,
       },
       { status: 402 }
     );
@@ -169,6 +171,8 @@ export async function verifyRequestContext(
       return NextResponse.json(
         {
           error: '积分不足，请购买更多积分后继续',
+          errorCode: 'INSUFFICIENT_CREDITS',
+          required: creditResult.creditCost,
         },
         { status: 402 }
       );

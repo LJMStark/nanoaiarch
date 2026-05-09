@@ -99,6 +99,15 @@ vi.mock('../ProjectSidebar', () => ({
   ProjectSidebar: () => <div>project-sidebar</div>,
 }));
 
+// InsufficientCreditsModal pulls in server-only via the credit-balance
+// action chain. We don't need its real behavior for layout tests.
+vi.mock(
+  '@/ai/image/components/credits/InsufficientCreditsModal',
+  () => ({
+    InsufficientCreditsModal: () => null,
+  })
+);
+
 vi.mock('@/ai/image/components/lazy', () => ({
   LazyTemplateDetailModal: ({
     open,

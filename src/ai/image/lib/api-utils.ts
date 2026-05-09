@@ -350,6 +350,10 @@ export interface GenerateImageResult {
   image?: string;
   text?: string;
   error?: string;
+  /** Stable string code for error categorisation, e.g. 'INSUFFICIENT_CREDITS'. */
+  errorCode?: string;
+  /** Required credits for this generation; populated alongside INSUFFICIENT_CREDITS. */
+  requiredCredits?: number;
   creditsUsed?: number;
   message?: PersistedAssistantMessagePayload;
 }
@@ -414,6 +418,8 @@ export async function generateImage(
       return {
         success: false,
         error: data.error || '图片生成失败',
+        errorCode: data.errorCode,
+        requiredCredits: data.required,
       };
     }
 
