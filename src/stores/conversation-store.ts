@@ -123,15 +123,20 @@ const customStorage = {
     } catch (error) {
       logger.general.error('Failed to set localStorage:', error);
 
-      // Handle quota exceeded error by cleaning up and retrying
+      // QuotaExceededError recovery (Week 4.2):
+      // Browser localStorage is shared across all keys (5-10 MB total).
+      // If we hit quota writing OUR key, the cause is almost always
+      // OTHER apps/keys filling the bucket — our value is tiny since
+      // partialize() returns {}. Removing and re-setting our own key is
+      // pointless (it can only free as much as our previous value, which
+      // is near-zero). Instead we accept the write failure and let the
+      // store stay in-memory for this session; data is recoverable from
+      // the server on next reload.
       if (error instanceof Error && error.name === 'QuotaExceededError') {
-        logger.general.warn('localStorage quota exceeded, attempting cleanup');
-        try {
-          storage.removeItem(name);
-          storage.setItem(name, value);
-        } catch (retryError) {
-          logger.general.error('Failed to cleanup and retry:', retryError);
-        }
+        logger.general.warn(
+          'localStorage quota exceeded — skipping persist for this session. ' +
+            'Other apps may have filled localStorage; clearing browser data resolves it.'
+        );
       }
     }
   },

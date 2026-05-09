@@ -11,8 +11,26 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 /**
- * Project Store - Zustand state for image projects
+ * Project Store - Zustand state for image projects.
+ *
+ * Persistence policy (Week 4.2): localStorage holds ONLY the three
+ * lightweight fields named in {@link PersistedProjectState} —
+ * `currentProjectId` (string id), `imageQuality` (enum), and
+ * `selectedModel` (enum). Everything else, especially the `projects`
+ * array (which contains base64 cover images), is fetched fresh from the
+ * server on each app load. This bound keeps the persisted blob under
+ * ~200 bytes and immune to QuotaExceededError under any user behavior.
+ *
+ * To add a new persisted field, extend `PersistedProjectState`'s key
+ * union — `partialize` is type-checked against it, so accidentally
+ * persisting a heavy field (like base64 images) won't silently slip in.
  */
+
+/** Whitelist of fields that survive a page reload. Keep this list small. */
+type PersistedProjectState = Pick<
+  ProjectState,
+  'currentProjectId' | 'imageQuality' | 'selectedModel'
+>;
 
 interface ProjectState {
   // Project list
@@ -174,7 +192,10 @@ export const useProjectStore = create<ProjectState>()(
     {
       name: 'project-store',
       version: 3,
-      partialize: (state) => ({
+      // Explicit return type forces the partialize body to stay aligned
+      // with the persistence whitelist. Adding a new field here without
+      // first extending PersistedProjectState is a type error — by design.
+      partialize: (state): PersistedProjectState => ({
         currentProjectId: isTemporaryId(state.currentProjectId)
           ? null
           : state.currentProjectId,
