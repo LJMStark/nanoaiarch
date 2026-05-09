@@ -7,43 +7,46 @@ import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { CreditPricingCard } from './credit-pricing-card';
+import { FreeTierCard } from './free-tier-card';
 
 interface CreditPricingTableProps {
   userId?: string;
   className?: string;
 }
 
+const TIERS: CreditPackageTier[] = ['basic', 'standard', 'pro'];
+
 /**
- * Credit Pricing Table with subscription-style layout
+ * Subscription-style membership table laid out as 4 columns:
+ *   [非会员] [黄金会员] [铂金会员] [钻石会员]
  *
- * Displays credit packages in a tier-based layout (Basic/Standard/Pro)
- * with billing interval toggle (Monthly/Quarterly/Yearly)
+ * The interval toggle (按月 / 按年) only affects the paid columns;
+ * the free tier is constant. Quarter packages were retired — only month
+ * and year intervals are exposed in the UI.
+ *
+ * Backend reality vs UX: zpay does not support recurring billing, so each
+ * "subscription" purchase is a one-time charge under the hood. The UI is
+ * intentionally framed as a subscription to match user expectations and
+ * simplify migration when a recurring-capable provider is wired in later.
  */
 export function CreditPricingTable({
   userId,
   className,
 }: CreditPricingTableProps) {
   const t = useTranslations('CreditPricing');
-  const [interval, setInterval] = useState<CreditPackageInterval>('quarter'); // Default to quarterly (best value)
+  const [interval, setInterval] = useState<CreditPackageInterval>('month');
 
   const packages = websiteConfig.credits.packages;
 
-  // Get unique tiers
-  const tiers: CreditPackageTier[] = ['basic', 'standard', 'pro'];
-
-  // Check which intervals are available
   const hasMonthly = Object.values(packages).some(
     (p) => p.interval === 'month'
-  );
-  const hasQuarterly = Object.values(packages).some(
-    (p) => p.interval === 'quarter'
   );
   const hasYearly = Object.values(packages).some((p) => p.interval === 'year');
 
   return (
     <div className={cn('flex flex-col gap-8', className)}>
-      {/* Interval Toggle - X style with "Best Value" badge */}
-      {(hasMonthly || hasQuarterly || hasYearly) && (
+      {/* Interval toggle — defaults to monthly */}
+      {(hasMonthly || hasYearly) && (
         <div className="flex justify-center">
           <ToggleGroup
             size="lg"
@@ -54,35 +57,6 @@ export function CreditPricingTable({
             }
             className="rounded-full border border-border/70 bg-background/55 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]"
           >
-            {hasYearly && (
-              <ToggleGroupItem
-                value="year"
-                className={cn(
-                  'relative min-h-11 cursor-pointer rounded-full px-6 py-2 text-sm font-medium',
-                  'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground',
-                  'data-[state=off]:hover:bg-muted'
-                )}
-              >
-                <div className="flex flex-col items-center gap-0.5">
-                  <span>{t('yearly')}</span>
-                  {interval === 'year' && (
-                    <span className="text-xs opacity-90">{t('bestValue')}</span>
-                  )}
-                </div>
-              </ToggleGroupItem>
-            )}
-            {hasQuarterly && (
-              <ToggleGroupItem
-                value="quarter"
-                className={cn(
-                  'min-h-11 cursor-pointer rounded-full px-6 py-2 text-sm font-medium',
-                  'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground',
-                  'data-[state=off]:hover:bg-muted'
-                )}
-              >
-                {t('quarterly')}
-              </ToggleGroupItem>
-            )}
             {hasMonthly && (
               <ToggleGroupItem
                 value="month"
@@ -95,14 +69,27 @@ export function CreditPricingTable({
                 {t('monthly')}
               </ToggleGroupItem>
             )}
+            {hasYearly && (
+              <ToggleGroupItem
+                value="year"
+                className={cn(
+                  'min-h-11 cursor-pointer rounded-full px-6 py-2 text-sm font-medium',
+                  'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground',
+                  'data-[state=off]:hover:bg-muted'
+                )}
+              >
+                {t('yearly')}
+              </ToggleGroupItem>
+            )}
           </ToggleGroup>
         </div>
       )}
 
-      {/* Pricing Cards Grid - 3 columns for tiers */}
-      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
-        {tiers.map((tier) => {
-          // Find package for this tier and interval
+      {/* 4-column membership grid: free + 3 tiers */}
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <FreeTierCard />
+
+        {TIERS.map((tier) => {
           const pkg = Object.values(packages).find(
             (p) => p.tier === tier && p.interval === interval && !p.disabled
           );
@@ -118,15 +105,6 @@ export function CreditPricingTable({
             />
           );
         })}
-      </div>
-
-      {/* Free Plan Info */}
-      <div className="mx-auto max-w-2xl text-center text-sm leading-7 text-muted-foreground">
-        <p>
-          {t('freeInfo', {
-            credits: websiteConfig.credits.registerGiftCredits.amount,
-          })}
-        </p>
       </div>
     </div>
   );

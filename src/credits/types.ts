@@ -63,7 +63,8 @@ export class CreditBalanceUpdateError extends CreditError {
  */
 export interface CreditPackagePrice {
   priceId: string;                   // Stripe price ID (not product id)
-  amount: number;                    // Price amount in currency units (dollars, euros, etc.)
+  amount: number;                    // Discounted price (in minor units, e.g. cents)
+  originalPrice?: number;            // Pre-discount list price (in minor units); rendered as strikethrough next to the discounted price
   currency: string;                  // Currency code (e.g., USD)
   allowPromotionCode?: boolean;      // Whether to allow promotion code for this price
   zpayAmount?: number;               // zpay price in CNY (Chinese Yuan), for China payments
@@ -77,7 +78,7 @@ export type CreditPackageTier = 'basic' | 'standard' | 'pro';
 /**
  * Credit package billing interval
  */
-export type CreditPackageInterval = 'month' | 'quarter' | 'year';
+export type CreditPackageInterval = 'month' | 'year';
 
 /**
  * Credit package
@@ -94,4 +95,5 @@ export interface CreditPackage {
   tier?: CreditPackageTier;            // Package tier for subscription-style pricing
   interval?: CreditPackageInterval;    // Billing interval for subscription-style pricing
   savings?: number;                    // Savings percentage compared to monthly (e.g., 15 for 15% off)
+  monthlyImageEstimate?: number;       // Approximate images generatable per month (for marketing copy)
 }

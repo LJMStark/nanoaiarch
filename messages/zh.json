@@ -318,33 +318,58 @@
     }
   },
   "CreditPricing": {
-    "monthly": "月度",
-    "quarterly": "季度",
-    "yearly": "年度",
-    "bestValue": "最划算",
-    "freeInfo": "注册即送 {credits} 积分",
+    "monthly": "按月订阅",
+    "yearly": "按年订阅",
     "Card": {
       "tiers": {
-        "basic": "基础版",
-        "standard": "标准版",
-        "pro": "专业版"
+        "basic": "黄金会员",
+        "standard": "铂金会员",
+        "pro": "钻石会员"
       },
       "intervals": {
         "month": "月",
-        "quarter": "季",
         "year": "年"
       },
-      "recommended": "推荐选择",
-      "monthlyEquivalent": "约 {price}/月",
-      "save": "节省",
-      "defaultDescription": "适合轻度使用",
-      "subscribe": "立即订阅",
+      "subscribe": "立即开通",
+      "unitPrice": "￥{price}/100积分",
+      "giftCredits": "送 {amount} 积分",
+      "monthlyImageEstimate": "每月大约可生成 {count}+ 张图",
       "features": {
-        "credits": "{amount} 积分",
-        "images": "约生成 {count} 张图片",
-        "expiry": "有效期 {days} 天",
-        "allModels": "支持所有 AI 模型",
-        "priority": "优先处理队列"
+        "basic": {
+          "1": "每月可用 15次 精准渲染功能",
+          "2": "平峰期享最高 8折 优惠（综合折扣）",
+          "3": "每天 5次 加速生图",
+          "4": "专属高速服务器",
+          "5": "平峰、低谷期部分功能无限生图",
+          "6": "支持 4K 超清下载",
+          "7": "下载无水印原图"
+        },
+        "standard": {
+          "1": "每月可用 60次 精准渲染功能",
+          "2": "平峰期享最高 6折 优惠（综合折扣）",
+          "3": "每天 12次 加速生图",
+          "4": "专属高速服务器",
+          "5": "平峰、低谷期部分功能无限生图",
+          "6": "支持 4K 超清下载",
+          "7": "下载无水印原图"
+        },
+        "pro": {
+          "1": "每月可用 1000+次 精准渲染功能",
+          "2": "平峰期享最高 5折 优惠（综合折扣）",
+          "3": "每天 30次 加速生图",
+          "4": "专属高速服务器 + 专属通道",
+          "5": "平峰、低谷期部分功能无限生图",
+          "6": "无限次 4K 下载（平峰、低谷期）",
+          "7": "下载无水印原图"
+        }
+      }
+    },
+    "FreeTier": {
+      "tierName": "非会员",
+      "currentPlan": "当前使用",
+      "features": {
+        "1": "登录每日送免费积分（连续10天）",
+        "2": "免费功能体验（有限次数）"
       }
     }
   },
