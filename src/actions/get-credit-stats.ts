@@ -14,13 +14,14 @@ export const getCreditStatsAction = userActionClient.action(async ({ ctx }) => {
 
     const db = await getDb();
     const now = new Date();
+    const expirationDay = sql<Date>`DATE(${creditTransaction.expirationDate})`;
 
     // All non-expired grants with remaining balance, grouped by expiration date.
     // Null expirationDate rows (never-expire grants) are excluded so the UI
     // only shows dates that are actually relevant to the user.
     const rows = await db
       .select({
-        expirationDate: creditTransaction.expirationDate,
+        expirationDate: expirationDay,
         totalAmount: sum(creditTransaction.remainingAmount),
       })
       .from(creditTransaction)
@@ -33,8 +34,8 @@ export const getCreditStatsAction = userActionClient.action(async ({ ctx }) => {
           gte(creditTransaction.expirationDate, now)
         )
       )
-      .groupBy(sql`DATE(${creditTransaction.expirationDate})`)
-      .orderBy(creditTransaction.expirationDate);
+      .groupBy(expirationDay)
+      .orderBy(expirationDay);
 
     const expiryBreakdown = rows
       .filter((r) => r.expirationDate != null && Number(r.totalAmount) > 0)
