@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { randomUUID } from 'crypto';
 import { websiteConfig } from '@/config/website';
-import { addCredits, addLifetimeMonthlyCredits } from '@/credits/credits';
+import { addCredits, addLifetimeInitialCredits } from '@/credits/credits';
 import { completeReferral } from '@/credits/referral';
 import { getCreditPackageById } from '@/credits/server';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
@@ -561,12 +561,18 @@ export class ZpayProvider implements PaymentProvider {
     }
 
     if (websiteConfig.credits?.enableCredits) {
-      await addLifetimeMonthlyCredits(
+      // Webhook-driven first-purchase grant: keyed on invoiceId so the user
+      // always receives credits for the purchase month — even after refund +
+      // rebuy in the same month — while replays remain idempotent.
+      const invoiceId = paymentRecord.invoiceId ?? paymentRecord.id;
+      await addLifetimeInitialCredits(
         paymentRecord.userId,
-        paymentRecord.priceId
+        paymentRecord.priceId,
+        invoiceId
       );
       logger.payment.info('Added lifetime credits for user', {
         userId: paymentRecord.userId,
+        invoiceId,
       });
     }
 

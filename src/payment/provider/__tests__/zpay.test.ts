@@ -4,7 +4,7 @@ import { ZpayProvider } from '../zpay';
 
 const mocks = vi.hoisted(() => ({
   addCredits: vi.fn(),
-  addLifetimeMonthlyCredits: vi.fn(),
+  addLifetimeInitialCredits: vi.fn(),
   completeReferral: vi.fn(),
   getCreditPackageById: vi.fn(),
   getDb: vi.fn(),
@@ -27,7 +27,7 @@ vi.mock('@/config/website', () => ({
 
 vi.mock('@/credits/credits', () => ({
   addCredits: mocks.addCredits,
-  addLifetimeMonthlyCredits: mocks.addLifetimeMonthlyCredits,
+  addLifetimeInitialCredits: mocks.addLifetimeInitialCredits,
 }));
 
 vi.mock('@/credits/referral', () => ({
@@ -176,6 +176,71 @@ describe('ZpayProvider webhook hardening', () => {
         '9.90'
       )
     ).rejects.toThrow('Lifetime payment amount mismatch');
+  });
+
+  it('grants lifetime credits using invoice-scoped idempotency key', async () => {
+    mocks.findPlanByPriceId.mockReturnValue({
+      isLifetime: true,
+      prices: [
+        {
+          priceId: 'price-lifetime',
+          zpayAmount: 199,
+        },
+      ],
+      credits: { enable: true, amount: 1000 },
+    });
+    mocks.addLifetimeInitialCredits.mockResolvedValue(true);
+
+    const provider = new ZpayProvider();
+
+    await (provider as any).processLifetimePurchase(
+      {
+        id: 'payment-1',
+        invoiceId: 'invoice-lifetime-1',
+        priceId: 'price-lifetime',
+        userId: 'user-1',
+        sessionId: 'session-1',
+        customerId: 'customer-1',
+      },
+      '199.00'
+    );
+
+    expect(mocks.addLifetimeInitialCredits).toHaveBeenCalledWith(
+      'user-1',
+      'price-lifetime',
+      'invoice-lifetime-1'
+    );
+  });
+
+  it('falls back to payment.id when invoiceId missing on lifetime grant', async () => {
+    // Defensive path: legacy or partial payment records without invoiceId
+    // should still produce a stable idempotency scope rather than throwing.
+    mocks.findPlanByPriceId.mockReturnValue({
+      isLifetime: true,
+      prices: [{ priceId: 'price-lifetime', zpayAmount: 199 }],
+      credits: { enable: true, amount: 1000 },
+    });
+    mocks.addLifetimeInitialCredits.mockResolvedValue(true);
+
+    const provider = new ZpayProvider();
+
+    await (provider as any).processLifetimePurchase(
+      {
+        id: 'payment-fallback-1',
+        invoiceId: null,
+        priceId: 'price-lifetime',
+        userId: 'user-1',
+        sessionId: 'session-1',
+        customerId: 'customer-1',
+      },
+      '199.00'
+    );
+
+    expect(mocks.addLifetimeInitialCredits).toHaveBeenCalledWith(
+      'user-1',
+      'price-lifetime',
+      'payment-fallback-1'
+    );
   });
 
   it('retries referral reward when payment was already marked paid', async () => {

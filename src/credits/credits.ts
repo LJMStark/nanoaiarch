@@ -891,7 +891,17 @@ export async function addSubscriptionCredits(userId: string, priceId: string) {
 }
 
 /**
- * Add lifetime monthly credits
+ * Add lifetime monthly credits (cron-driven recurring grant).
+ *
+ * Uses a month-scoped idempotency key combined with canAddCreditsByType to
+ * ensure each user receives at most one LIFETIME_MONTHLY grant per month from
+ * the cron pipeline.
+ *
+ * For first-purchase grants triggered by the payment webhook, use
+ * {@link addLifetimeInitialCredits} instead — it keys on the invoice id so
+ * the user always receives their purchase-month credits even in edge cases
+ * (e.g. refund + rebuy within the same month).
+ *
  * @param userId - User ID
  * @param priceId - Price ID
  */
@@ -922,6 +932,94 @@ export async function addLifetimeMonthlyCredits(
     descriptionPrefix: 'Lifetime monthly credits',
     logLabel: 'addLifetimeMonthlyCredits',
   });
+}
+
+/**
+ * Build the invoice-scoped idempotency key for lifetime first-purchase grants.
+ * Exposed for tests; internal callers should rely on addLifetimeInitialCredits.
+ */
+export function buildLifetimeInitialIdempotencyKey(invoiceId: string): string {
+  return `lifetime-init:${invoiceId}`;
+}
+
+/**
+ * Add lifetime credits triggered by a successful payment webhook.
+ *
+ * Unlike {@link addLifetimeMonthlyCredits}, this function:
+ *   1. Bypasses the month-scoped canAddCreditsByType gate, so a refund+rebuy
+ *      in the same month still grants the purchase-month credits.
+ *   2. Uses an invoice-scoped idempotency key so webhook replays are safe.
+ *
+ * The cron monthly grant is still gated by canAddCreditsByType, so it will
+ * naturally skip the current month if this function has already granted.
+ *
+ * @param userId - User ID
+ * @param priceId - Price ID
+ * @param invoiceId - Payment invoice id (forms the idempotency key scope)
+ * @returns true if credits were applied, false if a duplicate webhook
+ */
+export async function addLifetimeInitialCredits(
+  userId: string,
+  priceId: string,
+  invoiceId: string
+): Promise<boolean> {
+  if (!invoiceId) {
+    throw new Error('addLifetimeInitialCredits: invoiceId required');
+  }
+
+  const pricePlan = findPlanByPriceId(priceId);
+  if (
+    !pricePlan ||
+    !pricePlan.isLifetime ||
+    pricePlan.disabled ||
+    !pricePlan.credits ||
+    !pricePlan.credits.enable
+  ) {
+    logger.credits.debug('addLifetimeInitialCredits no credits configured', {
+      priceId,
+      invoiceId,
+    });
+    return false;
+  }
+
+  const credits = pricePlan.credits.amount;
+  // Lifetime plans use expireDays: 0 to mean "never expires"; addCredits
+  // treats undefined as "no expiry" but rejects 0 outright. Normalize here
+  // so the invoice grant survives the validation gate.
+  const rawExpireDays = pricePlan.credits.expireDays;
+  const expireDays =
+    rawExpireDays && rawExpireDays > 0 ? rawExpireDays : undefined;
+  const now = new Date();
+  const month = `${now.getFullYear()}-${now.getMonth() + 1}`;
+
+  const applied = await addCredits({
+    userId,
+    amount: credits,
+    type: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
+    description: `Lifetime monthly credits: ${credits} for ${month}`,
+    expireDays,
+    idempotencyKey: buildLifetimeInitialIdempotencyKey(invoiceId),
+  });
+
+  if (applied) {
+    logger.credits.info('addLifetimeInitialCredits completed', {
+      userId,
+      credits,
+      invoiceId,
+      month,
+    });
+  } else {
+    logger.credits.debug(
+      'addLifetimeInitialCredits skipped (duplicate webhook)',
+      {
+        userId,
+        invoiceId,
+        month,
+      }
+    );
+  }
+
+  return applied;
 }
 
 // ============================================================================
