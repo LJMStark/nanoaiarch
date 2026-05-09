@@ -172,9 +172,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Verify session and credits. Passing assistantMessageId here lets the
-    // hold idempotency key be derived from the message id, so the Week 5.1
-    // lease sweeper can find and release the hold for an orphaned message.
+    // Verify session and credits. Passing assistantMessageId here lets
+    // recovery derive the hold idempotency key from the message id.
     const ctx = await verifyRequestContext(req.headers, modelId, requestId, {
       messageId: assistantMessageId,
     });

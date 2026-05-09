@@ -166,18 +166,17 @@ export function useGenerationRecovery(projectId: string | null): void {
         // Successful resolution clears the not-found backoff too.
         notFoundCountRef.current = 0;
 
-        // Lease check (Week 4.1): if the server-side lease has elapsed for
-        // a row that's still showing 'generating', the background sweeper
-        // will finalize this row to 'failed' shortly. Stop polling so the
-        // client doesn't fight the sweeper. The next mount-time hydration
-        // will pick up the sweeper's terminal status.
+        // Lease check: getMessageStatus runs server-side recovery before it
+        // returns. If this row still shows 'generating' with an expired lease,
+        // stop polling and let the next mount/request pick up the terminal
+        // status after recovery.
         if (result.data.status === 'generating') {
           const leaseExpiresAt = result.data.generationLeaseExpiresAt;
           if (leaseExpiresAt) {
             const leaseExpiry = new Date(leaseExpiresAt).getTime();
             if (!Number.isNaN(leaseExpiry) && leaseExpiry < Date.now()) {
               logger.ai.warn(
-                `Lease expired for generating message [messageId=${activeMessageId}, leaseExpiry=${new Date(leaseExpiry).toISOString()}] — sweeper will finalize`
+                `Lease expired for generating message [messageId=${activeMessageId}, leaseExpiry=${new Date(leaseExpiry).toISOString()}]`
               );
               setGenerating(false);
               stopPolling();

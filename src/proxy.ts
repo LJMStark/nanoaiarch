@@ -16,6 +16,7 @@ import {
 } from './routes';
 
 const intlMiddleware = createMiddleware(routing);
+const removedPublicRoutes = ['/waitlist', '/changelog'];
 
 /**
  * Get the base URL from the request headers
@@ -40,6 +41,14 @@ function getBaseUrlFromRequest(req: NextRequest): string {
 export default async function proxy(req: NextRequest) {
   const { nextUrl } = req;
   logger.general.debug('middleware start', { pathname: nextUrl.pathname });
+  const pathnameWithoutLocale = getPathnameWithoutLocale(
+    nextUrl.pathname,
+    LOCALES
+  );
+
+  if (removedPublicRoutes.includes(pathnameWithoutLocale)) {
+    return new NextResponse('Not Found', { status: 404 });
+  }
 
   // Handle internal docs link redirection for internationalization
   // Check if this is a docs page without locale prefix
@@ -84,12 +93,6 @@ export default async function proxy(req: NextRequest) {
     });
   }
   // console.log('middleware, isLoggedIn', isLoggedIn);
-
-  // Get the pathname of the request (e.g. /zh/dashboard to /dashboard)
-  const pathnameWithoutLocale = getPathnameWithoutLocale(
-    nextUrl.pathname,
-    LOCALES
-  );
 
   // If the route can not be accessed by logged in users, redirect if the user is logged in
   if (isLoggedIn) {

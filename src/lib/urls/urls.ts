@@ -2,11 +2,61 @@ import { routing } from '@/i18n/routing';
 import { logger } from '@/lib/logger';
 import type { Locale } from 'next-intl';
 
-function getConfiguredBaseUrl(): string {
+function isLocalHostname(hostname: string): boolean {
   return (
-    process.env.NEXT_PUBLIC_BASE_URL?.trim() ||
-    `http://localhost:${process.env.PORT ?? 3000}`
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1' ||
+    hostname.endsWith('.localhost')
   );
+}
+
+function isPrivateHostname(hostname: string): boolean {
+  return (
+    isLocalHostname(hostname) ||
+    hostname.startsWith('10.') ||
+    hostname.startsWith('192.168.') ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
+  );
+}
+
+function allowLocalProductionBaseUrl(): boolean {
+  return process.env.ALLOW_LOCAL_BASE_URL_IN_PRODUCTION === 'true';
+}
+
+function getConfiguredBaseUrl(): string {
+  const configuredBaseUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+
+  if (!configuredBaseUrl) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('NEXT_PUBLIC_BASE_URL is required in production');
+    }
+
+    return `http://localhost:${process.env.PORT ?? 3000}`;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(configuredBaseUrl);
+  } catch {
+    throw new Error('NEXT_PUBLIC_BASE_URL must be a valid absolute URL');
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    const isAllowedLocal = allowLocalProductionBaseUrl();
+
+    if (url.protocol !== 'https:' && !isAllowedLocal) {
+      throw new Error('NEXT_PUBLIC_BASE_URL must use https in production');
+    }
+
+    if (isPrivateHostname(url.hostname) && !isAllowedLocal) {
+      throw new Error(
+        'NEXT_PUBLIC_BASE_URL must be a public hostname in production'
+      );
+    }
+  }
+
+  return url.origin;
 }
 
 /**

@@ -50,7 +50,9 @@ export default defineConfig({
       // exercised by smoke tests.
       DATABASE_URL: 'postgresql://stub:stub@localhost:5432/stub',
       BETTER_AUTH_SECRET: 'e2e-stub-secret',
-      NEXT_PUBLIC_APP_URL: 'http://127.0.0.1:3000',
+      NEXT_PUBLIC_BASE_URL: 'http://127.0.0.1:3000',
+      ALLOW_LOCAL_BASE_URL_IN_PRODUCTION: 'true',
+      CRON_SECRET: 'e2e-cron-secret',
     },
   },
 });

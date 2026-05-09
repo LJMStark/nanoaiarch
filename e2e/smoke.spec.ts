@@ -13,8 +13,15 @@ import { expect, test } from '@playwright/test';
  *   /pricing     — 4-column membership table (Week 1.6 redesign)
  *   /privacy     — legal SSG
  *   /terms       — legal SSG
+ *   /cookie      — legal SSG
+ *   /blog        — SEO content list
+ *   /blog/[slug] — SEO content detail
+ *   /about
+ *   /contact
  *   /auth/login  — auth entry
  *   /auth/register
+ *   /sitemap.xml
+ *   /robots.txt
  *
  * Excluded for now (need real auth or external services):
  *   /(protected)/* — needs a logged-in session
@@ -29,6 +36,14 @@ const PUBLIC_ROUTES: Array<{ path: string; expects: RegExp }> = [
   { path: '/pricing', expects: /会员|套餐|订阅/i },
   { path: '/privacy', expects: /privacy|隐私/i },
   { path: '/terms', expects: /terms|条款/i },
+  { path: '/cookie', expects: /Cookie|政策/i },
+  { path: '/blog', expects: /博客|文章/i },
+  {
+    path: '/blog/ai-rendering-wins-clients',
+    expects: /建筑师|效果图|客户/i,
+  },
+  { path: '/about', expects: /关于我们|Arch AI/i },
+  { path: '/contact', expects: /联系我们|邮箱/i },
   { path: '/auth/login', expects: /邮箱|登录|password/i },
   { path: '/auth/register', expects: /注册|register|邮箱/i },
 ];
@@ -79,4 +94,52 @@ test('pricing page shows the three paid tiers', async ({ page }) => {
   await expect(page.getByText('黄金会员').first()).toBeVisible();
   await expect(page.getByText('铂金会员').first()).toBeVisible();
   await expect(page.getByText('钻石会员').first()).toBeVisible();
+});
+
+test('sitemap and robots expose public SEO metadata without removed routes', async ({
+  request,
+}) => {
+  const [sitemapResponse, robotsResponse] = await Promise.all([
+    request.get('/sitemap.xml'),
+    request.get('/robots.txt'),
+  ]);
+
+  expect(sitemapResponse.status()).toBe(200);
+  expect(robotsResponse.status()).toBe(200);
+
+  const sitemapXml = await sitemapResponse.text();
+  expect(sitemapXml).toContain('/blog/ai-rendering-wins-clients');
+  expect(sitemapXml).not.toContain('/waitlist');
+  expect(sitemapXml).not.toContain('/changelog');
+
+  const robotsTxt = await robotsResponse.text();
+  expect(robotsTxt).toContain('Sitemap:');
+  expect(robotsTxt).toContain('/sitemap.xml');
+});
+
+test('removed marketing routes return 404', async ({ request }) => {
+  await Promise.all(
+    ['/waitlist', '/changelog'].map(async (path) => {
+      const response = await request.get(path);
+      expect(response.status(), `${path} status`).toBe(404);
+    })
+  );
+});
+
+test('protected routes redirect anonymous users to login', async ({ page }) => {
+  await page.goto('/dashboard');
+
+  await expect(page).toHaveURL(/\/auth\/login\?callbackUrl=%2Fdashboard/);
+  await expect(page.getByText(/欢迎回来|登录/).first()).toBeVisible();
+});
+
+test('cron route rejects missing auth and advertises supported schemes', async ({
+  request,
+}) => {
+  const response = await request.get('/api/cron/lease-sweep');
+
+  expect(response.status()).toBe(401);
+  const authenticateHeader = response.headers()['www-authenticate'] ?? '';
+  expect(authenticateHeader).toContain('Bearer');
+  expect(authenticateHeader).toContain('Basic');
 });

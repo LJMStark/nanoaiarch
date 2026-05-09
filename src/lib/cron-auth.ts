@@ -2,6 +2,8 @@ import { timingSafeEqual } from 'crypto';
 import { logger } from '@/lib/logger';
 import { NextResponse } from 'next/server';
 
+const CRON_REALM = 'Cron';
+
 function safeCompareStrings(a: string, b: string): boolean {
   const aBuffer = Buffer.from(a, 'utf8');
   const bBuffer = Buffer.from(b, 'utf8');
@@ -13,6 +15,30 @@ function safeCompareStrings(a: string, b: string): boolean {
   return timingSafeEqual(aBuffer, bBuffer);
 }
 
+function parseBasicCredentials(authHeader: string): {
+  username: string;
+  password: string;
+} | null {
+  const base64Credentials = authHeader.slice('Basic '.length);
+  let credentials: string;
+
+  try {
+    credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+  } catch {
+    return null;
+  }
+
+  const separatorIndex = credentials.indexOf(':');
+  if (separatorIndex < 0) {
+    return null;
+  }
+
+  return {
+    username: credentials.slice(0, separatorIndex),
+    password: credentials.slice(separatorIndex + 1),
+  };
+}
+
 export function validateBasicCronAuth(request: Request): boolean {
   const authHeader = request.headers.get('authorization');
 
@@ -20,16 +46,7 @@ export function validateBasicCronAuth(request: Request): boolean {
     return false;
   }
 
-  const base64Credentials = authHeader.split(' ')[1];
-  let credentials: string;
-
-  try {
-    credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
-  } catch {
-    return false;
-  }
-
-  const [username, password] = credentials.split(':');
+  const credentials = parseBasicCredentials(authHeader);
   const expectedUsername = process.env.CRON_JOBS_USERNAME;
   const expectedPassword = process.env.CRON_JOBS_PASSWORD;
 
@@ -40,21 +57,48 @@ export function validateBasicCronAuth(request: Request): boolean {
     return false;
   }
 
-  if (typeof username !== 'string' || typeof password !== 'string') {
+  if (!credentials) {
     return false;
   }
 
   return (
-    safeCompareStrings(username, expectedUsername) &&
-    safeCompareStrings(password, expectedPassword)
+    safeCompareStrings(credentials.username, expectedUsername) &&
+    safeCompareStrings(credentials.password, expectedPassword)
   );
+}
+
+export function validateBearerCronAuth(request: Request): boolean {
+  const authHeader = request.headers.get('authorization');
+
+  if (!authHeader?.startsWith('Bearer ')) {
+    return false;
+  }
+
+  const expectedSecret = process.env.CRON_SECRET?.trim();
+  if (!expectedSecret) {
+    logger.api.error('Bearer cron secret not configured in environment');
+    return false;
+  }
+
+  const token = authHeader.slice('Bearer '.length).trim();
+  return safeCompareStrings(token, expectedSecret);
+}
+
+export function validateCronAuth(request: Request): boolean {
+  const authHeader = request.headers.get('authorization');
+
+  if (authHeader?.startsWith('Bearer ')) {
+    return validateBearerCronAuth(request);
+  }
+
+  return validateBasicCronAuth(request);
 }
 
 export function createCronUnauthorizedResponse(): NextResponse {
   return new NextResponse('Unauthorized', {
     status: 401,
     headers: {
-      'WWW-Authenticate': 'Basic realm="Secure Area"',
+      'WWW-Authenticate': `Bearer realm="${CRON_REALM}", Basic realm="${CRON_REALM}"`,
     },
   });
 }

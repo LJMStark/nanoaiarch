@@ -1,7 +1,7 @@
 import { distributeCreditsToAllUsers } from '@/credits/distribute';
 import {
   createCronUnauthorizedResponse,
-  validateBasicCronAuth,
+  validateCronAuth,
 } from '@/lib/cron-auth';
 import { logger } from '@/lib/logger';
 import { NextResponse } from 'next/server';
@@ -10,8 +10,7 @@ import { NextResponse } from 'next/server';
  * distribute credits to all users daily
  */
 export async function GET(request: Request) {
-  // Validate basic authentication
-  if (!validateBasicCronAuth(request)) {
+  if (!validateCronAuth(request)) {
     logger.api.error('distribute credits unauthorized');
     return createCronUnauthorizedResponse();
   }

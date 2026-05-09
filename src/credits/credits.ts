@@ -1244,9 +1244,37 @@ export async function holdCredits({
 }
 
 /**
- * Find an existing PENDING hold by its idempotency key (Week 5.1).
+ * Find an existing hold by its idempotency key.
  *
- * Used by the lease sweeper to locate the credit hold associated with an
+ * Filters by userId for defense-in-depth: a stale or malicious key from one
+ * user must not surface a hold for another.
+ */
+export async function findHoldRecordByIdempotencyKey(
+  idempotencyKey: string,
+  userId: string
+): Promise<{ id: string; holdStatus: string | null } | null> {
+  if (!idempotencyKey || !userId) return null;
+  const db = await getDb();
+  const rows = await db
+    .select({
+      id: creditTransaction.id,
+      holdStatus: creditTransaction.holdStatus,
+    })
+    .from(creditTransaction)
+    .where(
+      and(
+        eq(creditTransaction.idempotencyKey, idempotencyKey),
+        eq(creditTransaction.userId, userId)
+      )
+    )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/**
+ * Find an existing PENDING hold by its idempotency key.
+ *
+ * Used by recovery to locate the credit hold associated with an
  * orphaned generating message. Filters by userId for defense-in-depth: a
  * stale or malicious key from one user must not surface a hold for another.
  *
@@ -1257,22 +1285,8 @@ export async function findHoldByIdempotencyKey(
   idempotencyKey: string,
   userId: string
 ): Promise<string | null> {
-  if (!idempotencyKey || !userId) return null;
-  const db = await getDb();
-  const rows = await db
-    .select({
-      id: creditTransaction.id,
-    })
-    .from(creditTransaction)
-    .where(
-      and(
-        eq(creditTransaction.idempotencyKey, idempotencyKey),
-        eq(creditTransaction.userId, userId),
-        eq(creditTransaction.holdStatus, HOLD_STATUS.PENDING)
-      )
-    )
-    .limit(1);
-  return rows[0]?.id ?? null;
+  const record = await findHoldRecordByIdempotencyKey(idempotencyKey, userId);
+  return record?.holdStatus === HOLD_STATUS.PENDING ? record.id : null;
 }
 
 /**

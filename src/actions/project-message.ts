@@ -14,8 +14,11 @@ import type {
   GeminiConversationPart,
   ProjectMessageItem as SharedProjectMessageItem,
 } from '@/ai/image/lib/workspace-types';
+import { findHoldRecordByIdempotencyKey, releaseHold } from '@/credits/credits';
+import { HOLD_STATUS } from '@/credits/types';
 import { getDb } from '@/db';
 import { imageProject, projectMessage } from '@/db/schema';
+import { AUDIT_ACTIONS, recordAudit } from '@/lib/audit';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
@@ -59,6 +62,12 @@ type DbTransaction = Parameters<Parameters<DbClient['transaction']>[0]>[0];
 type ValidatedInputImagesResult =
   | { valid: true; inputImages: string[] }
   | { valid: false; error: string };
+type ExpiredGeneratingMessageRow = {
+  id: string;
+  projectId: string;
+  userId: string;
+};
+type RecoveryTrigger = 'lazy-project' | 'lazy-status' | 'lazy-create' | 'cron';
 
 function getValidatedInputImages(
   images: Array<string | null | undefined>
@@ -151,6 +160,13 @@ export async function getProjectMessages(projectId: string) {
       return { success: false, error: 'Project not found', data: [] };
     }
 
+    await recoverExpiredGeneratingMessages({
+      userId: session.user.id,
+      projectId,
+      limit: 20,
+      trigger: 'lazy-project',
+    });
+
     const messages = await db
       .select()
       .from(projectMessage)
@@ -172,11 +188,11 @@ export async function getProjectMessages(projectId: string) {
  * Server-only direct update of an assistant message's terminal status.
  *
  * Skips the per-user auth check that updateAssistantMessage enforces —
- * intended for trusted background workers (lease sweeper, Inngest jobs)
+ * intended for trusted recovery paths and maintenance jobs
  * where there's no acting user. The userId argument is still required as
  * a write filter so a stray call can't transition another user's message.
  *
- * Always clears generationLeaseExpiresAt: a sweeper finalization is by
+ * Always clears generationLeaseExpiresAt: a recovery finalization is by
  * definition a terminal state.
  */
 export async function updateAssistantMessageDirect(
@@ -186,10 +202,24 @@ export async function updateAssistantMessageDirect(
     status: 'failed';
     content?: string;
     errorMessage?: string;
+    leaseExpiredBefore?: Date;
   }
-): Promise<void> {
+): Promise<boolean> {
   const db = await getDb();
-  await db
+  const conditions = [
+    eq(projectMessage.id, messageId),
+    eq(projectMessage.userId, userId),
+    eq(projectMessage.status, 'generating'),
+  ];
+
+  if (data.leaseExpiredBefore) {
+    conditions.push(
+      sql`${projectMessage.generationLeaseExpiresAt} IS NOT NULL`,
+      sql`${projectMessage.generationLeaseExpiresAt} < ${data.leaseExpiredBefore.toISOString()}::timestamp`
+    );
+  }
+
+  const result = await db
     .update(projectMessage)
     .set({
       status: data.status,
@@ -198,35 +228,51 @@ export async function updateAssistantMessageDirect(
       generationLeaseExpiresAt: null,
       updatedAt: new Date(),
     })
-    .where(
-      and(eq(projectMessage.id, messageId), eq(projectMessage.userId, userId))
-    );
+    .where(and(...conditions))
+    .returning({ id: projectMessage.id });
+
+  return result.length > 0;
 }
 
 /**
  * Find generating messages whose lease has expired (Week 4.1).
  *
- * Called by the Week 5 background sweeper. Returns lightweight rows
- * (id + projectId + userId) that the sweeper will then transition to
- * status='failed' and release the associated credit hold for.
+ * Returns lightweight rows (id + projectId + userId) that the recovery path
+ * will transition to status='failed' and release the associated credit hold for.
  *
- * Server-only — no auth check, callers must be trusted background workers.
+ * Server-only — no auth check. Callers must either be trusted maintenance
+ * routes or pass the authenticated userId for request-triggered recovery.
  */
 export async function findExpiredGeneratingMessages(opts: {
   /** Hard cap on rows returned per sweep to bound load. */
   limit?: number;
   /** Optional override of "now" for tests. */
   now?: Date;
-}): Promise<
-  Array<{
-    id: string;
-    projectId: string;
-    userId: string;
-  }>
-> {
+  /** Optional owner filter for request-triggered recovery. */
+  userId?: string;
+  /** Optional project filter for request-triggered recovery. */
+  projectId?: string;
+  /** Optional message filter for status polling recovery. */
+  messageId?: string;
+}): Promise<ExpiredGeneratingMessageRow[]> {
   const db = await getDb();
   const now = opts.now ?? new Date();
   const limit = opts.limit ?? 100;
+  const conditions = [
+    eq(projectMessage.status, 'generating'),
+    sql`${projectMessage.generationLeaseExpiresAt} IS NOT NULL`,
+    sql`${projectMessage.generationLeaseExpiresAt} < ${now.toISOString()}::timestamp`,
+  ];
+
+  if (opts.userId) {
+    conditions.push(eq(projectMessage.userId, opts.userId));
+  }
+  if (opts.projectId) {
+    conditions.push(eq(projectMessage.projectId, opts.projectId));
+  }
+  if (opts.messageId) {
+    conditions.push(eq(projectMessage.id, opts.messageId));
+  }
 
   const rows = await db
     .select({
@@ -235,16 +281,98 @@ export async function findExpiredGeneratingMessages(opts: {
       userId: projectMessage.userId,
     })
     .from(projectMessage)
-    .where(
-      and(
-        eq(projectMessage.status, 'generating'),
-        sql`${projectMessage.generationLeaseExpiresAt} IS NOT NULL`,
-        sql`${projectMessage.generationLeaseExpiresAt} < ${now.toISOString()}::timestamp`
-      )
-    )
+    .where(and(...conditions))
     .limit(limit);
 
   return rows;
+}
+
+export async function recoverExpiredGeneratingMessages(opts: {
+  limit?: number;
+  now?: Date;
+  userId?: string;
+  projectId?: string;
+  messageId?: string;
+  trigger?: RecoveryTrigger;
+}): Promise<{ scanned: number; recovered: number; errors: number }> {
+  const now = opts.now ?? new Date();
+  const trigger = opts.trigger ?? 'lazy-project';
+  const expired = await findExpiredGeneratingMessages({ ...opts, now });
+  let recovered = 0;
+  let errors = 0;
+
+  for (const row of expired) {
+    try {
+      const hold = await findHoldRecordByIdempotencyKey(
+        `gen-hold:${row.id}`,
+        row.userId
+      );
+      const holdId = hold?.id ?? null;
+
+      if (hold?.holdStatus === HOLD_STATUS.PENDING) {
+        try {
+          await releaseHold(hold.id);
+        } catch (releaseError) {
+          logger.actions.error(
+            `generation recovery: releaseHold failed [messageId=${row.id}, holdId=${hold.id}]`,
+            releaseError
+          );
+          throw releaseError;
+        }
+      } else if (hold?.holdStatus === HOLD_STATUS.CONFIRMED) {
+        logger.actions.warn(
+          `generation recovery: hold already confirmed, finalizing message without refund [messageId=${row.id}, holdId=${hold.id}]`
+        );
+      }
+
+      const terminalContent =
+        hold?.holdStatus === HOLD_STATUS.CONFIRMED
+          ? '生成结果保存失败，请重试'
+          : '生成超时，请重试';
+      const terminalError =
+        hold?.holdStatus === HOLD_STATUS.CONFIRMED
+          ? 'Generation result was not saved after credit confirmation'
+          : 'Generation timed out (lease expired)';
+
+      const updated = await updateAssistantMessageDirect(row.id, row.userId, {
+        status: 'failed',
+        content: terminalContent,
+        errorMessage: terminalError,
+        leaseExpiredBefore: now,
+      });
+
+      if (!updated) {
+        logger.actions.info(
+          `generation recovery: skipped stale row [messageId=${row.id}, projectId=${row.projectId}, trigger=${trigger}]`
+        );
+        continue;
+      }
+
+      await recordAudit({
+        userId: row.userId,
+        actorId: null,
+        action: AUDIT_ACTIONS.CREDIT_LEASE_SWEEP,
+        entityType: 'project_message',
+        entityId: row.id,
+        metadata: {
+          holdId,
+          holdStatus: hold?.holdStatus ?? null,
+          projectId: row.projectId,
+          trigger,
+        },
+      });
+
+      recovered += 1;
+    } catch (error) {
+      errors += 1;
+      logger.actions.error(
+        `generation recovery: row failed [messageId=${row.id}, projectId=${row.projectId}, trigger=${trigger}]`,
+        error
+      );
+    }
+  }
+
+  return { scanned: expired.length, recovered, errors };
 }
 
 export async function getMessageStatus(projectId: string, messageId: string) {
@@ -254,6 +382,14 @@ export async function getMessageStatus(projectId: string, messageId: string) {
   }
 
   try {
+    await recoverExpiredGeneratingMessages({
+      userId: session.user.id,
+      projectId,
+      messageId,
+      limit: 1,
+      trigger: 'lazy-status',
+    });
+
     const db = await getDb();
 
     const message = await db
@@ -266,8 +402,8 @@ export async function getMessageStatus(projectId: string, messageId: string) {
         generationTime: projectMessage.generationTime,
         // Lease expiry surfaces to the client so the recovery hook can decide
         // whether a "still generating" row is genuinely live or already past
-        // its lease window (in which case the client should stop polling
-        // and let the server-side sweeper finalize it).
+        // its lease window. getMessageStatus also triggers server-side
+        // recovery before this row is returned.
         generationLeaseExpiresAt: projectMessage.generationLeaseExpiresAt,
         updatedAt: projectMessage.updatedAt,
       })
@@ -558,6 +694,13 @@ export async function createPendingGeneration(
   };
 
   try {
+    await recoverExpiredGeneratingMessages({
+      userId: session.user.id,
+      projectId,
+      limit: 50,
+      trigger: 'lazy-create',
+    });
+
     const db = await getDb();
     const now = new Date();
     const userMessageId = generateId();
@@ -648,8 +791,8 @@ export async function createPendingGeneration(
           generationTime: null,
           status: assistantMessage.status,
           errorMessage: null,
-          // Stamp the initial lease so a background sweeper can reap this
-          // row if the client crashes before update.
+          // Stamp the initial lease so server-side recovery can reap this row
+          // if the client crashes before update.
           generationLeaseExpiresAt:
             assistantMessage.status === 'generating'
               ? nextLeaseExpiry(now)
@@ -768,7 +911,7 @@ export async function updateAssistantMessage(
       updates.status = data.status;
       // Lease lifecycle:
       //  - generating  -> set/refresh the lease window
-      //  - completed/failed -> clear the lease (work is done; no sweeper concern)
+      //  - completed/failed -> clear the lease (work is done)
       updates.generationLeaseExpiresAt =
         data.status === 'generating' ? nextLeaseExpiry() : null;
     }
@@ -951,7 +1094,7 @@ export async function updateAssistantMessageFromClient(
       const updates: Record<string, unknown> = {
         status: 'failed',
         errorMessage: data.errorMessage ?? null,
-        // Failed terminal state: clear the lease so the sweeper ignores us.
+        // Failed terminal state: clear the lease so recovery ignores us.
         generationLeaseExpiresAt: null,
         updatedAt: now,
       };

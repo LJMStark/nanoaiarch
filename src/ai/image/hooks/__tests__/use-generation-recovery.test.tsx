@@ -158,12 +158,10 @@ describe('useGenerationRecovery', () => {
     expect(updateAssistantMessageRequestMock).not.toHaveBeenCalled();
   });
 
-  it('stops polling when the server reports lease has expired (sweeper takes over)', async () => {
-    // Week 4.1 contract: if the server-side generation lease has elapsed,
-    // a background sweeper will finalize the row to status='failed' and
-    // release the credit hold. The client should stop polling so it
-    // doesn't fight the sweeper or mark the row failed itself
-    // (otherwise the sweeper's hold-release path may double-fire).
+  it('stops polling when the server reports lease has expired', async () => {
+    // If the server-side generation lease has elapsed, the status endpoint
+    // owns recovery. The client should stop polling and avoid marking the row
+    // failed itself, otherwise the hold-release path may double-fire.
     fetchMessageStatusMock.mockResolvedValue({
       success: true,
       data: {
@@ -190,7 +188,7 @@ describe('useGenerationRecovery', () => {
     });
 
     // Crucially: we did NOT call markGenerationFailed (no
-    // updateAssistantMessage round-trip). The sweeper owns the
+    // updateAssistantMessage round-trip). Server-side recovery owns the
     // 'failed' transition.
     expect(updateAssistantMessageRequestMock).not.toHaveBeenCalled();
     expect(updateMessageMock).not.toHaveBeenCalled();

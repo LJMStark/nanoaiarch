@@ -303,7 +303,10 @@ describe('ComponentName', () => {
 - `ZPAY_PID` / `ZPAY_KEY` — zpay 商户 ID 与密钥
 - `ZPAY_NOTIFY_URL` / `ZPAY_RETURN_URL` — zpay 回调地址
 - `ZPAY_PRICE_*` — 9 个套餐价格配置
-- `NEXT_PUBLIC_APP_URL` — 应用 base URL
+- `NEXT_PUBLIC_BASE_URL` — 应用 base URL
+
+**可选维护变量**：
+- `CRON_SECRET` — 保护手动维护接口的 Bearer token；图片生成超时恢复不依赖外部定时任务
 
 **已废弃变量**（仍在 env.example 中，待 Week 8 删除）：
 - ❌ `STRIPE_SECRET_KEY`、`STRIPE_*` — 项目用 zpay

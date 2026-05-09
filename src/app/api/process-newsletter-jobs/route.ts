@@ -1,13 +1,13 @@
 import {
   createCronUnauthorizedResponse,
-  validateBasicCronAuth,
+  validateCronAuth,
 } from '@/lib/cron-auth';
 import { logger } from '@/lib/logger';
 import { processNewsletterSubscribeJobs } from '@/newsletter/jobs';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-  if (!validateBasicCronAuth(request)) {
+  if (!validateCronAuth(request)) {
     logger.api.error('process newsletter jobs unauthorized');
     return createCronUnauthorizedResponse();
   }

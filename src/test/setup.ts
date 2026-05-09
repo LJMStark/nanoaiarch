@@ -39,7 +39,7 @@ afterEach(() => {
 // Mock next-intl
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
-  useLocale: () => 'en',
+  useLocale: () => 'zh',
 }));
 
 // Mock Next.js router
@@ -54,4 +54,4 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
+process.env.NEXT_PUBLIC_BASE_URL = 'http://localhost:3000';

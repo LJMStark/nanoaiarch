@@ -2,9 +2,10 @@
  * Default generation lease window — 5 minutes (Week 4.1).
  *
  * When a message is created with status='generating' the server stamps
- * generationLeaseExpiresAt = now() + this window. A background sweeper
- * (Week 5 cron) finds messages whose lease has elapsed, marks them failed,
- * and releases the associated credit hold.
+ * generationLeaseExpiresAt = now() + this window. Request-triggered recovery
+ * finds messages whose lease has elapsed, marks them failed, and releases the
+ * associated credit hold when the user opens a project, polls status, or starts
+ * another generation.
  *
  * Tradeoff: too short and slow Gemini calls get reaped while still alive;
  * too long and a crashed client leaves credits locked for too long.

@@ -117,10 +117,10 @@ export async function verifyCredits(
 /**
  * Build the idempotency key used for the credit hold.
  *
- * Prefer the assistant messageId when available (Week 5.1) — that gives the
- * lease sweeper a stable handle to find and release the hold for an
- * orphaned generating message. Falls back to the per-request UUID for
- * paths that don't pass a messageId (legacy/edge cases).
+ * Prefer the assistant messageId when available. That gives recovery a stable
+ * handle to find and release the hold for an orphaned generating message.
+ * Falls back to the per-request UUID for paths that don't pass a messageId
+ * (legacy/edge cases).
  */
 export function buildGenerationHoldIdempotencyKey(
   messageId: string | undefined,

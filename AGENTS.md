@@ -55,7 +55,9 @@
   - `GEMINI_API_KEY`、`GEMINI_DEFAULT_MODEL`
   - `ZPAY_PID`、`ZPAY_KEY`、`ZPAY_NOTIFY_URL`、`ZPAY_RETURN_URL`
   - `ZPAY_PRICE_*`（套餐价格）
-  - `NEXT_PUBLIC_APP_URL`
+  - `NEXT_PUBLIC_BASE_URL`
+- 可选维护变量：
+  - `CRON_SECRET`（保护手动维护接口；图片生成超时恢复不依赖外部定时任务）
 - ❌ 严禁提交密钥或生产凭证
 - ⚠️ env.example 中的 `STRIPE_*`、`DUOMI_API_KEY`、`OPENAI_API_KEY` 等是模板残留，**不再使用**（计划 Week 8 删除）
 
