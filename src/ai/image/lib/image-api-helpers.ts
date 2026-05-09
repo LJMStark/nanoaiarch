@@ -217,9 +217,20 @@ interface ExecuteGenerationOptions {
 }
 
 /**
- * Executes image generation with timeout, credit hold confirm/release, and logging
+ * Executes image generation with timeout, credit hold confirm/release,
+ * and logging.
+ *
  * Credits are held before generation starts (in verifyRequestContext).
- * On success: hold is confirmed. On failure: hold is released (credits refunded).
+ * On success the hold is confirmed; on any failure path it is released
+ * (credits refunded). Hold lifecycle is tracked explicitly so we never
+ * attempt to release a hold that has already transitioned to CONFIRMED —
+ * that previously could surface as "invalid hold status" errors and risked
+ * billing the user for a generation that returned an error response.
+ *
+ * Layout note: only the upstream generatePromise (network call to Gemini)
+ * is wrapped in withTimeout. The post-processing steps (confirmHold, S3
+ * upload) run outside the timeout race so they cannot be interrupted
+ * mid-flight by a timeout firing.
  */
 export async function executeImageGeneration({
   ctx,
@@ -233,106 +244,107 @@ export async function executeImageGeneration({
   creditsUsed?: number;
   modelResponseParts?: GeminiConversationPart[];
 }> {
-  try {
-    return await withTimeout(
-      generatePromise.then(async (genResult) => {
-        const elapsed = ((performance.now() - startstamp) / 1000).toFixed(1);
+  // Track the hold's lifecycle so each branch knows whether release is safe.
+  // 'absent' covers the legacy code path that consumes credits directly
+  // without a hold record.
+  type HoldLifecycle = 'pending' | 'confirmed' | 'released' | 'absent';
+  let holdState: HoldLifecycle = ctx.holdId ? 'pending' : 'absent';
 
-        if (genResult.success && genResult.image) {
-          // Confirm the credit hold on success
-          try {
-            if (ctx.holdId) {
-              await confirmHold(ctx.holdId);
-            } else {
-              // Fallback for legacy flow without hold
-              await consumeImageCredits(
-                ctx,
-                `Image ${operationType}: ${ctx.modelId}`
-              );
-            }
-          } catch (creditError) {
-            if (ctx.holdId) {
-              try {
-                await releaseHold(ctx.holdId);
-              } catch (releaseError) {
-                logger.api.error(
-                  `Failed to release credit hold after confirm failure [requestId=${ctx.requestId}, holdId=${ctx.holdId}]`,
-                  releaseError
-                );
-              }
-            }
-            logger.api.error(
-              `Failed to confirm credit hold [requestId=${ctx.requestId}, holdId=${ctx.holdId}, messageId=${ctx.messageId ?? 'n/a'}]`,
-              creditError
-            );
-            return {
-              error: '积分处理失败，请重试',
-            };
-          }
-
-          // Upload generated image to object storage
-          let imageData = genResult.image;
-          try {
-            const imageUrl = await uploadGeneratedImage(
-              genResult.image,
-              ctx.requestId,
-              `gen-${Date.now()}`
-            );
-            imageData = imageUrl;
-          } catch (uploadError) {
-            logger.api.warn(
-              `[requestId=${ctx.requestId}] Failed to upload generated image to storage, falling back to base64: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`
-            );
-          }
-
-          logger.api.info(
-            `Completed image ${operationType} [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s, messageId=${ctx.messageId ?? 'n/a'}]`
-          );
-          return {
-            image: imageData,
-            text: genResult.text,
-            creditsUsed: ctx.creditCost,
-            modelResponseParts: genResult.modelResponseParts,
-          };
-        }
-
-        // Generation failed - release the hold to refund credits
-        if (ctx.holdId) {
-          try {
-            await releaseHold(ctx.holdId);
-          } catch (releaseError) {
-            logger.api.error(
-              `Failed to release credit hold [requestId=${ctx.requestId}, holdId=${ctx.holdId}, messageId=${ctx.messageId ?? 'n/a'}]`,
-              releaseError
-            );
-          }
-        }
-
-        logger.api.error(
-          `Image ${operationType} failed [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s, messageId=${ctx.messageId ?? 'n/a'}]: ${genResult.error}`
-        );
-        return {
-          error:
-            genResult.error ||
-            `${operationType === 'edit' ? '编辑' : '生成'}图片失败`,
-        };
-      }),
-      TIMEOUT_MILLIS
-    );
-  } catch (timeoutOrError) {
-    // Timeout or unexpected error - release the hold to refund credits
-    if (ctx.holdId) {
-      try {
-        await releaseHold(ctx.holdId);
-      } catch (releaseError) {
-        logger.api.error(
-          `Failed to release credit hold after timeout [requestId=${ctx.requestId}, holdId=${ctx.holdId}, messageId=${ctx.messageId ?? 'n/a'}]`,
-          releaseError
-        );
-      }
+  // Best-effort release that only fires if the hold is still pending.
+  // Any error from the release itself is swallowed (logged) — once we are
+  // already in a failure path, surfacing a secondary release error to the
+  // user adds noise without changing the outcome.
+  const safeRelease = async (
+    reason: string,
+    cause?: unknown
+  ): Promise<void> => {
+    if (holdState !== 'pending' || !ctx.holdId) return;
+    try {
+      await releaseHold(ctx.holdId);
+      holdState = 'released';
+    } catch (releaseError) {
+      logger.api.error(
+        `Failed to release credit hold (${reason}) [requestId=${ctx.requestId}, holdId=${ctx.holdId}, messageId=${ctx.messageId ?? 'n/a'}]`,
+        releaseError
+      );
     }
+    if (cause) {
+      logger.api.error(
+        `Hold released after error [requestId=${ctx.requestId}, holdId=${ctx.holdId}]`,
+        cause
+      );
+    }
+  };
+
+  let genResult: ImageGenerationResult;
+  try {
+    // Only the network round-trip is on the timeout clock.
+    genResult = await withTimeout(generatePromise, TIMEOUT_MILLIS);
+  } catch (timeoutOrError) {
+    await safeRelease('after timeout/network error', timeoutOrError);
     throw timeoutOrError;
   }
+
+  const elapsed = ((performance.now() - startstamp) / 1000).toFixed(1);
+
+  if (!genResult.success || !genResult.image) {
+    // Generation reported failure (or no image) — refund credits.
+    await safeRelease('after generation failure');
+    logger.api.error(
+      `Image ${operationType} failed [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s, messageId=${ctx.messageId ?? 'n/a'}]: ${genResult.error}`
+    );
+    return {
+      error:
+        genResult.error ||
+        `${operationType === 'edit' ? '编辑' : '生成'}图片失败`,
+    };
+  }
+
+  // Generation succeeded. Confirm credits (or fall back to legacy consume).
+  try {
+    if (ctx.holdId) {
+      await confirmHold(ctx.holdId);
+      holdState = 'confirmed';
+    } else {
+      await consumeImageCredits(ctx, `Image ${operationType}: ${ctx.modelId}`);
+    }
+  } catch (creditError) {
+    // Confirm failed — but it might have partially completed (transactional
+    // failure mid-flight). safeRelease guards against double-release on a
+    // hold that already transitioned to CONFIRMED.
+    await safeRelease('after confirm failure', creditError);
+    logger.api.error(
+      `Failed to confirm credit hold [requestId=${ctx.requestId}, holdId=${ctx.holdId}, messageId=${ctx.messageId ?? 'n/a'}]`,
+      creditError
+    );
+    return { error: '积分处理失败，请重试' };
+  }
+
+  // Upload the generated image to object storage. Failures fall back to the
+  // raw base64 so the user still gets their image — credits already confirmed.
+  let imageData = genResult.image;
+  try {
+    const imageUrl = await uploadGeneratedImage(
+      genResult.image,
+      ctx.requestId,
+      `gen-${Date.now()}`
+    );
+    imageData = imageUrl;
+  } catch (uploadError) {
+    logger.api.warn(
+      `[requestId=${ctx.requestId}] Failed to upload generated image to storage, falling back to base64: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`
+    );
+  }
+
+  logger.api.info(
+    `Completed image ${operationType} [requestId=${ctx.requestId}, model=${ctx.modelId}, elapsed=${elapsed}s, messageId=${ctx.messageId ?? 'n/a'}]`
+  );
+  return {
+    image: imageData,
+    text: genResult.text,
+    creditsUsed: ctx.creditCost,
+    modelResponseParts: genResult.modelResponseParts,
+  };
 }
 
 /**

@@ -148,6 +148,58 @@ describe('executeImageGeneration', () => {
       expect(mocks.uploadGeneratedImage).not.toHaveBeenCalled();
       expect(mocks.releaseHold).toHaveBeenCalledWith('hold-123');
     });
+
+    it('swallows release errors after confirm failure (no double-throw)', async () => {
+      // Reproduces the FINDING-C1 race: confirmHold throws after partially
+      // succeeding (DB transaction committed but response timed out). Our
+      // recovery path tries releaseHold, which now sees the hold as already
+      // CONFIRMED and throws "invalid hold status". That secondary error
+      // must not propagate to the user — they should see only the credit
+      // processing message, not a stack trace.
+      mocks.confirmHold.mockRejectedValue(new Error('confirm-network-fail'));
+      mocks.releaseHold.mockRejectedValue(
+        new Error('invalid hold status (confirmed)')
+      );
+
+      const result = await executeImageGeneration({
+        ctx,
+        generatePromise: Promise.resolve({
+          success: true,
+          image: 'base64-image',
+        }),
+        operationType: 'generation',
+        startstamp: performance.now(),
+      });
+
+      expect(result.error).toBe('积分处理失败，请重试');
+      // Release was attempted exactly once (not twice from outer + inner
+      // catch as in the old structure).
+      expect(mocks.releaseHold).toHaveBeenCalledTimes(1);
+      expect(mocks.uploadGeneratedImage).not.toHaveBeenCalled();
+    });
+
+    it('does not release a confirmed hold even on subsequent errors', async () => {
+      // After confirmHold succeeds, holdState transitions to 'confirmed'.
+      // Any later error path must not re-attempt release (the user has
+      // already been billed and the audit row is final).
+      mocks.confirmHold.mockResolvedValue(undefined);
+      mocks.releaseHold.mockResolvedValue(undefined);
+      mocks.uploadGeneratedImage.mockRejectedValue(new Error('s3-down'));
+
+      const result = await executeImageGeneration({
+        ctx,
+        generatePromise: Promise.resolve({
+          success: true,
+          image: 'base64-image',
+        }),
+        operationType: 'generation',
+        startstamp: performance.now(),
+      });
+
+      // Upload fell back to base64; no release attempted.
+      expect(result.image).toBe('base64-image');
+      expect(mocks.releaseHold).not.toHaveBeenCalled();
+    });
   });
 
   it('returns uploaded image URL when generation and billing succeed (legacy)', async () => {
