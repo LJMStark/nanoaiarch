@@ -115,13 +115,29 @@ export async function verifyCredits(
 }
 
 /**
+ * Build the idempotency key used for the credit hold.
+ *
+ * Prefer the assistant messageId when available (Week 5.1) — that gives the
+ * lease sweeper a stable handle to find and release the hold for an
+ * orphaned generating message. Falls back to the per-request UUID for
+ * paths that don't pass a messageId (legacy/edge cases).
+ */
+export function buildGenerationHoldIdempotencyKey(
+  messageId: string | undefined,
+  requestId: string
+): string {
+  return messageId ? `gen-hold:${messageId}` : `img-gen-${requestId}`;
+}
+
+/**
  * Combined session and credit verification
  * Returns API context if valid, or NextResponse error
  */
 export async function verifyRequestContext(
   headers: Headers,
   modelId: string,
-  requestId: string
+  requestId: string,
+  options?: { messageId?: string }
 ): Promise<ApiContext | NextResponse> {
   // Validate modelId to prevent invalid model attacks
   if (!VALID_MODEL_IDS.includes(modelId)) {
@@ -153,7 +169,10 @@ export async function verifyRequestContext(
     const hold = await holdCredits({
       userId,
       amount: creditResult.creditCost,
-      idempotencyKey: `img-gen-${requestId}`,
+      idempotencyKey: buildGenerationHoldIdempotencyKey(
+        options?.messageId,
+        requestId
+      ),
       description: `Image generation hold: ${modelId}`,
     });
 

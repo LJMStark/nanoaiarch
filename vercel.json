@@ -3,5 +3,11 @@
     "app/api/**/*": {
       "maxDuration": 300
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/lease-sweep",
+      "schedule": "*/3 * * * *"
+    }
+  ]
 }

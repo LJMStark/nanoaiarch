@@ -169,6 +169,41 @@ export async function getProjectMessages(projectId: string) {
  * Only returns minimal data needed for status check
  */
 /**
+ * Server-only direct update of an assistant message's terminal status.
+ *
+ * Skips the per-user auth check that updateAssistantMessage enforces —
+ * intended for trusted background workers (lease sweeper, Inngest jobs)
+ * where there's no acting user. The userId argument is still required as
+ * a write filter so a stray call can't transition another user's message.
+ *
+ * Always clears generationLeaseExpiresAt: a sweeper finalization is by
+ * definition a terminal state.
+ */
+export async function updateAssistantMessageDirect(
+  messageId: string,
+  userId: string,
+  data: {
+    status: 'failed';
+    content?: string;
+    errorMessage?: string;
+  }
+): Promise<void> {
+  const db = await getDb();
+  await db
+    .update(projectMessage)
+    .set({
+      status: data.status,
+      content: data.content ?? '',
+      errorMessage: data.errorMessage ?? null,
+      generationLeaseExpiresAt: null,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(eq(projectMessage.id, messageId), eq(projectMessage.userId, userId))
+    );
+}
+
+/**
  * Find generating messages whose lease has expired (Week 4.1).
  *
  * Called by the Week 5 background sweeper. Returns lightweight rows
