@@ -1,0 +1,41 @@
+name: Release Please
+
+# Auto-generate CHANGELOG.md and create release PRs based on
+# Conventional Commits (Week 3.5).
+#
+# How it works:
+#  1. Commits land on main with conventional prefixes (feat/fix/refactor/...)
+#  2. release-please scans the commit log and opens a PR titled
+#     "chore: release X.Y.Z" with an updated CHANGELOG.md and bumped
+#     package.json version.
+#  3. Merging that PR triggers the same workflow to publish a GitHub
+#     Release with the changelog body and tag the commit.
+#
+# Bump rules (default semver mapping):
+#  - feat: minor
+#  - fix / perf / refactor: patch
+#  - feat! / BREAKING CHANGE: major
+# Other types (docs, test, chore, ci, style, build) do not trigger releases.
+#
+# This is the simplest possible release pipeline — no npm publish, just a
+# git tag + CHANGELOG. Suitable for an internal SaaS that doesn't ship as
+# a package.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          release-type: node
+          # Initial version: align with the existing 0.1.0 in package.json.
+          # release-please will infer subsequent bumps from commit history.
+          target-branch: main

@@ -27,3 +27,14 @@ pre-push:
       # cross-file errors that staged-only would miss (e.g. a renamed
       # exported symbol).
       run: pnpm typecheck
+
+# Conventional Commits enforcement (Week 3.5).
+# `release-please` reads commit history at release time to auto-generate
+# CHANGELOG.md and bump versions; if commits don't follow the convention,
+# release notes silently miss them. This hook fails fast on bad messages
+# rather than letting the cost compound.
+commit-msg:
+  commands:
+    commitlint:
+      # {1} is the path to the commit message file (.git/COMMIT_EDITMSG).
+      run: pnpm exec commitlint --edit {1}
