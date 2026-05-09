@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { confirmHold, holdCredits, releaseHold } from '@/credits/credits';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-import { checkRateLimit, createRateLimitHeaders } from '@/lib/rate-limit';
+import { applyRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { createOpenAI } from '@ai-sdk/openai';
 import { type UIMessage, convertToModelMessages, streamText } from 'ai';
 import { NextResponse } from 'next/server';
@@ -110,12 +110,12 @@ export async function POST(req: Request) {
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     req.headers.get('x-real-ip') ||
     'unknown';
-  const rateLimit = await checkRateLimit({
+  const rateLimit = await applyRateLimit({
     key: `api:chat:${session.user.id}:${clientAddress}`,
     limit: CHAT_RATE_LIMIT.limit,
     windowMs: CHAT_RATE_LIMIT.windowMs,
   });
-  const rateLimitHeaders = createRateLimitHeaders(rateLimit);
+  const rateLimitHeaders = getRateLimitHeaders(rateLimit);
 
   if (!rateLimit.success) {
     return createChatErrorResponse(

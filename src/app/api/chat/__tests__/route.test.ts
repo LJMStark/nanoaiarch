@@ -5,8 +5,8 @@ const mocks = vi.hoisted(() => ({
   holdCredits: vi.fn(),
   confirmHold: vi.fn(),
   releaseHold: vi.fn(),
-  checkRateLimit: vi.fn(),
-  createRateLimitHeaders: vi.fn(),
+  applyRateLimit: vi.fn(),
+  getRateLimitHeaders: vi.fn(),
   streamText: vi.fn(),
   convertToModelMessages: vi.fn(),
   createOpenAI: vi.fn(() => (modelId: string) => ({
@@ -31,8 +31,8 @@ vi.mock('@/credits/credits', () => ({
 }));
 
 vi.mock('@/lib/rate-limit', () => ({
-  checkRateLimit: mocks.checkRateLimit,
-  createRateLimitHeaders: mocks.createRateLimitHeaders,
+  applyRateLimit: mocks.applyRateLimit,
+  getRateLimitHeaders: mocks.getRateLimitHeaders,
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -66,13 +66,13 @@ describe('/api/chat POST', () => {
         id: 'user-1',
       },
     });
-    mocks.checkRateLimit.mockReturnValue({
+    mocks.applyRateLimit.mockReturnValue({
       success: true,
       limit: 20,
       remaining: 19,
       resetAt: Date.now() + 60_000,
     });
-    mocks.createRateLimitHeaders.mockReturnValue({
+    mocks.getRateLimitHeaders.mockReturnValue({
       'x-ratelimit-limit': '20',
       'x-ratelimit-remaining': '19',
       'x-ratelimit-reset': '1234567890',
@@ -141,14 +141,14 @@ describe('/api/chat POST', () => {
   });
 
   it('returns 429 when the rate limit is exceeded', async () => {
-    mocks.checkRateLimit.mockReturnValue({
+    mocks.applyRateLimit.mockReturnValue({
       success: false,
       limit: 20,
       remaining: 0,
       resetAt: Date.now() + 60_000,
       retryAfterSeconds: 60,
     });
-    mocks.createRateLimitHeaders.mockReturnValue({
+    mocks.getRateLimitHeaders.mockReturnValue({
       'x-ratelimit-limit': '20',
       'x-ratelimit-remaining': '0',
       'x-ratelimit-reset': '1234567890',

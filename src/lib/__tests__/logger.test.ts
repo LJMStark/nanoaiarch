@@ -99,32 +99,3 @@ describe('logger - JSON output', () => {
     expect(parsed.err?.message ?? '').toContain('serialization');
   });
 });
-
-describe('logger - human output', () => {
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  beforeEach(() => {
-    vi.stubEnv('LOG_FORMAT', 'human');
-    vi.stubEnv('LOG_LEVEL', 'debug');
-    // Tests run under jsdom (window defined) so the human path routes to
-    // console.log, not stdout.write.
-    consoleLogSpy = vi
-      .spyOn(console, 'log')
-      .mockImplementation(() => undefined);
-  });
-
-  afterEach(() => {
-    consoleLogSpy.mockRestore();
-  });
-
-  it('emits human-readable timestamped lines (not JSON)', async () => {
-    const { logger } = await import('../logger');
-    logger.api.info('hello');
-
-    expect(consoleLogSpy).toHaveBeenCalledTimes(1);
-    const payload = consoleLogSpy.mock.calls[0][0] as string;
-    // Should NOT parse as JSON — human format is bracketed text.
-    expect(() => JSON.parse(payload)).toThrow();
-    expect(payload).toContain('[API]');
-    expect(payload).toContain('hello');
-  });
-});

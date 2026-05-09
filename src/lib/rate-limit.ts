@@ -161,9 +161,6 @@ export function getRateLimitHeaders(result: RateLimitResult): HeadersInit {
   };
 }
 
-export const checkRateLimit = applyRateLimit;
-export const createRateLimitHeaders = getRateLimitHeaders;
-
 /**
  * Strict rate limiter for security-sensitive endpoints (webhooks, login,
  * password reset). Differs from {@link applyRateLimit} in that it does NOT

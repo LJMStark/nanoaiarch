@@ -34,7 +34,7 @@ describe('recordAudit', () => {
     await recordAudit({
       userId: 'u1',
       actorId: 'admin-1',
-      action: AUDIT_ACTIONS.ADMIN_BAN_USER,
+      action: AUDIT_ACTIONS.CREDIT_ADMIN_BYPASS,
       entityType: 'user',
       entityId: 'u1',
       metadata: { reason: 'spam' },
@@ -47,7 +47,7 @@ describe('recordAudit', () => {
     );
     expect(row.userId).toBe('u1');
     expect(row.actorId).toBe('admin-1');
-    expect(row.action).toBe('admin.ban_user');
+    expect(row.action).toBe('credit.admin_bypass');
     expect(row.entityType).toBe('user');
     expect(row.entityId).toBe('u1');
     expect(row.metadata).toEqual({ reason: 'spam' });

@@ -3,28 +3,9 @@ import { getDb } from '@/db';
 import { auditLog } from '@/db/schema';
 import { logger } from '@/lib/logger';
 
-/**
- * Stable action verbs (Week 5.2). Add new entries here rather than
- * inlining magic strings at call sites — this is the canonical list
- * the audit query UI / customer support tools will key off of.
- *
- * Convention: lowercase domain.verb. Domain names align with module
- * boundaries (credit / payment / admin / referral / etc.).
- */
 export const AUDIT_ACTIONS = {
-  CREDIT_ADD: 'credit.add',
-  CREDIT_CONSUME: 'credit.consume',
-  CREDIT_HOLD: 'credit.hold',
-  CREDIT_HOLD_CONFIRM: 'credit.hold.confirm',
-  CREDIT_HOLD_RELEASE: 'credit.hold.release',
   CREDIT_ADMIN_BYPASS: 'credit.admin_bypass',
   CREDIT_LEASE_SWEEP: 'credit.lease_sweep',
-  PAYMENT_REFUND: 'payment.refund',
-  PAYMENT_LIFETIME_GRANT: 'payment.lifetime_grant',
-  ADMIN_BAN_USER: 'admin.ban_user',
-  ADMIN_UNBAN_USER: 'admin.unban_user',
-  REFERRAL_BONUS: 'referral.bonus',
-  REFERRAL_COMMISSION: 'referral.commission',
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
