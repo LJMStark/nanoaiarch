@@ -13,7 +13,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { websiteConfig } from '@/config/website';
 import { useCreditBalance, useCreditStats } from '@/hooks/use-credits';
 import { useMounted } from '@/hooks/use-mounted';
-import { CREDITS_EXPIRATION_DAYS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { RefreshCwIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -120,20 +119,20 @@ export default function CreditsCard() {
         </div>
       </CardContent>
       <CardFooter className="px-6 py-4 flex justify-between items-center bg-muted rounded-none">
-        {/* Expiring credits warning */}
-        {!isLoadingStats && creditStats && (
-          <div className="text-sm text-muted-foreground space-y-2">
-            {' '}
-            <div className="flex items-center gap-2 text-amber-600">
-              <span>
-                {t('expiringCredits', {
-                  credits: creditStats.expiringCredits.amount,
-                  days: CREDITS_EXPIRATION_DAYS,
-                })}
+        {!isLoadingStats &&
+          creditStats &&
+          creditStats.expiringCredits.breakdown.length > 0 && (
+            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <span className="font-medium text-amber-500">
+                {t('expiryTitle')}
               </span>
+              {creditStats.expiringCredits.breakdown.map((entry) => (
+                <span key={entry.date}>
+                  {entry.amount.toLocaleString()} 积分 · 到期：{entry.date}
+                </span>
+              ))}
             </div>
-          </div>
-        )}
+          )}
       </CardFooter>
     </Card>
   );

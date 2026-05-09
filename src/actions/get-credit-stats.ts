@@ -3,15 +3,10 @@
 import { getDb } from '@/db';
 import { creditTransaction } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
-import { CREDITS_EXPIRATION_DAYS } from '@/lib/constants';
 import { logger } from '@/lib/logger';
 import { userActionClient } from '@/lib/safe-action';
-import { addDays } from 'date-fns';
-import { and, eq, gt, gte, isNotNull, lte, sum } from 'drizzle-orm';
+import { and, eq, gt, gte, isNotNull, sql, sum } from 'drizzle-orm';
 
-/**
- * Get credit statistics for a user
- */
 export const getCreditStatsAction = userActionClient.action(async ({ ctx }) => {
   try {
     const currentUser = (ctx as { user: User }).user;
@@ -19,12 +14,13 @@ export const getCreditStatsAction = userActionClient.action(async ({ ctx }) => {
 
     const db = await getDb();
     const now = new Date();
-    // Get credits expiring in the next 30 days
-    const expirationDaysFromNow = addDays(now, CREDITS_EXPIRATION_DAYS);
 
-    // Get total credits expiring in the next 30 days
-    const expiringCreditsResult = await db
+    // All non-expired grants with remaining balance, grouped by expiration date.
+    // Null expirationDate rows (never-expire grants) are excluded so the UI
+    // only shows dates that are actually relevant to the user.
+    const rows = await db
       .select({
+        expirationDate: creditTransaction.expirationDate,
         totalAmount: sum(creditTransaction.remainingAmount),
       })
       .from(creditTransaction)
@@ -34,19 +30,27 @@ export const getCreditStatsAction = userActionClient.action(async ({ ctx }) => {
           isNotNull(creditTransaction.expirationDate),
           isNotNull(creditTransaction.remainingAmount),
           gt(creditTransaction.remainingAmount, 0),
-          lte(creditTransaction.expirationDate, expirationDaysFromNow),
           gte(creditTransaction.expirationDate, now)
         )
-      );
+      )
+      .groupBy(sql`DATE(${creditTransaction.expirationDate})`)
+      .orderBy(creditTransaction.expirationDate);
 
-    const totalExpiringCredits =
-      Number(expiringCreditsResult[0]?.totalAmount) || 0;
+    const expiryBreakdown = rows
+      .filter((r) => r.expirationDate != null && Number(r.totalAmount) > 0)
+      .map((r) => ({
+        date: (r.expirationDate as Date).toISOString().slice(0, 10),
+        amount: Number(r.totalAmount),
+      }));
+
+    const totalExpiring = expiryBreakdown.reduce((s, r) => s + r.amount, 0);
 
     return {
       success: true,
       data: {
         expiringCredits: {
-          amount: totalExpiringCredits,
+          amount: totalExpiring,
+          breakdown: expiryBreakdown,
         },
       },
     };
