@@ -1,0 +1,1 @@
+ALTER TABLE "project_message" ADD COLUMN "generation_lease_expires_at" timestamp;

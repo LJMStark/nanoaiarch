@@ -1,5 +1,6 @@
 'use server';
 
+import { GENERATION_LEASE_DURATION_MS } from '@/ai/image/config/generation-recovery';
 import { validateBase64Image, validatePrompt } from '@/ai/image/lib/api-utils';
 import {
   getPrimaryInputImage,
@@ -22,6 +23,10 @@ import { headers } from 'next/headers';
 
 function generateId(): string {
   return crypto.randomUUID();
+}
+
+function nextLeaseExpiry(now: Date = new Date()): Date {
+  return new Date(now.getTime() + GENERATION_LEASE_DURATION_MS);
 }
 
 export type MessageRole = 'user' | 'assistant';
@@ -163,6 +168,50 @@ export async function getProjectMessages(projectId: string) {
  * Get single message status - optimized for polling
  * Only returns minimal data needed for status check
  */
+/**
+ * Find generating messages whose lease has expired (Week 4.1).
+ *
+ * Called by the Week 5 background sweeper. Returns lightweight rows
+ * (id + projectId + userId) that the sweeper will then transition to
+ * status='failed' and release the associated credit hold for.
+ *
+ * Server-only — no auth check, callers must be trusted background workers.
+ */
+export async function findExpiredGeneratingMessages(opts: {
+  /** Hard cap on rows returned per sweep to bound load. */
+  limit?: number;
+  /** Optional override of "now" for tests. */
+  now?: Date;
+}): Promise<
+  Array<{
+    id: string;
+    projectId: string;
+    userId: string;
+  }>
+> {
+  const db = await getDb();
+  const now = opts.now ?? new Date();
+  const limit = opts.limit ?? 100;
+
+  const rows = await db
+    .select({
+      id: projectMessage.id,
+      projectId: projectMessage.projectId,
+      userId: projectMessage.userId,
+    })
+    .from(projectMessage)
+    .where(
+      and(
+        eq(projectMessage.status, 'generating'),
+        sql`${projectMessage.generationLeaseExpiresAt} IS NOT NULL`,
+        sql`${projectMessage.generationLeaseExpiresAt} < ${now.toISOString()}::timestamp`
+      )
+    )
+    .limit(limit);
+
+  return rows;
+}
+
 export async function getMessageStatus(projectId: string, messageId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
@@ -180,6 +229,11 @@ export async function getMessageStatus(projectId: string, messageId: string) {
         errorMessage: projectMessage.errorMessage,
         creditsUsed: projectMessage.creditsUsed,
         generationTime: projectMessage.generationTime,
+        // Lease expiry surfaces to the client so the recovery hook can decide
+        // whether a "still generating" row is genuinely live or already past
+        // its lease window (in which case the client should stop polling
+        // and let the server-side sweeper finalize it).
+        generationLeaseExpiresAt: projectMessage.generationLeaseExpiresAt,
         updatedAt: projectMessage.updatedAt,
       })
       .from(projectMessage)
@@ -559,6 +613,12 @@ export async function createPendingGeneration(
           generationTime: null,
           status: assistantMessage.status,
           errorMessage: null,
+          // Stamp the initial lease so a background sweeper can reap this
+          // row if the client crashes before update.
+          generationLeaseExpiresAt:
+            assistantMessage.status === 'generating'
+              ? nextLeaseExpiry(now)
+              : null,
           orderIndex: assistantMessage.orderIndex,
           createdAt: now,
           updatedAt: now,
@@ -669,7 +729,14 @@ export async function updateAssistantMessage(
     if (data.creditsUsed !== undefined) updates.creditsUsed = data.creditsUsed;
     if (data.generationTime !== undefined)
       updates.generationTime = data.generationTime;
-    if (data.status !== undefined) updates.status = data.status;
+    if (data.status !== undefined) {
+      updates.status = data.status;
+      // Lease lifecycle:
+      //  - generating  -> set/refresh the lease window
+      //  - completed/failed -> clear the lease (work is done; no sweeper concern)
+      updates.generationLeaseExpiresAt =
+        data.status === 'generating' ? nextLeaseExpiry() : null;
+    }
     if (data.errorMessage !== undefined)
       updates.errorMessage = data.errorMessage;
     if (data.generationParams !== undefined) {
@@ -800,6 +867,8 @@ export async function updateAssistantMessageFromClient(
           generationTime: null,
           status: 'generating',
           errorMessage: null,
+          // Re-arm the lease window for the retry attempt.
+          generationLeaseExpiresAt: nextLeaseExpiry(now),
           updatedAt: now,
         })
         .where(
@@ -847,6 +916,8 @@ export async function updateAssistantMessageFromClient(
       const updates: Record<string, unknown> = {
         status: 'failed',
         errorMessage: data.errorMessage ?? null,
+        // Failed terminal state: clear the lease so the sweeper ignores us.
+        generationLeaseExpiresAt: null,
         updatedAt: now,
       };
 

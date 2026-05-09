@@ -158,6 +158,44 @@ describe('useGenerationRecovery', () => {
     expect(updateAssistantMessageRequestMock).not.toHaveBeenCalled();
   });
 
+  it('stops polling when the server reports lease has expired (sweeper takes over)', async () => {
+    // Week 4.1 contract: if the server-side generation lease has elapsed,
+    // a background sweeper will finalize the row to status='failed' and
+    // release the credit hold. The client should stop polling so it
+    // doesn't fight the sweeper or mark the row failed itself
+    // (otherwise the sweeper's hold-release path may double-fire).
+    fetchMessageStatusMock.mockResolvedValue({
+      success: true,
+      data: {
+        id: 'assistant-1',
+        status: 'generating',
+        outputImage: null,
+        errorMessage: null,
+        creditsUsed: null,
+        generationTime: null,
+        // 1 minute in the past — lease has elapsed.
+        generationLeaseExpiresAt: new Date(Date.now() - 60_000).toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+
+    renderHook(() => useGenerationRecovery('project-1'));
+
+    await waitFor(() => {
+      expect(fetchMessageStatusMock).toHaveBeenCalledTimes(1);
+    });
+
+    await waitFor(() => {
+      expect(setGeneratingMock).toHaveBeenCalledWith(false);
+    });
+
+    // Crucially: we did NOT call markGenerationFailed (no
+    // updateAssistantMessage round-trip). The sweeper owns the
+    // 'failed' transition.
+    expect(updateAssistantMessageRequestMock).not.toHaveBeenCalled();
+    expect(updateMessageMock).not.toHaveBeenCalled();
+  });
+
   it('ignores stale poll results after a newer generation starts', async () => {
     let resolveStatus:
       | ((value: { success: boolean; data: { status: string } | null }) => void)

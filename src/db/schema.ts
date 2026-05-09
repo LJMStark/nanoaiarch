@@ -280,6 +280,13 @@ export const projectMessage = pgTable("project_message", {
 	status: text("status").notNull().default("completed"), // pending, generating, completed, failed
 	errorMessage: text("error_message"),
 
+	// Generation lease (Week 4.1): when status='generating', this is the wall-clock
+	// time after which a background sweeper considers the generation orphaned and
+	// transitions status -> 'failed' + releases the credit hold. Null for any
+	// non-generating message. The owning client/server pipeline is responsible for
+	// extending the lease while work is genuinely in flight.
+	generationLeaseExpiresAt: timestamp("generation_lease_expires_at"),
+
 	// Order
 	orderIndex: integer("order_index").notNull().default(0),
 

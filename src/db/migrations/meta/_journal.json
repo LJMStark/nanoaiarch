@@ -162,6 +162,13 @@
       "when": 1778203890000,
       "tag": "0022_restore_credit_transaction_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1778312463060,
+      "tag": "0023_broad_chat",
+      "breakpoints": true
     }
   ]
 }

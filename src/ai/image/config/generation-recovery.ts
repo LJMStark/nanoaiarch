@@ -1,4 +1,22 @@
 /**
+ * Default generation lease window — 5 minutes (Week 4.1).
+ *
+ * When a message is created with status='generating' the server stamps
+ * generationLeaseExpiresAt = now() + this window. A background sweeper
+ * (Week 5 cron) finds messages whose lease has elapsed, marks them failed,
+ * and releases the associated credit hold.
+ *
+ * Tradeoff: too short and slow Gemini calls get reaped while still alive;
+ * too long and a crashed client leaves credits locked for too long.
+ * Gemini's 95th-percentile generation time is ~90s, so 5 minutes gives
+ * 3x headroom while keeping the UX impact of a true crash bounded.
+ *
+ * Lives here (not in a 'use server' module) because Next.js requires that
+ * 'use server' files only export async functions.
+ */
+export const GENERATION_LEASE_DURATION_MS = 5 * 60 * 1000;
+
+/**
  * Configuration for generation state recovery and polling
  */
 export const GENERATION_RECOVERY_CONFIG = {

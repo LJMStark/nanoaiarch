@@ -98,5 +98,12 @@ export type MessageStatusItem = {
   errorMessage: string | null;
   creditsUsed: number | null;
   generationTime: number | null;
+  /**
+   * Wall-clock expiry of the generation lease. Surfaced when status is
+   * 'generating'; null for terminal states. The recovery hook uses this
+   * to stop polling once the lease has elapsed (the server-side sweeper
+   * will finalize the row shortly).
+   */
+  generationLeaseExpiresAt: SerializableDate | null;
   updatedAt: SerializableDate;
 };
