@@ -1,6 +1,13 @@
 'use client';
 
 import { generateImage } from '@/ai/image/lib/api-utils';
+import {
+  clearFinishedGeneration,
+  isActiveGenerationRequest,
+  isGenerationCancelled,
+  normalizePersistedAssistantMessage,
+} from '@/ai/image/lib/generation-utils';
+import { useConversationStore } from '@/stores/conversation-store';
 import { preloadImage } from '@/ai/image/lib/image-display-utils';
 import {
   createPendingGenerationRequest,
@@ -8,7 +15,6 @@ import {
 } from '@/ai/image/lib/workspace-client';
 import type { ProjectMessageItem } from '@/ai/image/lib/workspace-types';
 import { logger } from '@/lib/logger';
-import { useConversationStore } from '@/stores/conversation-store';
 import { useCallback, useRef } from 'react';
 
 export interface MessageUpdateData {
@@ -18,14 +24,6 @@ export interface MessageUpdateData {
   status: 'generating' | 'failed';
   content?: string;
   errorMessage?: string | null;
-}
-
-interface GenerationStateDependencies {
-  setAbortController: (controller: AbortController | null) => void;
-  setGenerationRequestToken: (token: string | null) => void;
-  setGenerationStage: (
-    stage: 'submitting' | 'queued' | 'generating' | 'finishing' | null
-  ) => void;
 }
 
 interface ConversationMessageLike {
@@ -84,32 +82,6 @@ function getInputImages(
   return [getLastOutputImage()].filter(Boolean) as string[];
 }
 
-function clearFinishedGeneration(
-  requestToken: string,
-  generatingMessageId: string | null,
-  dependencies: GenerationStateDependencies & {
-    setGenerating: (
-      isGenerating: boolean,
-      generatingMessageId?: string
-    ) => void;
-  }
-): void {
-  const state = useConversationStore.getState();
-
-  if (state.generationRequestToken === requestToken) {
-    dependencies.setAbortController(null);
-    dependencies.setGenerationRequestToken(null);
-  }
-
-  if (
-    !generatingMessageId ||
-    state.generatingMessageId === generatingMessageId
-  ) {
-    dependencies.setGenerating(false);
-    dependencies.setGenerationStage(null);
-  }
-}
-
 function getFailureState(
   error: unknown,
   t: (key: ConversationTranslationKey) => string
@@ -123,37 +95,6 @@ function getFailureState(
       : error instanceof Error
         ? error.message
         : t('errors.unknown'),
-  };
-}
-
-function isGenerationCancelled(error?: string): boolean {
-  return error === 'Generation cancelled' || error === '生成已取消';
-}
-
-function isActiveGenerationRequest(
-  requestToken: string,
-  generatingMessageId: string
-): boolean {
-  const state = useConversationStore.getState();
-  return (
-    state.generationRequestToken === requestToken &&
-    state.generatingMessageId === generatingMessageId
-  );
-}
-
-function normalizePersistedAssistantMessage(
-  message: PersistedAssistantMessageLike
-): Partial<ProjectMessageItem> {
-  return {
-    content: message.content,
-    outputImage: message.outputImage,
-    generationParams: message.generationParams,
-    creditsUsed: message.creditsUsed,
-    generationTime: message.generationTime,
-    status: message.status,
-    errorMessage: message.errorMessage,
-    orderIndex: message.orderIndex,
-    createdAt: new Date(message.createdAt),
   };
 }
 
@@ -439,14 +380,3 @@ export function useConversationSubmit({
     updateMessage,
   ]);
 }
-type PersistedAssistantMessageLike = {
-  content: string;
-  outputImage: string | null;
-  generationParams: string | null;
-  creditsUsed: number | null;
-  generationTime: number | null;
-  status: string;
-  errorMessage: string | null;
-  orderIndex: number;
-  createdAt: string | Date;
-};

@@ -4,6 +4,12 @@ import { LoadingMessage } from '@/ai/image/components/conversation/LoadingMessag
 import { generateImage } from '@/ai/image/lib/api-utils';
 import { parseErrorMessage } from '@/ai/image/lib/error-utils';
 import {
+  clearFinishedGeneration,
+  isActiveGenerationRequest,
+  isGenerationCancelled,
+  normalizePersistedAssistantMessage,
+} from '@/ai/image/lib/generation-utils';
+import {
   downloadImage,
   getImageSrc,
   preloadImage,
@@ -69,60 +75,6 @@ export function MessageItem({ message, isLast }: MessageItemProps) {
   }
 
   return <AssistantMessage message={message} isLast={isLast} />;
-}
-
-function normalizePersistedAssistantMessage(
-  message: PersistedAssistantMessageLike
-): Partial<ProjectMessageItem> {
-  return {
-    content: message.content,
-    outputImage: message.outputImage,
-    generationParams: message.generationParams,
-    creditsUsed: message.creditsUsed,
-    generationTime: message.generationTime,
-    status: message.status,
-    errorMessage: message.errorMessage,
-    orderIndex: message.orderIndex,
-    createdAt: new Date(message.createdAt),
-  };
-}
-
-function isGenerationCancelled(error?: string): boolean {
-  return error === 'Generation cancelled' || error === '生成已取消';
-}
-
-function isActiveGenerationRequest(
-  requestToken: string,
-  generatingMessageId: string
-): boolean {
-  const state = useConversationStore.getState();
-  return (
-    state.generationRequestToken === requestToken &&
-    state.generatingMessageId === generatingMessageId
-  );
-}
-
-function clearFinishedGeneration(
-  requestToken: string,
-  generatingMessageId: string,
-  setAbortController: (controller: AbortController | null) => void,
-  setGenerationRequestToken: (token: string | null) => void,
-  setGenerating: (generating: boolean, messageId?: string | null) => void,
-  setGenerationStage: (
-    stage: 'submitting' | 'queued' | 'generating' | 'finishing' | null
-  ) => void
-): void {
-  const state = useConversationStore.getState();
-
-  if (state.generationRequestToken === requestToken) {
-    setAbortController(null);
-    setGenerationRequestToken(null);
-  }
-
-  if (state.generatingMessageId === generatingMessageId) {
-    setGenerating(false);
-    setGenerationStage(null);
-  }
 }
 
 function UserMessage({ message }: { message: ProjectMessageItem }) {
@@ -400,14 +352,12 @@ function AssistantMessage({
           error instanceof Error ? error.message : t('errors.unknown'),
       });
     } finally {
-      clearFinishedGeneration(
-        requestToken,
-        message.id,
+      clearFinishedGeneration(requestToken, message.id, {
         setAbortController,
         setGenerationRequestToken,
         setGenerating,
-        setGenerationStage
-      );
+        setGenerationStage,
+      });
 
       if (isMountedRef.current) {
         setIsRetrying(false);
@@ -637,14 +587,3 @@ function AssistantMessage({
     </div>
   );
 }
-type PersistedAssistantMessageLike = {
-  content: string;
-  outputImage: string | null;
-  generationParams: string | null;
-  creditsUsed: number | null;
-  generationTime: number | null;
-  status: string;
-  errorMessage: string | null;
-  orderIndex: number;
-  createdAt: string | Date;
-};
