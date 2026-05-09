@@ -13,6 +13,11 @@ export function useGenerationRecovery(projectId: string | null): void {
     useConversationStore();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retryCountRef = useRef(0);
+  // Tracks consecutive "message not found" responses separately from generic
+  // network errors. Multi-tab usage can briefly return "not found" while the
+  // server propagates a write — we want to retry rather than instantly mark
+  // a possibly-completed message as failed.
+  const notFoundCountRef = useRef(0);
   const startTimeRef = useRef(0);
 
   const stopPolling = useCallback(() => {
@@ -67,6 +72,7 @@ export function useGenerationRecovery(projectId: string | null): void {
     const activeMessageId = generatingMessageId;
 
     retryCountRef.current = 0;
+    notFoundCountRef.current = 0;
     startTimeRef.current = Date.now();
 
     logger.ai.info(
@@ -127,8 +133,27 @@ export function useGenerationRecovery(projectId: string | null): void {
         }
 
         if (!result.data) {
+          notFoundCountRef.current += 1;
+          // Treat "not found" as transient for the first N polls. Common
+          // root causes: replication lag between read replicas, multi-tab
+          // race where another tab is mid-write, or a brief userId filter
+          // mismatch during session refresh. Only after sustained absence
+          // do we conclude the message is truly gone and mark failed —
+          // otherwise a successful generation could be overwritten with
+          // status=failed.
+          if (
+            notFoundCountRef.current <
+            GENERATION_RECOVERY_CONFIG.MAX_NOT_FOUND_RETRIES
+          ) {
+            logger.ai.warn(
+              `Generating message not found, retrying (${notFoundCountRef.current}/${GENERATION_RECOVERY_CONFIG.MAX_NOT_FOUND_RETRIES}) [messageId=${activeMessageId}]`
+            );
+            scheduleNextPoll();
+            return;
+          }
+
           logger.ai.warn(
-            `Generating message not found [messageId=${activeMessageId}]`
+            `Generating message not found after ${notFoundCountRef.current} retries [messageId=${activeMessageId}]`
           );
           await markGenerationFailed(
             activeMessageId,
@@ -138,6 +163,8 @@ export function useGenerationRecovery(projectId: string | null): void {
         }
 
         retryCountRef.current = 0;
+        // Successful resolution clears the not-found backoff too.
+        notFoundCountRef.current = 0;
 
         if (result.data.status !== 'generating') {
           logger.ai.info(

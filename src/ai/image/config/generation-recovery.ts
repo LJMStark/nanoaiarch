@@ -8,6 +8,16 @@ export const GENERATION_RECOVERY_CONFIG = {
   /** Maximum number of polling retries before giving up */
   MAX_RETRIES: 12,
 
+  /**
+   * Tolerance for "message not found" responses before concluding the
+   * message is truly gone. Multi-tab usage and replica lag can briefly
+   * surface a not-found while a write is propagating, so we wait for a
+   * sustained absence rather than failing on the first miss. Smaller than
+   * MAX_RETRIES because a missing record is a stronger signal than a
+   * generic network error.
+   */
+  MAX_NOT_FOUND_RETRIES: 3,
+
   /** Maximum total polling duration in milliseconds (5 minutes) */
   MAX_POLL_DURATION_MS: 5 * 60 * 1000,
 } as const;
