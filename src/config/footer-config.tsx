@@ -42,8 +42,8 @@ export function useFooterLinks(): NestedMenuItem[] {
       title: t('resources.title'),
       items: [
         {
-          title: t('resources.items.help'),
-          href: Routes.Help,
+          title: t('resources.items.contact'),
+          href: Routes.Contact,
           external: false,
         },
       ],

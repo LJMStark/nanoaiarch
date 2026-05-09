@@ -709,8 +709,7 @@
         "title": "资源",
         "items": {
           "blog": "博客",
-          "docs": "文档",
-          "help": "帮助中心",
+          "contact": "联系我们",
           "changelog": "更新日志",
           "roadmap": "路线图"
         }
