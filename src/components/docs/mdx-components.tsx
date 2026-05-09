@@ -12,8 +12,6 @@ import defaultMdxComponents from 'fumadocs-ui/mdx';
 import * as LucideIcons from 'lucide-react';
 import type { MDXComponents } from 'mdx/types';
 import type { ComponentProps, FC } from 'react';
-import { XEmbedClient } from './xembed';
-
 /**
  * Enhanced MDX Content component that includes commonly used MDX components
  * It can be used for blog posts, documentation, and custom pages
@@ -23,8 +21,6 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
   const baseComponents: Record<string, any> = {
     ...defaultMdxComponents,
     ...LucideIcons,
-    // ...((await import('lucide-react')) as unknown as MDXComponents),
-    XEmbedClient,
     YoutubeVideo,
     PremiumContent,
     Tabs,
