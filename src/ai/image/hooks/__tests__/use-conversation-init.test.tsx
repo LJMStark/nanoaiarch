@@ -126,6 +126,67 @@ describe('useConversationInit', () => {
     expect(setMessagesMock).toHaveBeenCalledWith([]);
   });
 
+  it('re-initializes when mode changes between renders (Week 4.4 regression)', async () => {
+    // Previously initRef locked after the first run; flipping
+    // ?new=1 -> ?template=foo within the same tab would silently keep the
+    // 'new-project' bootstrap state and never re-fetch with mode='blank'.
+    fetchConversationInitDataMock.mockResolvedValue({
+      success: true,
+      data: {
+        projects: [],
+        messages: [],
+        currentProjectId: null,
+      },
+    });
+
+    const { rerender } = renderHook(
+      ({ mode }: { mode: 'new-project' | 'blank' }) =>
+        useConversationInit({ mode } as any),
+      { initialProps: { mode: 'new-project' } }
+    );
+
+    await waitFor(() => {
+      expect(fetchConversationInitDataMock).toHaveBeenCalledTimes(1);
+      expect(fetchConversationInitDataMock).toHaveBeenLastCalledWith(null, {
+        mode: 'new-project',
+      });
+    });
+
+    rerender({ mode: 'blank' });
+
+    await waitFor(() => {
+      expect(fetchConversationInitDataMock).toHaveBeenCalledTimes(2);
+      expect(fetchConversationInitDataMock).toHaveBeenLastCalledWith(null, {
+        mode: 'blank',
+      });
+    });
+  });
+
+  it('skips re-initialization when re-rendered with the same mode', async () => {
+    // Spurious re-renders (e.g. parent re-renders with new prop refs but
+    // the same mode) must NOT re-trigger the bootstrap. Otherwise we'd
+    // race-fetch projects on every store update.
+    fetchConversationInitDataMock.mockResolvedValue({
+      success: true,
+      data: { projects: [], messages: [], currentProjectId: null },
+    });
+
+    const { rerender } = renderHook(
+      ({ mode }: { mode: 'resume' }) => useConversationInit({ mode } as any),
+      { initialProps: { mode: 'resume' } }
+    );
+
+    await waitFor(() => {
+      expect(fetchConversationInitDataMock).toHaveBeenCalledTimes(1);
+    });
+
+    rerender({ mode: 'resume' });
+    rerender({ mode: 'resume' });
+
+    // Still exactly one fetch — same-mode re-renders are no-ops.
+    expect(fetchConversationInitDataMock).toHaveBeenCalledTimes(1);
+  });
+
   it('clears stale generating state when bootstrap returns no generating messages', async () => {
     fetchConversationInitDataMock.mockResolvedValue({
       success: true,

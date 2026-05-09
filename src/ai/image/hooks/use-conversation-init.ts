@@ -33,7 +33,14 @@ function syncRecoveredGenerationState(
  * Optimizes initial load by fetching projects and messages in a single request
  */
 export function useConversationInit(options?: { mode?: ConversationInitMode }) {
-  const initRef = useRef(false);
+  // Tracks the mode value the init effect last ran for. Previously this was
+  // a boolean `initRef` that locked after the first run, which meant a
+  // user navigating from /ai/image?new=1 to /ai/image?template=foo stayed
+  // stuck on the old "new project" bootstrap and never saw the template
+  // applied (mode change ignored). Compare current mode against last-run
+  // mode so genuine route transitions re-initialize, while spurious
+  // re-renders within the same mode stay no-op.
+  const initializedModeRef = useRef<ConversationInitMode | null>(null);
   const mode = options?.mode ?? 'resume';
 
   const { setProjects, setLoadingProjects, selectProject } = useProjectStore();
@@ -48,8 +55,8 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
 
   // Initial data load - single request for projects + messages
   useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
+    if (initializedModeRef.current === mode) return;
+    initializedModeRef.current = mode;
 
     const loadInitialData = async () => {
       setLoadingProjects(true);
