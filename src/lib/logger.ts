@@ -1,9 +1,15 @@
 /**
- * Unified logging utility for the application
+ * Unified logging utility for the application.
  *
- * - Production: Only outputs warn and error levels
- * - Development: Outputs all levels
- * - Supports structured data for log analysis
+ * Production server: emits one JSON object per line (Week 5.3) so log
+ * aggregators (Vercel logs, Datadog, Axiom, Loki, etc.) can index
+ * fields directly without regex parsing. Each line has a stable shape:
+ *   { ts, level, prefix, msg, data?, err? }
+ *
+ * Development server: emits colorized human-friendly multi-line output.
+ * Browser: emits the same human-friendly form via console.* (so the
+ * devtools timeline groups it normally; JSON in browser console is
+ * needlessly verbose).
  */
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -39,11 +45,30 @@ function resolveMinLogLevel(): LogLevel {
 
 const MIN_LOG_LEVEL = resolveMinLogLevel();
 
+/**
+ * JSON output is enabled when running on the server in production.
+ * Development server keeps the colorized format because humans read it
+ * during local debugging. Browser also keeps human format.
+ *
+ * Override either way with LOG_FORMAT=json or LOG_FORMAT=human (useful
+ * for piping local server logs through jq, or running prod with human
+ * format for incident debugging).
+ */
+function resolveJsonOutput(): boolean {
+  const configured = process.env.LOG_FORMAT?.toLowerCase();
+  if (configured === 'json') return true;
+  if (configured === 'human') return false;
+  if (typeof window !== 'undefined') return false;
+  return process.env.NODE_ENV === 'production';
+}
+
+const USE_JSON_OUTPUT = resolveJsonOutput();
+
 function shouldLog(level: LogLevel): boolean {
   return LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[MIN_LOG_LEVEL];
 }
 
-function formatMessage(
+function formatHumanMessage(
   level: LogLevel,
   prefix: string,
   message: string
@@ -53,7 +78,7 @@ function formatMessage(
   const reset = LOG_COLORS.reset;
   const levelLabel = level.toUpperCase().padEnd(5);
 
-  // In browser, colors don't work the same way
+  // In browser, ANSI colors render as junk text — drop them.
   if (typeof window !== 'undefined') {
     return `[${timestamp}] ${levelLabel} [${prefix}] ${message}`;
   }
@@ -61,11 +86,67 @@ function formatMessage(
   return `${color}[${timestamp}] ${levelLabel}${reset} [${prefix}] ${message}`;
 }
 
-function formatData(data: LogData): string {
+function formatHumanData(data: LogData): string {
   try {
     return JSON.stringify(data, null, 2);
   } catch {
     return '[Unable to serialize data]';
+  }
+}
+
+interface SerializedError {
+  message: string;
+  stack?: string;
+  name?: string;
+}
+
+function serializeError(error: unknown): SerializedError {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    };
+  }
+  return { message: String(error) };
+}
+
+interface JsonLogLine {
+  ts: string;
+  level: LogLevel;
+  prefix: string;
+  msg: string;
+  data?: LogData;
+  err?: SerializedError;
+}
+
+function formatJsonLine(
+  level: LogLevel,
+  prefix: string,
+  message: string,
+  data?: LogData,
+  error?: unknown
+): string {
+  const line: JsonLogLine = {
+    ts: new Date().toISOString(),
+    level,
+    prefix,
+    msg: message,
+  };
+  if (data) line.data = data;
+  if (error !== undefined) line.err = serializeError(error);
+  try {
+    return JSON.stringify(line);
+  } catch {
+    // Last-ditch fallback when data contains a circular ref. Drop the
+    // payload but keep the message + level so we don't lose the event.
+    return JSON.stringify({
+      ts: line.ts,
+      level: line.level,
+      prefix: line.prefix,
+      msg: line.msg,
+      err: { message: 'log serialization failed' },
+    });
   }
 }
 
@@ -84,77 +165,75 @@ class Logger {
     this.prefix = prefix;
   }
 
-  debug(message: string, data?: LogData): void {
-    if (!shouldLog('debug')) return;
-    const formattedMessage = formatMessage('debug', this.prefix, message);
-    if (typeof window !== 'undefined') {
-      console.log(formattedMessage);
-      if (data) console.log(formatData(data));
+  private emit(
+    level: LogLevel,
+    message: string,
+    data?: LogData,
+    error?: unknown
+  ): void {
+    if (!shouldLog(level)) return;
+
+    const stream: 'stdout' | 'stderr' =
+      level === 'warn' || level === 'error' ? 'stderr' : 'stdout';
+
+    if (USE_JSON_OUTPUT) {
+      writeServerLog(
+        formatJsonLine(level, this.prefix, message, data, error),
+        stream
+      );
       return;
     }
 
-    writeServerLog(formattedMessage);
-    if (data) writeServerLog(formatData(data));
+    // Human format — split message + (optional) error/data across lines so
+    // the colorized header stays compact and the payload is pretty-printed.
+    const formattedMessage = formatHumanMessage(level, this.prefix, message);
+
+    if (typeof window !== 'undefined') {
+      const consoleFn =
+        level === 'error'
+          ? console.error
+          : level === 'warn'
+            ? console.warn
+            : console.log;
+      consoleFn(formattedMessage);
+      if (error) {
+        if (error instanceof Error) {
+          consoleFn(`  Error: ${error.message}`);
+          if (error.stack) consoleFn(`  Stack: ${error.stack}`);
+        } else {
+          consoleFn(`  Error: ${String(error)}`);
+        }
+      }
+      if (data) consoleFn(formatHumanData(data));
+      return;
+    }
+
+    writeServerLog(formattedMessage, stream);
+    if (error) {
+      if (error instanceof Error) {
+        writeServerLog(`  Error: ${error.message}`, stream);
+        if (error.stack) writeServerLog(`  Stack: ${error.stack}`, stream);
+      } else {
+        writeServerLog(`  Error: ${String(error)}`, stream);
+      }
+    }
+    if (data) writeServerLog(formatHumanData(data), stream);
+  }
+
+  debug(message: string, data?: LogData): void {
+    this.emit('debug', message, data);
   }
 
   info(message: string, data?: LogData): void {
-    if (!shouldLog('info')) return;
-    const formattedMessage = formatMessage('info', this.prefix, message);
-    if (typeof window !== 'undefined') {
-      console.log(formattedMessage);
-      if (data) console.log(formatData(data));
-      return;
-    }
-
-    writeServerLog(formattedMessage);
-    if (data) writeServerLog(formatData(data));
+    this.emit('info', message, data);
   }
 
   warn(message: string, data?: LogData): void {
-    if (!shouldLog('warn')) return;
-    const formattedMessage = formatMessage('warn', this.prefix, message);
-    if (typeof window !== 'undefined') {
-      console.warn(formattedMessage);
-      if (data) console.warn(formatData(data));
-      return;
-    }
-
-    writeServerLog(formattedMessage, 'stderr');
-    if (data) writeServerLog(formatData(data), 'stderr');
+    this.emit('warn', message, data);
   }
 
   error(message: string, error?: unknown, data?: LogData): void {
-    if (!shouldLog('error')) return;
-    const formattedMessage = formatMessage('error', this.prefix, message);
-
-    if (typeof window !== 'undefined') {
-      console.error(formattedMessage);
-      if (error) {
-        if (error instanceof Error) {
-          console.error(`  Error: ${error.message}`);
-          if (error.stack) {
-            console.error(`  Stack: ${error.stack}`);
-          }
-        } else {
-          console.error(`  Error: ${String(error)}`);
-        }
-      }
-      if (data) console.error(formatData(data));
-      return;
-    }
-
-    writeServerLog(formattedMessage, 'stderr');
-    if (error) {
-      if (error instanceof Error) {
-        writeServerLog(`  Error: ${error.message}`, 'stderr');
-        if (error.stack) {
-          writeServerLog(`  Stack: ${error.stack}`, 'stderr');
-        }
-      } else {
-        writeServerLog(`  Error: ${String(error)}`, 'stderr');
-      }
-    }
-    if (data) writeServerLog(formatData(data), 'stderr');
+    this.emit('error', message, data, error);
   }
 }
 
