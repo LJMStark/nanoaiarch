@@ -4,6 +4,7 @@ import { consumeCredits } from '../credits';
 const mocks = vi.hoisted(() => ({
   getDb: vi.fn(),
   isAdminUser: vi.fn(),
+  recordAudit: vi.fn(),
 }));
 
 vi.mock('@/db', () => ({
@@ -12,6 +13,11 @@ vi.mock('@/db', () => ({
 
 vi.mock('@/lib/admin', () => ({
   isAdminUser: mocks.isAdminUser,
+}));
+
+vi.mock('@/lib/audit', () => ({
+  AUDIT_ACTIONS: { CREDIT_ADMIN_BYPASS: 'credit.admin_bypass' },
+  recordAudit: mocks.recordAudit,
 }));
 
 vi.mock('@/lib/logger', () => ({

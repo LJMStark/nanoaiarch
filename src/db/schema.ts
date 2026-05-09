@@ -1,5 +1,5 @@
 import { DEFAULT_MODEL } from '@/ai/image/lib/provider-config';
-import { boolean, integer, pgTable, text, timestamp, index, unique } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, text, timestamp, index, unique } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -303,4 +303,42 @@ export const projectMessage = pgTable("project_message", {
 	projectMessageUserProjectIdx: index("project_message_user_project_idx").on(table.userId, table.projectId),
 	projectMessageProjectCreatedAtIdx: index("project_message_project_created_at_idx").on(table.projectId, table.createdAt),
 	projectMessageProjectOrderUnique: unique("project_message_project_order_unique").on(table.projectId, table.orderIndex),
+}));
+
+/**
+ * Audit log table (Week 5.2).
+ *
+ * Records sensitive actions for compliance, debugging, and customer-support
+ * lookups. Distinct from creditTransaction (which is the authoritative
+ * ledger): audit_log captures the *intent* and *actor* of an operation,
+ * even when no balance changed (admin bypass) or the action targeted a
+ * different domain (refund issued, user banned, etc.).
+ *
+ * Schema rules:
+ *   - userId  : the SUBJECT of the action (whose data was touched)
+ *   - actorId : who performed it. Null for system/cron operations
+ *   - action  : a stable lowercase verb-string ('credit.add', 'admin.ban_user')
+ *               kept under 64 chars so it indexes well
+ *   - entityType / entityId : optional pointer to the affected row, e.g.
+ *               ('credit_transaction', '<id>') or ('payment', '<id>')
+ *   - metadata: free-form JSONB for context (amounts, reason codes, etc.)
+ *
+ * Append-only by convention; never UPDATE or DELETE rows in here.
+ */
+export const auditLog = pgTable("audit_log", {
+	id: text("id").primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+	actorId: text("actor_id").references(() => user.id, { onDelete: 'set null' }),
+	action: text("action").notNull(),
+	entityType: text("entity_type"),
+	entityId: text("entity_id"),
+	metadata: jsonb("metadata"),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+	auditLogUserIdIdx: index("audit_log_user_id_idx").on(table.userId),
+	auditLogActorIdIdx: index("audit_log_actor_id_idx").on(table.actorId),
+	auditLogActionIdx: index("audit_log_action_idx").on(table.action),
+	auditLogCreatedAtIdx: index("audit_log_created_at_idx").on(table.createdAt),
+	// Composite for the common query "what did actor X do recently?"
+	auditLogActorCreatedAtIdx: index("audit_log_actor_created_at_idx").on(table.actorId, table.createdAt),
 }));

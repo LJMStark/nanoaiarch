@@ -6,6 +6,12 @@ const mocks = vi.hoisted(() => ({
   findHoldByIdempotencyKey: vi.fn(),
   releaseHold: vi.fn(),
   updateAssistantMessageDirect: vi.fn(),
+  recordAudit: vi.fn(),
+}));
+
+vi.mock('@/lib/audit', () => ({
+  AUDIT_ACTIONS: { CREDIT_LEASE_SWEEP: 'credit.lease_sweep' },
+  recordAudit: mocks.recordAudit,
 }));
 
 vi.mock('@/lib/cron-auth', () => ({

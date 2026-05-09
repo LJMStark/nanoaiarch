@@ -17,6 +17,11 @@ vi.mock('@/lib/admin', () => ({
   isAdminUser: mocks.isAdminUser,
 }));
 
+vi.mock('@/lib/audit', () => ({
+  AUDIT_ACTIONS: { CREDIT_ADMIN_BYPASS: 'credit.admin_bypass' },
+  recordAudit: vi.fn(),
+}));
+
 vi.mock('@/lib/logger', () => ({
   logger: {
     credits: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },

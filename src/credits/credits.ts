@@ -3,6 +3,7 @@ import { websiteConfig } from '@/config/website';
 import { getDb } from '@/db';
 import { creditTransaction, userCredit } from '@/db/schema';
 import { isAdminUser } from '@/lib/admin';
+import { AUDIT_ACTIONS, recordAudit } from '@/lib/audit';
 import { logger } from '@/lib/logger';
 import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
 import { addDays } from 'date-fns';
@@ -717,6 +718,13 @@ export async function consumeCredits({
       amount,
       description,
     });
+    await recordAudit({
+      userId,
+      actorId: userId, // self-action: admin consuming on their own account
+      action: AUDIT_ACTIONS.CREDIT_ADMIN_BYPASS,
+      entityType: 'credit_transaction',
+      metadata: { kind: 'consume', amount, description },
+    });
     return;
   }
 
@@ -1107,6 +1115,14 @@ export async function holdCredits({
       holdId,
       userId,
       amount,
+    });
+    await recordAudit({
+      userId,
+      actorId: userId,
+      action: AUDIT_ACTIONS.CREDIT_ADMIN_BYPASS,
+      entityType: 'credit_transaction',
+      entityId: holdId,
+      metadata: { kind: 'hold', amount, description, idempotencyKey },
     });
     return { holdId, userId, amount };
   }

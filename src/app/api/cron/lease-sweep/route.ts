@@ -3,6 +3,7 @@ import {
   updateAssistantMessageDirect,
 } from '@/actions/project-message';
 import { findHoldByIdempotencyKey, releaseHold } from '@/credits/credits';
+import { AUDIT_ACTIONS, recordAudit } from '@/lib/audit';
 import {
   createCronUnauthorizedResponse,
   validateBasicCronAuth,
@@ -85,6 +86,17 @@ export async function GET(request: Request) {
         status: 'failed',
         content: '生成超时，请重试',
         errorMessage: 'Generation timed out (lease expired)',
+      });
+
+      // Audit: which user got swept, which hold (if any) we touched.
+      // actorId=null marks this as a system action.
+      await recordAudit({
+        userId: row.userId,
+        actorId: null,
+        action: AUDIT_ACTIONS.CREDIT_LEASE_SWEEP,
+        entityType: 'project_message',
+        entityId: row.id,
+        metadata: { holdId, projectId: row.projectId },
       });
 
       swept += 1;

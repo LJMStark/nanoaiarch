@@ -169,6 +169,13 @@
       "when": 1778312463060,
       "tag": "0023_broad_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1778318203526,
+      "tag": "0024_silky_spyke",
+      "breakpoints": true
     }
   ]
 }
