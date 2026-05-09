@@ -100,51 +100,81 @@ export async function applyReferral(
     return { success: false, error: 'Cannot refer yourself' };
   }
 
-  // Check if user was already referred
-  const [existingReferral] = await db
-    .select()
-    .from(referral)
-    .where(eq(referral.referredId, newUserId))
-    .limit(1);
+  // Check if user was already referred. The referral row is what carries
+  // the bonus idempotencyKey, so we look it up rather than treating its
+  // presence as a hard error — a partial-failure retry must still grant
+  // the signup bonus even if the row was created on a previous attempt.
+  let referralRow = (
+    await db
+      .select()
+      .from(referral)
+      .where(eq(referral.referredId, newUserId))
+      .limit(1)
+  )[0];
 
-  if (existingReferral) {
-    return { success: false, error: 'User was already referred' };
+  if (referralRow) {
+    if (referralRow.referrerId !== referrerId) {
+      return { success: false, error: 'User was already referred' };
+    }
+    // Same referrer, fall through to bonus grant (idempotent below).
+  } else {
+    const newReferralId = randomUUID();
+    await db.insert(referral).values({
+      id: newReferralId,
+      referrerId,
+      referredId: newUserId,
+      status: 'pending',
+      createdAt: new Date(),
+    });
+
+    // Update user's referredBy field
+    await db
+      .update(user)
+      .set({ referredBy: referrerId })
+      .where(eq(user.id, newUserId));
+
+    referralRow = {
+      id: newReferralId,
+      referrerId,
+      referredId: newUserId,
+      status: 'pending',
+      qualifiedAt: null,
+      rewardedAt: null,
+      createdAt: new Date(),
+    };
   }
 
-  // Create referral record
-  await db.insert(referral).values({
-    id: randomUUID(),
-    referrerId,
-    referredId: newUserId,
-    status: 'pending',
-    createdAt: new Date(),
-  });
-
-  // Update user's referredBy field
-  await db
-    .update(user)
-    .set({ referredBy: referrerId })
-    .where(eq(user.id, newUserId));
-
-  // Add signup bonus to new user if enabled
+  // Add signup bonus to new user if enabled. The idempotencyKey is scoped
+  // to the referral row id so retries (e.g. after a network blip between
+  // referral insert and bonus grant) do not double-grant.
   if (websiteConfig.referral.signupBonus?.enable) {
     const { amount, expireDays } = websiteConfig.referral.signupBonus;
-    await addCredits({
+    const applied = await addCredits({
       userId: newUserId,
       amount,
       type: CREDIT_TRANSACTION_TYPE.REFERRAL_SIGNUP_BONUS,
       description: `Referral signup bonus: ${amount} credits`,
       expireDays: expireDays || undefined,
+      idempotencyKey: `referral-signup:${referralRow.id}`,
     });
-    logger.credits.info('Added signup bonus to user', {
-      amount,
-      userId: newUserId,
-    });
+    if (applied) {
+      logger.credits.info('Added signup bonus to user', {
+        amount,
+        userId: newUserId,
+        referralId: referralRow.id,
+      });
+    } else {
+      logger.credits.debug('Signup bonus skipped (already granted)', {
+        userId: newUserId,
+        referralId: referralRow.id,
+      });
+    }
   }
 
-  logger.credits.info('Created referral', {
+  logger.credits.info('Created or restored referral', {
     referrerId,
     referredId: newUserId,
+    referralId: referralRow.id,
   });
   return { success: true };
 }
