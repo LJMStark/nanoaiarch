@@ -126,8 +126,14 @@ describe('holdCredits', () => {
     ).rejects.toThrow('invalid amount');
   });
 
-  it('bypasses hold for admin users', async () => {
+  it('writes audit transaction for admin users without touching balance', async () => {
+    // Admin no longer silently bypasses — we persist a PENDING hold tagged
+    // with adminBypass metadata so confirmHold/releaseHold can find it,
+    // but do not call reserve/allocate (balance untouched).
     mocks.isAdminUser.mockResolvedValue(true);
+
+    const db = createMockDb();
+    mocks.getDb.mockResolvedValue(db);
 
     const result = await holdCredits({
       userId: 'admin-1',
@@ -139,6 +145,16 @@ describe('holdCredits', () => {
     expect(result.userId).toBe('admin-1');
     expect(result.amount).toBe(5);
     expect(result.holdId).toBeDefined();
+
+    // Audit insert happened directly on db (no transaction needed because we
+    // are not mutating balance/ledger).
+    expect(db.insert).toHaveBeenCalledWith(creditTransaction);
+    const insertArgs = db.values.mock.calls[0][0];
+    expect(insertArgs.metadata).toBe('{"adminBypass":true}');
+    expect(insertArgs.holdStatus).toBe(HOLD_STATUS.PENDING);
+    expect(insertArgs.idempotencyKey).toBe('key-1');
+    // No db.transaction call -> no reserve/allocate work for admin.
+    expect(db.transaction).not.toHaveBeenCalled();
   });
 
   it('returns existing pending hold for duplicate idempotency key', async () => {

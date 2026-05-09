@@ -86,6 +86,26 @@ function serializeHoldMetadata(allocations: HoldAllocation[]): string {
   return JSON.stringify({ allocations });
 }
 
+/**
+ * Marker metadata for admin-only audit transactions. Admin users no longer
+ * bypass the credit pipeline silently — instead we persist a transaction with
+ * this flag and skip the balance/ledger mutations. confirmHold/releaseHold
+ * detect the marker and treat the hold as a no-op.
+ */
+function serializeAdminBypassMetadata(): string {
+  return JSON.stringify({ adminBypass: true });
+}
+
+function isAdminBypassMetadata(metadata: string | null | undefined): boolean {
+  if (!metadata) return false;
+  try {
+    const parsed = JSON.parse(metadata) as { adminBypass?: unknown };
+    return parsed.adminBypass === true;
+  } catch {
+    return false;
+  }
+}
+
 function parseHoldAllocations(metadata?: string | null): HoldAllocation[] {
   if (!metadata) {
     return [];
@@ -674,18 +694,31 @@ export async function consumeCredits({
     throw new Error('Invalid amount');
   }
 
-  // Admin users skip credit consumption entirely
+  const db = await getDb();
+  const now = new Date();
+
+  // Admin users do not lose balance, but we still record an audit transaction
+  // so every operation has a paper trail. Skips the balance/ledger mutations
+  // (no need to reserve or allocate when nothing is actually consumed).
   if (await isAdminUser(userId)) {
-    logger.credits.debug('consumeCredits: admin user bypassed', {
+    await db.insert(creditTransaction).values({
+      id: randomUUID(),
+      userId,
+      type: CREDIT_TRANSACTION_TYPE.USAGE,
+      amount: -amount,
+      remainingAmount: null,
+      description,
+      metadata: serializeAdminBypassMetadata(),
+      createdAt: now,
+      updatedAt: now,
+    });
+    logger.credits.info('consumeCredits: admin audit-only', {
       userId,
       amount,
       description,
     });
     return;
   }
-
-  const db = await getDb();
-  const now = new Date();
 
   // Use transaction to ensure atomicity
   await db.transaction(async (tx) => {
@@ -1049,17 +1082,34 @@ export async function holdCredits({
     throw new Error('holdCredits: invalid amount');
   }
 
-  // Admin users bypass credit holds
+  const db = await getDb();
+
+  // Admin users: persist a PENDING hold tagged with adminBypass metadata so
+  // confirmHold/releaseHold can find it (and become no-ops). No balance or
+  // ledger mutation occurs; the record exists purely for audit.
   if (await isAdminUser(userId)) {
-    logger.credits.debug('holdCredits: admin user bypassed', {
+    const holdId = randomUUID();
+    const now = new Date();
+    await db.insert(creditTransaction).values({
+      id: holdId,
+      userId,
+      type: CREDIT_TRANSACTION_TYPE.HOLD,
+      amount: -amount,
+      remainingAmount: null,
+      description,
+      metadata: serializeAdminBypassMetadata(),
+      holdStatus: HOLD_STATUS.PENDING,
+      idempotencyKey,
+      createdAt: now,
+      updatedAt: now,
+    });
+    logger.credits.info('holdCredits: admin audit-only', {
+      holdId,
       userId,
       amount,
     });
-    const holdId = randomUUID();
     return { holdId, userId, amount };
   }
-
-  const db = await getDb();
 
   // Fast path: idempotency key already exists (non-racing duplicate request).
   // Avoids the overhead of reserving balance + allocating ledger only to roll back.
@@ -1191,16 +1241,16 @@ export async function confirmHold(holdId: string): Promise<void> {
       userId: creditTransaction.userId,
       holdStatus: creditTransaction.holdStatus,
       amount: creditTransaction.amount,
+      metadata: creditTransaction.metadata,
     })
     .from(creditTransaction)
     .where(eq(creditTransaction.id, holdId))
     .limit(1);
 
   if (hold.length === 0) {
-    // Admin users don't create real holds
-    logger.credits.debug('confirmHold: hold not found (likely admin)', {
-      holdId,
-    });
+    // Defensive: pre-2026-05 admin holds were not persisted, so a missing
+    // record may legitimately appear. Treat as no-op for back-compat.
+    logger.credits.debug('confirmHold: hold not found', { holdId });
     return;
   }
 
@@ -1213,6 +1263,25 @@ export async function confirmHold(holdId: string): Promise<void> {
 
   if (record.holdStatus !== HOLD_STATUS.PENDING) {
     throw new Error(`confirmHold: invalid hold status (${record.holdStatus})`);
+  }
+
+  // Admin audit holds: flip to CONFIRMED and convert to USAGE for the audit
+  // log, but skip any balance or ledger work (there was none to begin with).
+  if (isAdminBypassMetadata(record.metadata)) {
+    await db
+      .update(creditTransaction)
+      .set({
+        holdStatus: HOLD_STATUS.CONFIRMED,
+        type: CREDIT_TRANSACTION_TYPE.USAGE,
+        updatedAt: new Date(),
+      })
+      .where(eq(creditTransaction.id, holdId));
+    logger.credits.info('confirmHold: admin audit-only', {
+      holdId,
+      userId: record.userId,
+      amount: record.amount,
+    });
+    return;
   }
 
   await db
@@ -1256,9 +1325,9 @@ export async function releaseHold(holdId: string): Promise<void> {
       .limit(1);
 
     if (hold.length === 0) {
-      logger.credits.debug('releaseHold: hold not found (likely admin)', {
-        holdId,
-      });
+      // Defensive: pre-2026-05 admin holds were not persisted, so a missing
+      // record may legitimately appear. Treat as no-op for back-compat.
+      logger.credits.debug('releaseHold: hold not found', { holdId });
       return;
     }
 
@@ -1276,6 +1345,24 @@ export async function releaseHold(holdId: string): Promise<void> {
     }
 
     const now = new Date();
+
+    // Admin audit holds: just flip status to RELEASED, no balance restoration
+    // (no balance was reserved). The audit row remains for traceability.
+    if (isAdminBypassMetadata(record.metadata)) {
+      await tx
+        .update(creditTransaction)
+        .set({
+          holdStatus: HOLD_STATUS.RELEASED,
+          updatedAt: now,
+        })
+        .where(eq(creditTransaction.id, holdId));
+      logger.credits.info('releaseHold: admin audit-only', {
+        holdId,
+        userId: record.userId,
+      });
+      return;
+    }
+
     let refundAmount = Math.abs(record.amount);
 
     if (record.metadata) {
