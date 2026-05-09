@@ -401,7 +401,7 @@ describe('ComponentName', () => {
 | CRITICAL | `holdCredits` 并发缝隙 | Week 1 |
 | CRITICAL | Lifetime webhook 月度积分错发 | Week 1 |
 | CRITICAL | 文档与代码失同步 | Week 1（本次） |
-| CRITICAL | 缺生产错误监控 (Sentry) | Week 1 |
+| ~~CRITICAL~~ | ~~缺生产错误监控 (Sentry)~~ | 已取消 — Week 1+2 修完静默失败路径后紧迫性降低，看部署平台自带日志即可 |
 | HIGH | `busyProjectId` 防护失效 | Week 2 |
 | HIGH | 双 store `currentProjectId` 不同步 | Week 2 |
 | HIGH | `MessageItem.tsx` 重复代码 | Week 2 |
