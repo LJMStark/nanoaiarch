@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "postinstall": "fumadocs-mdx",
-    "prepare": "lefthook install",
+    "prepare": "lefthook install || true",
     "lint": "biome check --write .",
     "lint:ci": "biome check .",
     "lint:fix": "biome check --fix --unsafe .",
