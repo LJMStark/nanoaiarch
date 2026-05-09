@@ -389,18 +389,44 @@ body {
 }
 
 @layer components {
+  /*
+   * surface-panel / surface-subtle GPU footprint (audit 2026-05-09):
+   *   These two classes are applied site-wide — every Card (73 instances),
+   *   the floating sidebar, and most marketing blocks (Hero / Pricing /
+   *   FAQ / Stats / CallToAction). backdrop-filter: blur() forces the GPU
+   *   to recomposite the entire region behind the element on every frame
+   *   that anything underneath changes (scroll, animation, hover). At
+   *   18px / 14px radius, that's enough to keep the integrated GPU
+   *   on a Windows laptop spinning the fan.
+   *
+   * Two mitigations applied:
+   *   1. Lower the blur radius to 10px / 8px. Visually near-identical on
+   *      Mac/iOS (where backdrop-blur was first popularized) and meaningfully
+   *      cheaper on integrated GPUs.
+   *   2. Honor the user's OS-level "reduce motion" preference by removing
+   *      backdrop-filter entirely. Users who explicitly opt out of motion
+   *      typically also have older hardware or accessibility needs; falling
+   *      back to a flat semi-transparent surface is acceptable.
+   */
   .surface-panel {
     background: var(--surface-1);
     border: 1px solid var(--surface-border);
     box-shadow: var(--surface-shadow);
-    backdrop-filter: blur(18px);
+    backdrop-filter: blur(10px);
   }
 
   .surface-subtle {
     background: var(--surface-2);
     border: 1px solid var(--surface-border);
     box-shadow: 0 22px 50px -34px rgb(50 60 40 / 0.18);
-    backdrop-filter: blur(14px);
+    backdrop-filter: blur(8px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .surface-panel,
+    .surface-subtle {
+      backdrop-filter: none;
+    }
   }
 
   .editorial-label {
