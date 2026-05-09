@@ -1,157 +1,184 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> **Last verified**: 2026-05-09 against commit `0cf3f81`
+> **Maintenance rule**: 任何 PR 修改了支付/认证/AI Provider/i18n 配置时，必须同步更新本文件并刷新顶部时间戳与 commit hash。
 
-## Development Commands
+本文件为 Claude Code (claude.ai/code) 在此仓库内工作时提供项目级上下文。
 
-### Core Development
-- `pnpm dev` - Start development server with hot reload
-- `pnpm build` - Build production bundle (runs type check and fumadocs-mdx)
-- `pnpm start` - Start production server
-- `pnpm lint` - Run Biome linter and auto-fix issues
-- `pnpm lint:fix` - Run Biome with unsafe fixes
-- `pnpm format` - Format code with Biome
+---
 
-### Database Operations (Drizzle ORM)
-- `pnpm db:generate` - Generate migration files from schema changes
-- `pnpm db:migrate` - Apply pending migrations to database
-- `pnpm db:push` - Sync schema directly to DB (development only, skips migrations)
-- `pnpm db:studio` - Open Drizzle Studio for database management
+## 产品定位
 
-### Testing (Vitest)
-- `pnpm test` - Run tests in watch mode
-- `pnpm test:ui` - Run tests with Vitest UI
-- `pnpm test:coverage` - Generate coverage report
-- Tests located in `src/**/__tests__/*.test.ts(x)`
+**Arch AI** — 面向中文市场的建筑可视化 AI 产品，把草图、白模、平面图转成照片级渲染图。
 
-### Content & Email
-- `pnpm content` - Process MDX content collections (fumadocs)
-- `pnpm email` - Start email template dev server on port 3333
+- **目标用户**：建筑师、室内设计师、效果图工作室
+- **市场**：仅中国大陆（China-only）
+- **语言**：纯中文 UI（不支持英文版）
+- **付费**：Alipay (zpay) 一次性付款，**不支持订阅**
 
-### Utilities
-- `pnpm list-users` - List all users (script)
-- `pnpm list-contacts` - List newsletter contacts (script)
+---
 
-## Project Architecture
+## 开发命令
 
-This is a Next.js 15 full-stack SaaS application built on the **MkSaaS** template, optimized for rapid AI product development.
+### 核心开发
+- `pnpm dev` — 启动开发服务器（热重载）
+- `pnpm build` — 构建生产包（含 type check + fumadocs-mdx）
+- `pnpm start` — 启动生产服务器
+- `pnpm lint` — Biome lint + 自动修复
+- `pnpm lint:fix` — Biome lint 含 unsafe fix
+- `pnpm format` — Biome 格式化
 
-### Core Stack
-- **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript with strict mode
-- **Database**: PostgreSQL with Drizzle ORM
-- **Auth**: Better Auth (email/password, Google, GitHub)
-- **Payments**: Stripe (subscriptions + one-time)
+### 数据库（Drizzle ORM）
+- `pnpm db:generate` — 根据 schema 变更生成迁移文件
+- `pnpm db:migrate` — 应用待执行迁移
+- `pnpm db:push` — 直接同步 schema（仅开发，跳过迁移）
+- `pnpm db:studio` — 打开 Drizzle Studio
+
+### 测试（Vitest）
+- `pnpm test` — watch 模式
+- `pnpm test:ui` — Vitest UI
+- `pnpm test:coverage` — 覆盖率报告
+- 测试位置：`src/**/__tests__/*.test.ts(x)`
+
+### 内容与邮件
+- `pnpm content` — 处理 MDX 内容（fumadocs）
+- `pnpm email` — 邮件模板预览（端口 3333）
+
+### 工具脚本
+- `pnpm list-users` — 列出全部用户
+- `pnpm list-contacts` — 列出 newsletter 联系人
+
+---
+
+## 项目架构
+
+基于 Next.js 15 全栈 SaaS（前身为 MkSaaS 模板，已大幅改造）。
+
+### 核心技术栈
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript (strict mode)
+- **Database**: PostgreSQL + Drizzle ORM
+- **Auth**: Better Auth — **仅 email/password**（Google/GitHub 社交登录在 `src/lib/auth.ts:87-105` 注释禁用）
+- **Payments**: **zpay (Alipay)** — 仅支持一次性付款，**不支持订阅**。`src/payment/provider/zpay.ts:194` 显式抛出 "does not support subscription payments"
+- **AI Provider**: Gemini API via `@ai-sdk/google` — 模型为 `gemini-3-pro-image-preview`（forma）和 `gemini-2.5-flash-image`（flash），见 `src/ai/image/lib/provider-config.ts`
 - **UI**: Radix UI + TailwindCSS
-- **State**: Zustand with persistence
-- **i18n**: next-intl (English/Chinese)
-- **Content**: Fumadocs (docs) + MDX (blog)
-- **Quality**: Biome (linting/formatting), Vitest (testing)
+- **State**: Zustand（含 localStorage 持久化）
+- **i18n**: next-intl — **仅中文 (zh)**，英文版已删除
+- **Content**: Fumadocs (docs 已禁用) + MDX (blog 已禁用)
+- **Quality**: Biome (lint/format), Vitest (test)
 
-### Key Architectural Patterns
+### 关键架构模式
 
-#### 1. AI Image Generation System (`src/ai/image/`)
+#### 1. AI Image Generation 系统 (`src/ai/image/`)
 
-The centerpiece feature with a sophisticated multi-layer architecture:
+产品核心功能，多层架构：
 
-**Provider Layer** (`lib/provider-config.ts`)
-- Supports Duomi API (Gemini 3 Pro model)
-- Configurable image quality: 1K/2K/4K
-- Credits-based consumption (0.14/generation)
+**Provider 层** (`src/ai/image/lib/provider-config.ts`)
+- Gemini API（via `@ai-sdk/google`）
+- 支持模型：`forma` (gemini-3-pro-image-preview)、`flash` (gemini-2.5-flash-image)
+- 图片质量配置：1K / 2K / 4K
+- **积分消耗：1 credit/张**（`src/ai/image/lib/credit-costs.ts`）
 
 **State Management** (Zustand stores)
-- `conversation-store.ts` - Message history with persistence
-- `project-store.ts` - Project config and draft state
-- Both use localStorage with error handling and migration support
+- `src/stores/conversation-store.ts` — 消息历史（带持久化）
+- `src/stores/project-store.ts` — 项目配置和草稿状态
+- 已知问题：`currentProjectId` 在两个 store 并行维护，存在不一致风险（参见 `docs/baselines/` 重构计划）
 
-**Components Architecture**
-- `ArchPlayground.tsx` - Main playground page
-- `ConversationLayout.tsx` - Project-based conversation UI
-- `ConversationInput.tsx` - Input with multi-image upload
-- `MessageItem.tsx` - Message display with retry/download/share
-- `GenerationSettings.tsx` - Quality/ratio controls
-- `ReferenceImagesPreview.tsx` - Image preview component
+**Components**（位于 `src/ai/image/components/`）
+- `ArchPlayground.tsx` — 主 playground 页面
+- `ConversationLayout.tsx` — 项目对话布局
+- `ConversationInput.tsx` — 多图输入
+- `MessageItem.tsx` — 消息展示（重试/下载/分享）
+- `GenerationSettings.tsx` — 质量/宽高比控制
+- `ReferenceImagesPreview.tsx` — 参考图预览
 
-**Data Flow**
+**数据流**
 ```
-User Input → ConversationInput → Server Action (addUserMessage)
-          → Generate Image → Duomi API → Poll for result
-          → Server Action (updateAssistantMessage) → Update Store → UI Update
+用户输入 → ConversationInput → Server Action (addUserMessage)
+        → /api/generate-images → Gemini API → 轮询结果
+        → Server Action (updateAssistantMessage) → 更新 store → UI 更新
 ```
 
-**Recovery System** (`hooks/use-generation-recovery.ts`)
-- Detects interrupted generations on mount
-- Auto-recovers generating state from localStorage
-- Prevents orphaned "generating" states
+**Recovery 系统** (`src/ai/image/hooks/use-generation-recovery.ts`)
+- 页面挂载时检测中断的生成
+- 从 localStorage 恢复 generating 状态
+- 防止"卡住的 generating"孤儿消息
+- ⚠️ 已知缺陷：失败判定过于激进（找不到消息立刻 markFailed），重构计划在 Week 4
 
-#### 2. Server Actions Pattern (`src/actions/`)
+#### 2. Server Actions 模式 (`src/actions/`)
 
-All data mutations use Next.js Server Actions with this pattern:
+所有数据修改走 Next.js Server Actions：
 
 ```typescript
 export async function actionName(params) {
-  // 1. Auth check
+  // 1. 鉴权
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
 
-  // 2. Validation (Zod schemas recommended)
+  // 2. 校验（建议 Zod）
   const validated = schema.parse(params);
 
-  // 3. Database operation
+  // 3. DB 操作
   const db = await getDb();
   const result = await db.insert(...);
 
-  // 4. Return typed response
+  // 4. 返回类型化响应
   return { success: true, data: result };
 }
 ```
 
-**Key Server Actions**:
-- `src/actions/project-message.ts` - Message CRUD for conversations
-- `src/actions/image-project.ts` - Project management
-- `src/actions/check-payment-completion.ts` - Payment verification
+**关键 Server Actions**：
+- `src/actions/project-message.ts` — 对话消息 CRUD
+- `src/actions/image-project.ts` — 项目管理
+- `src/actions/check-payment-completion.ts` — 支付完成验证
 
-#### 3. Database Schema (`src/db/schema.ts`)
+#### 3. 数据库 Schema (`src/db/schema.ts`)
 
-**Core Tables**:
-- `user` - User accounts with Better Auth integration
-- `session` - Session management with IP/user-agent tracking
-- `account` - OAuth provider linkage
-- `payment` - Stripe payments with invoice deduplication
-- `credit_transaction` - Credit system transactions
-- `imageProject` - AI image generation projects
-- `projectMessage` - Conversation messages with generation metadata
+**核心表**：
+- `user` — 用户账户（Better Auth）
+- `session` — 会话（含 IP / user-agent）
+- `account` — OAuth provider 关联（当前社交登录禁用）
+- `payment` — zpay 支付记录（含 invoice 去重）
+- `creditTransaction` — 积分交易流水（注意：`paymentId` 字段实际存的是 `invoiceId`，schema 待修复）
+- `creditHold` / `creditLedger` — 积分持有/账本（生成期间预扣）
+- `imageProject` — AI 生成项目
+- `projectMessage` — 对话消息（含 generation 元数据）
 
-**Indexing Strategy**:
-- All foreign keys indexed
-- User role, customer ID indexed
-- Payment status, scene, type indexed
-- Project user ID indexed for fast queries
+**索引策略**：
+- 所有外键索引
+- `user.role`、`customerId` 索引
+- `payment.status/scene/type` 索引
+- `imageProject.userId` 索引
 
-#### 4. Authentication Flow (`src/lib/auth.ts`)
+**已知 schema 债务**（待 Week 8 处理）：
+- `userCredit.lastRefreshAt` 已废弃但未删除
+- `creditTransaction.paymentId` 名实不符（实为 invoiceId）
+- 多个 JSON 字段存为 `text` 而非 `jsonb`
 
-**Better Auth Configuration**:
-- Session cookie caching (1 hour)
-- 7-day session expiration
-- Email verification required
-- Automatic welcome email + credit distribution
-- Social providers: Google, GitHub
-- Admin plugin for user banning
+#### 4. 认证流程 (`src/lib/auth.ts`)
 
-**Locale Handling**:
-- Reads `NEXT_LOCALE` cookie for user language
-- Injects locale into email verification URLs
-- Supports callback URL localization
+**Better Auth 配置**：
+- Session cookie 缓存 1 小时
+- Session 7 天过期
+- 强制邮箱验证
+- 注册自动发送欢迎邮件 + 发放注册礼积分（50 积分，30 天过期）
+- **社交 Provider (Google/GitHub) 已注释禁用**（`src/lib/auth.ts:87-105`）
+- Admin plugin（用于 banUser 等管理动作）
 
-#### 5. Internationalization (`src/i18n/`)
+**Locale 处理**：
+- 项目纯中文化后，`NEXT_LOCALE` cookie 锁定为 `zh`
+- 邮件验证 URL 仍走 locale 注入（向前兼容，但实际只有 zh）
 
-**Structure**:
-- `routing.ts` - Define supported locales (en, zh)
-- `request.ts` - Server-side locale detection
-- `messages/en.json` - English translations
-- `messages/zh.json` - Chinese translations
+#### 5. 国际化 (`src/i18n/`)
 
-**Usage Pattern**:
+**项目纯中文产品**，不支持英文版：
+
+- `src/i18n/routing.ts` — 仅 `zh` locale
+- `src/i18n/request.ts` — 服务端固定返回 zh
+- `messages/zh.json` — 唯一翻译文件
+- ❌ 已删除：`messages/en.json`、`LocaleSwitcher` 组件
+
+**使用模式**：
 ```typescript
 // Server Component
 import { getTranslations } from 'next-intl/server';
@@ -162,78 +189,91 @@ import { useTranslations } from 'next-intl';
 const t = useTranslations('PageName');
 ```
 
-#### 6. Payment System (`src/payment/`)
+#### 6. 支付系统 (`src/payment/`)
 
-**Credit System** (`src/credits/`):
-- Free monthly credits (auto-renewal)
-- Registration gift credits (one-time)
-- Pay-per-use credit packages
-- Transaction logging with credit_transaction table
+**积分系统** (`src/credits/`)：
+- 免费月度积分（自动续期）
+- 注册礼积分（一次性，50 积分，30 天有效）
+- 一次性购买积分包（basic/standard/pro × month/quarter/year，9 个 SKU）
+- 流水记录在 `creditTransaction` 表
 
-**Stripe Integration**:
-- Webhook handlers for invoice.paid, subscription events
-- Customer portal for subscription management
-- Three tiers: Free, Pro (monthly/yearly), Lifetime
-- Scene-based payment tracking (subscription/credit/lifetime)
+**zpay 集成** (`src/payment/provider/zpay.ts`)：
+- ⚠️ **仅支持一次性付款**，不支持订阅
+- creditPackages 中的 `interval: 'month'` 字段表示积分有效期，不是自动续费
+- Webhook：`/api/webhooks/zpay` 处理 GET + POST 两种回调
+- 套餐：
+  - `pricePlans.free` — 免费版（50 积分/月）
+  - `pricePlans.lifetime` — 终身版（**当前 disabled**）
+  - `creditPackages.*` — 9 个一次性积分包
 
-### Directory Structure Philosophy
+**已知缺陷**（Week 1 已修复）：
+- `holdCredits` check-then-act 并发缝隙
+- Lifetime webhook 月度积分错发风险
+
+### 目录结构
 
 ```
 src/
-├── app/              # Next.js routes (internationalized with [locale])
-├── actions/          # Server actions (data mutations)
-├── ai/               # AI features (image generation)
-│   └── image/
-│       ├── components/   # UI components
-│       ├── hooks/        # React hooks
-│       ├── lib/          # Business logic
-│       └── config/       # Configuration
-├── components/       # Shared UI components
-├── db/              # Database schema and migrations
-├── stores/          # Zustand state management
-├── lib/             # Utility functions
-├── hooks/           # Global React hooks
-├── config/          # App configuration
-├── i18n/            # Internationalization
-├── mail/            # Email templates
-├── payment/         # Payment integration
-└── credits/         # Credit system logic
+├── app/[locale]/    # Next.js routes (locale 锁定 zh)
+├── actions/          # Server Actions (数据修改)
+├── ai/image/         # AI 图像生成（产品核心）
+│   ├── components/
+│   ├── hooks/
+│   ├── lib/
+│   └── config/
+├── components/       # 通用 UI 组件
+├── db/              # Drizzle schema + migrations
+├── stores/          # Zustand state
+├── lib/             # 工具函数
+├── hooks/           # 全局 React hooks
+├── config/          # 应用配置（pricing/website）
+├── i18n/            # 国际化（仅 zh）
+├── mail/            # 邮件模板
+├── payment/         # 支付集成（zpay only）
+└── credits/         # 积分系统
 ```
 
-### Code Style & Conventions
+---
+
+## 编码规范
 
 **TypeScript**:
-- Use `function` keyword for named functions (not arrow functions)
-- Explicit return types for public functions
-- Path aliases: `@/*` maps to `src/*`
+- 命名函数使用 `function` 关键字（不用箭头函数）
+- public 函数显式返回类型
+- 路径别名 `@/*` → `src/*`
 
-**Comments**:
-- Code comments in English
-- UI text in messages/locales (English + Chinese)
-- JSDoc for public APIs
+**注释**:
+- 代码注释用英文
+- UI 文案在 `messages/zh.json`
+- public API 加 JSDoc
 
-**State Management**:
-- Zustand for client state (with persistence if needed)
-- Server state via Server Actions
-- No React Context for global state
+**State**:
+- Zustand 管客户端状态（按需持久化）
+- 服务端状态走 Server Actions
+- ❌ 不用 React Context 做全局状态
 
-**Error Handling**:
-- Server Actions return `{ success: boolean, error?: string, data?: T }`
-- Client errors use `error.tsx` boundaries
-- 404s use `not-found.tsx`
+**错误处理**:
+- Server Actions 返回 `{ success: boolean, error?: string, data?: T }`
+- 客户端错误用 `error.tsx` 边界
+- 404 用 `not-found.tsx`
 
 **Imports**:
-- Group imports: external → internal → relative
-- Use Biome auto-sort
+- 顺序：external → internal → relative
+- Biome 自动排序
 
-### Testing Strategy
+---
 
-**Current Coverage**:
+## 测试策略
+
+**当前覆盖**：
 - Server Actions: `src/actions/__tests__/`
-- Components: `src/ai/image/components/conversation/__tests__/`
-- Vitest + React Testing Library + jsdom
+- 组件: `src/ai/image/components/conversation/__tests__/`
+- Credits 模块: `src/credits/__tests__/`
+- Payment Provider: `src/payment/provider/__tests__/`
 
-**Test Pattern**:
+**Stack**: Vitest + React Testing Library + jsdom
+
+**测试模板**：
 ```typescript
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -246,77 +286,125 @@ describe('ComponentName', () => {
 });
 ```
 
-### Environment Configuration
+**覆盖缺口**（Week 3 补齐）：
+- Webhook 入口零测试
+- 无 E2E（计划引入 Playwright）
+- 无真 DB 集成测试（计划引入 Testcontainers）
 
-**Required Variables** (see `env.example`):
-- `DATABASE_URL` - PostgreSQL connection
-- `BETTER_AUTH_SECRET` - Auth encryption key
-- `STRIPE_SECRET_KEY` - Stripe API key
-- `DUOMI_API_KEY` - AI image generation API
-- `NEXT_PUBLIC_APP_URL` - Application base URL
+---
 
-**Image Upload**:
-- Max body size: 10MB (configured in `next.config.ts`)
-- Image optimization can be disabled via `DISABLE_IMAGE_OPTIMIZATION=true`
+## 环境变量
 
-### Performance Considerations
+**必需变量**（详见 `env.example`）：
+- `DATABASE_URL` — PostgreSQL 连接串
+- `BETTER_AUTH_SECRET` — Auth 加密密钥
+- `GEMINI_API_KEY` — Gemini AI Provider key
+- `GEMINI_DEFAULT_MODEL` — 默认 `gemini-3-pro-image-preview`
+- `ZPAY_PID` / `ZPAY_KEY` — zpay 商户 ID 与密钥
+- `ZPAY_NOTIFY_URL` / `ZPAY_RETURN_URL` — zpay 回调地址
+- `ZPAY_PRICE_*` — 9 个套餐价格配置
+- `NEXT_PUBLIC_APP_URL` — 应用 base URL
 
-**Next.js 15 Optimizations**:
-- Server Components by default
-- Client components marked with `'use client'`
-- Dynamic imports for heavy components
-- Image optimization with remote patterns whitelist
+**已废弃变量**（仍在 env.example 中，待 Week 8 删除）：
+- ❌ `STRIPE_SECRET_KEY`、`STRIPE_*` — 项目用 zpay
+- ❌ `DUOMI_API_KEY` — 实际用 Gemini
+- ❌ `AI_GATEWAY_API_KEY` / `FAL_API_KEY` / `FIREWORKS_API_KEY` / `OPENAI_API_KEY` / `REPLICATE_API_TOKEN` / `DEEPSEEK_API_KEY` — Legacy 模板残留
 
-**Database**:
-- Connection pooling via Drizzle
-- Indexed foreign keys and common queries
-- Avoid N+1 with proper joins
+**图片上传**：
+- 最大 body size 10MB（`next.config.ts`）
+- 可设 `DISABLE_IMAGE_OPTIMIZATION=true` 跳过 Next.js 图像优化
 
-**State**:
-- Zustand slices prevent unnecessary re-renders
-- Persist only critical state (not full message history)
-- Use `useCallback`/`useMemo` for expensive computations
+---
 
-### Common Development Workflows
+## 性能注意事项
 
-**Adding a New Server Action**:
-1. Create in `src/actions/[feature].ts`
-2. Add auth check + validation
-3. Perform DB operation
-4. Return typed response
-5. Import and use in components
+**Next.js 15 优化**：
+- 默认 Server Components
+- 客户端组件标 `'use client'`
+- 重组件用 `next/dynamic` 懒加载
+- `next/image` 远程域名白名单
 
-**Adding a New Database Table**:
-1. Define in `src/db/schema.ts`
-2. Run `pnpm db:generate` (creates migration)
-3. Run `pnpm db:migrate` (applies migration)
-4. Update TypeScript types if needed
+**已知性能债务**（Week 6 处理）：
+- `src/ai/image/components/` 39/39 全部 `'use client'`，待部分 RSC 化
+- `MessageList` 无虚拟化，长对话会卡顿
+- 重复依赖：`framer-motion` + `motion`、`@radix-ui/*` + `radix-ui`
 
-**Adding a New Route**:
-1. Create in `src/app/[locale]/[route]/page.tsx`
-2. Add translations in `messages/en.json` and `messages/zh.json`
-3. Use `getTranslations()` for server components or `useTranslations()` for client
+**数据库**：
+- Drizzle 连接池
+- 外键 + 常用查询全索引
+- 注意 N+1 问题，用 join
 
-**Debugging Image Generation**:
-1. Check `conversation-store` in localStorage
-2. Verify `isGenerating` and `generatingMessageId` state
-3. Check Server Action logs for API errors
-4. Inspect `projectMessage` table for stuck messages
-5. Use generation recovery hook to reset state
+**State**：
+- Zustand slice 防止不必要重渲染
+- 持久化只存关键 ID/枚举，**不存 base64 图片**
+- 热路径用 `useCallback`/`useMemo`
 
-### Important Notes
+---
 
-- Package manager is **pnpm** (not npm/yarn)
-- Database is PostgreSQL (Drizzle ORM adapter)
-- Biome handles both linting and formatting (no ESLint/Prettier)
-- Server Actions have 10MB body size limit
-- Image generation uses polling (not streaming)
-- All routes are internationalized with `[locale]` segment
-- Better Auth handles session management (no NextAuth)
-- Stripe webhooks require proper endpoint configuration
+## 常见开发流程
 
-### Useful Resources
+**新增 Server Action**：
+1. 在 `src/actions/[feature].ts` 创建
+2. 加鉴权 + Zod 校验
+3. 执行 DB 操作
+4. 返回 `{ success, data?, error? }`
+5. 在组件中导入使用
 
-- Documentation: https://mksaas.com/docs
-- Discord: https://mksaas.link/discord
-- GitHub: https://github.com/MkSaaSHQ/mksaas-template
+**新增数据库表**：
+1. 在 `src/db/schema.ts` 定义
+2. `pnpm db:generate` 生成迁移
+3. `pnpm db:migrate` 应用迁移
+4. 必要时更新 TS 类型
+
+**新增路由**：
+1. 在 `src/app/[locale]/[route]/page.tsx` 创建
+2. 在 `messages/zh.json` 加翻译键
+3. Server 组件用 `getTranslations()`，客户端用 `useTranslations()`
+
+**调试图像生成**：
+1. 检查 localStorage 中 `conversation-store`
+2. 验证 `isGenerating` 和 `generatingMessageId` 状态
+3. 查 Server Action 日志看 API 错误
+4. 查 `projectMessage` 表看卡住的消息
+5. 必要时手动调用 recovery hook 重置
+
+---
+
+## 重要约定
+
+- 包管理：**pnpm**（不用 npm/yarn）
+- 数据库：PostgreSQL（Drizzle adapter）
+- Lint+Format：Biome（不用 ESLint/Prettier）
+- Server Actions body 限制 10MB
+- 图像生成走轮询（**不是 streaming**）
+- 路由结构带 `[locale]` 段，但已锁定为 `zh`
+- 认证：Better Auth（**不是 NextAuth**）
+- 支付：**zpay**（**不是 Stripe**）；webhook 端点须正确配置签名
+
+---
+
+## 相关资源
+
+- 项目计划与重构路线：`/Users/demon/.claude/plans/abundant-sparking-lampson.md`
+- Better Auth 文档：https://www.better-auth.com/docs
+- zpay 文档：参见 `src/payment/provider/zpay.ts` 内联注释
+- Gemini API 文档：https://ai.google.dev/
+
+---
+
+## 架构债务清单（参考重构计划）
+
+以下问题已识别并安排修复时间表，详见 `/Users/demon/.claude/plans/abundant-sparking-lampson.md`：
+
+| 优先级 | 问题 | 计划修复 |
+|---|---|---|
+| CRITICAL | `holdCredits` 并发缝隙 | Week 1 |
+| CRITICAL | Lifetime webhook 月度积分错发 | Week 1 |
+| CRITICAL | 文档与代码失同步 | Week 1（本次） |
+| CRITICAL | 缺生产错误监控 (Sentry) | Week 1 |
+| HIGH | `busyProjectId` 防护失效 | Week 2 |
+| HIGH | 双 store `currentProjectId` 不同步 | Week 2 |
+| HIGH | `MessageItem.tsx` 重复代码 | Week 2 |
+| HIGH | Admin bypass 无审计 | Week 2 |
+| HIGH | CI 不跑 lint/typecheck/build | Week 3 |
+| HIGH | 无 E2E、无真 DB 集成测试 | Week 3 |

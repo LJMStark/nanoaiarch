@@ -417,4 +417,4 @@ The `PaymentCard` component uses `usePaymentCompletion` hook to:
 - Customer portal (self-service billing management)
 - Multiple currencies (CNY only)
 
-For subscription-based business models, consider using Stripe instead.
+本产品定位中国市场，业务模型已对齐 zpay 一次性付款（积分套餐 + 终身买断）。如果未来需要订阅模型，需先评估是否切换市场定位。
