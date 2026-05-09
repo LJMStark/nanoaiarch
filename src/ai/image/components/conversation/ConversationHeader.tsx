@@ -2,7 +2,6 @@
 
 import { updateImageProjectRequest } from '@/ai/image/lib/workspace-client';
 import { LoginWrapper } from '@/components/auth/login-wrapper';
-import LocaleSwitcher from '@/components/layout/locale-switcher';
 import { Logo } from '@/components/layout/logo';
 import { ModeSwitcher } from '@/components/layout/mode-switcher';
 import { UserButton } from '@/components/layout/user-button';
@@ -157,7 +156,6 @@ export function ConversationHeader() {
       )}
 
       <div className="flex items-center gap-2 ml-2">
-        <LocaleSwitcher />
         <ModeSwitcher />
         {!mounted || isPending ? (
           <Skeleton className="size-8 border rounded-full" />

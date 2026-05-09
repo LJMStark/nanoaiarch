@@ -1,5 +1,5 @@
 import type { routing } from '@/i18n/routing';
-import type messages from './messages/en.json';
+import type messages from './messages/zh.json';
 
 /**
  * next-intl 4.0.0

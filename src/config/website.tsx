@@ -56,13 +56,9 @@ export const websiteConfig: WebsiteConfig = {
     enableCredentialLogin: true,
   },
   i18n: {
-    defaultLocale: 'en',
+    // Project is China-only — locked to Chinese.
+    defaultLocale: 'zh',
     locales: {
-      en: {
-        flag: '🇺🇸',
-        name: 'English',
-        hreflang: 'en',
-      },
       zh: {
         flag: '🇨🇳',
         name: '中文',

@@ -26,7 +26,6 @@ import { ArrowUpRightIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '../ui/skeleton';
-import LocaleSwitcher from './locale-switcher';
 
 interface NavBarProps {
   scroll?: boolean;
@@ -256,7 +255,6 @@ export function Navbar({ scroll }: NavBarProps) {
               )}
 
               <ModeSwitcher />
-              <LocaleSwitcher />
             </div>
           </nav>
 

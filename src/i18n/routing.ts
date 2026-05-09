@@ -14,19 +14,19 @@ export const LOCALE_COOKIE_NAME = 'NEXT_LOCALE';
  * https://github.com/amannn/next-intl/blob/main/examples/example-app-router/src/i18n/routing.ts
  */
 export const routing = defineRouting({
-  // A list of all locales that are supported
+  // A list of all locales that are supported (China-only: zh).
   locales: LOCALES,
   // Default locale when no locale matches
   defaultLocale: DEFAULT_LOCALE,
-  // Auto detect locale
+  // No locale negotiation: a single supported locale (zh) is always used.
   // https://next-intl.dev/docs/routing/middleware#locale-detection
-  localeDetection: true,
-  // Once a locale is detected, it will be remembered for
-  // future requests by being stored in the NEXT_LOCALE cookie.
+  localeDetection: false,
+  // Cookie kept for compatibility with Better Auth's email URL injection;
+  // value is effectively always 'zh' under the current locale set.
   localeCookie: {
     name: LOCALE_COOKIE_NAME,
   },
-  // The prefix to use for the locale in the URL
+  // No /zh/ prefix in URLs since there is only one locale.
   // https://next-intl.dev/docs/routing#locale-prefix
-  localePrefix: 'as-needed',
+  localePrefix: 'never',
 });

@@ -10,7 +10,6 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { isDemoWebsite } from '@/lib/demo';
 import React, { type ReactNode } from 'react';
 import { CreditsBalanceButton } from '../layout/credits-balance-button';
-import LocaleSwitcher from '../layout/locale-switcher';
 import { ModeSwitcher } from '../layout/mode-switcher';
 import { ThemeSelector } from '../layout/theme-selector';
 
@@ -75,7 +74,6 @@ export function DashboardHeader({
 
           <CreditsBalanceButton />
           <ModeSwitcher />
-          <LocaleSwitcher />
           {isDemo && <ThemeSelector />}
         </div>
       </div>
