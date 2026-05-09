@@ -1,0 +1,29 @@
+# Lefthook config — Week 3.2
+# https://github.com/evilmartians/lefthook
+#
+# Local guard rails: catch lint/type errors before commit, before they
+# reach CI. Two stages:
+#   pre-commit: fast checks on staged files only (biome lint + format)
+#   pre-push:   fuller checks before push (typecheck on changed code)
+#
+# To skip a hook in an emergency: LEFTHOOK=0 git commit ...
+# Persistent skip is available per-developer via local lefthook-local.yml.
+
+pre-commit:
+  parallel: true
+  commands:
+    biome-check:
+      # Auto-format + lint only the files staged for this commit. Use the
+      # write variant so trivial style fixes don't block the commit; biome
+      # restages the modified files automatically via stage_fixed.
+      glob: "*.{js,jsx,ts,tsx,json,jsonc,css}"
+      run: pnpm biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+
+pre-push:
+  commands:
+    typecheck:
+      # Full project tsc — slower than per-file checks but catches the
+      # cross-file errors that staged-only would miss (e.g. a renamed
+      # exported symbol).
+      run: pnpm typecheck
