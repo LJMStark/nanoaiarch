@@ -16,6 +16,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useImageGeneration } from '../hooks/use-image-generation';
+import { getImageSrc } from '../lib/image-display-utils';
 import { imageHelpers } from '../lib/image-helpers';
 import type { Suggestion } from '../lib/suggestions';
 import { EditHistory } from './EditHistory';
@@ -55,14 +56,6 @@ export function ImagePlayground({
   } = useImageGeneration();
 
   const [isZoomed, setIsZoomed] = useState(false);
-
-  // 处理图片 URL：如果是 URL 直接使用，如果是 base64 则添加前缀
-  const getImageSrc = (imageData: string) => {
-    if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
-      return imageData;
-    }
-    return `data:image/png;base64,${imageData}`;
-  };
 
   // 处理提示词提交
   const handlePromptSubmit = async (prompt: string) => {
