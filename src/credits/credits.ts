@@ -963,7 +963,8 @@ export async function holdCredits({
 
   const db = await getDb();
 
-  // Check for existing hold with same idempotency key
+  // Fast path: idempotency key already exists (non-racing duplicate request).
+  // Avoids the overhead of reserving balance + allocating ledger only to roll back.
   const existing = await db
     .select({
       id: creditTransaction.id,
@@ -988,32 +989,83 @@ export async function holdCredits({
   }
 
   const holdId = randomUUID();
+  // Concurrency guard: if two callers reach here with the same idempotencyKey,
+  // only one's INSERT will succeed (unique constraint on idempotency_key).
+  // The loser sets this flag, throws to rollback its reserve+allocate, then
+  // re-fetches the winner outside the transaction.
+  let raceLost = false;
 
-  await db.transaction(async (tx) => {
-    const now = new Date();
-    await reserveUserCreditBalance({ tx, userId, amount, now });
-    const allocations = await allocateCreditLedgerEntries({
-      tx,
-      userId,
-      amount,
-      now,
-    });
+  try {
+    await db.transaction(async (tx) => {
+      const now = new Date();
+      await reserveUserCreditBalance({ tx, userId, amount, now });
+      const allocations = await allocateCreditLedgerEntries({
+        tx,
+        userId,
+        amount,
+        now,
+      });
 
-    // Create hold transaction record
-    await tx.insert(creditTransaction).values({
-      id: holdId,
-      userId,
-      type: CREDIT_TRANSACTION_TYPE.HOLD,
-      amount: -amount,
-      remainingAmount: null,
-      description,
-      metadata: serializeHoldMetadata(allocations),
-      holdStatus: HOLD_STATUS.PENDING,
-      idempotencyKey,
-      createdAt: now,
-      updatedAt: now,
+      const inserted = await tx
+        .insert(creditTransaction)
+        .values({
+          id: holdId,
+          userId,
+          type: CREDIT_TRANSACTION_TYPE.HOLD,
+          amount: -amount,
+          remainingAmount: null,
+          description,
+          metadata: serializeHoldMetadata(allocations),
+          holdStatus: HOLD_STATUS.PENDING,
+          idempotencyKey,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoNothing({ target: creditTransaction.idempotencyKey })
+        .returning({ id: creditTransaction.id });
+
+      if (inserted.length === 0) {
+        raceLost = true;
+        // Throw to rollback the transaction (undo reserve + allocate).
+        throw new Error('__HOLD_IDEMPOTENCY_RACE_LOST__');
+      }
     });
-  });
+  } catch (err) {
+    if (!raceLost) {
+      throw err;
+    }
+    // raceLost: transaction rolled back; fetch winner's hold and return it.
+  }
+
+  if (raceLost) {
+    const winner = await db
+      .select({
+        id: creditTransaction.id,
+        holdStatus: creditTransaction.holdStatus,
+      })
+      .from(creditTransaction)
+      .where(eq(creditTransaction.idempotencyKey, idempotencyKey))
+      .limit(1);
+
+    if (winner.length === 0) {
+      throw new Error(
+        'holdCredits: idempotency race lost but winning record not found'
+      );
+    }
+
+    const record = winner[0];
+    if (record.holdStatus === HOLD_STATUS.PENDING) {
+      logger.credits.info('holdCredits: lost idempotency race, returning winner hold', {
+        holdId: record.id,
+        idempotencyKey,
+      });
+      return { holdId: record.id, userId, amount };
+    }
+
+    throw new Error(
+      `holdCredits: idempotency key already used (status=${record.holdStatus})`
+    );
+  }
 
   logger.credits.info('holdCredits: hold created', {
     holdId,

@@ -62,7 +62,25 @@ function createMockTx() {
   const updateSet = vi.fn().mockReturnValue({ where: updateWhere });
   const update = vi.fn().mockReturnValue({ set: updateSet });
 
-  const insertValues = vi.fn().mockResolvedValue(undefined);
+  // Insert chain supports both legacy callers (insert().values() -> resolved)
+  // and the holdCredits race-safe chain
+  // (insert().values().onConflictDoNothing().returning() -> [{id}]).
+  // The recorded args remain accessible via __insertValues for assertions.
+  const insertReturning = vi
+    .fn()
+    .mockResolvedValue([{ id: 'inserted-hold' }]);
+  const insertOnConflict = vi
+    .fn()
+    .mockReturnValue({ returning: insertReturning });
+  const insertValues = vi.fn().mockImplementation(() => {
+    // Make the values() result thenable (resolves undefined for legacy chains)
+    // while also exposing onConflictDoNothing() for the new chain.
+    const result = Promise.resolve(undefined) as Promise<unknown> & {
+      onConflictDoNothing: typeof insertOnConflict;
+    };
+    result.onConflictDoNothing = insertOnConflict;
+    return result;
+  });
   const insert = vi.fn().mockReturnValue({ values: insertValues });
 
   return {
@@ -75,6 +93,8 @@ function createMockTx() {
     __updateWhere: updateWhere,
     __updateReturning: updateReturning,
     __insertValues: insertValues,
+    __insertReturning: insertReturning,
+    __insertOnConflict: insertOnConflict,
   };
 }
 
@@ -152,6 +172,85 @@ describe('holdCredits', () => {
         amount: 1,
         idempotencyKey: 'used-key',
         description: 'test',
+      })
+    ).rejects.toThrow('idempotency key already used');
+  });
+
+  it('returns winner hold when concurrent insert loses idempotency race', async () => {
+    // Scenario: two concurrent calls with same idempotencyKey both pass the
+    // fast-path SELECT (no existing row). One INSERT wins; the other's
+    // onConflictDoNothing returns []. The losing call must roll back, then
+    // re-fetch the winning record and return it instead of throwing.
+    const db = createMockDb();
+    const tx = createMockTx();
+
+    // First db.limit call: fast-path idempotency check returns nothing.
+    // Second db.limit call: re-fetch winner after race-lost rollback.
+    db.limit
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 'winner-hold', holdStatus: HOLD_STATUS.PENDING },
+      ]);
+    db.transaction.mockImplementation(
+      async (fn: (value: typeof tx) => unknown) => fn(tx)
+    );
+    tx.__updateReturning.mockResolvedValueOnce([{ id: 'credit-row-1' }]);
+    tx.__selectOrderBy.mockResolvedValueOnce([
+      {
+        id: 'grant-1',
+        remainingAmount: 5,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+    ]);
+    // Simulate race lost: onConflictDoNothing -> returning() yields empty.
+    tx.__insertReturning.mockResolvedValueOnce([]);
+
+    mocks.getDb.mockResolvedValue(db);
+
+    const result = await holdCredits({
+      userId: 'user-1',
+      amount: 1,
+      idempotencyKey: 'race-key',
+      description: 'concurrent hold',
+    });
+
+    expect(result.holdId).toBe('winner-hold');
+    expect(result.amount).toBe(1);
+    // Sanity: re-fetch happened (db.limit invoked twice — once for fast-path,
+    // once for winner re-fetch).
+    expect(db.limit).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws when race is lost but winner was released (terminal status)', async () => {
+    const db = createMockDb();
+    const tx = createMockTx();
+
+    db.limit
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 'released-hold', holdStatus: HOLD_STATUS.RELEASED },
+      ]);
+    db.transaction.mockImplementation(
+      async (fn: (value: typeof tx) => unknown) => fn(tx)
+    );
+    tx.__updateReturning.mockResolvedValueOnce([{ id: 'credit-row-1' }]);
+    tx.__selectOrderBy.mockResolvedValueOnce([
+      {
+        id: 'grant-1',
+        remainingAmount: 5,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+    ]);
+    tx.__insertReturning.mockResolvedValueOnce([]);
+
+    mocks.getDb.mockResolvedValue(db);
+
+    await expect(
+      holdCredits({
+        userId: 'user-1',
+        amount: 1,
+        idempotencyKey: 'race-released-key',
+        description: 'concurrent hold',
       })
     ).rejects.toThrow('idempotency key already used');
   });
