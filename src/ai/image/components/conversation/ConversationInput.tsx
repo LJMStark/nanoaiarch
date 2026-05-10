@@ -5,6 +5,7 @@ import { GenerationSettings } from '@/ai/image/components/conversation/Generatio
 import { ReferenceImagesPreview } from '@/ai/image/components/conversation/ReferenceImagesPreview';
 import { useImageIngestion } from '@/ai/image/hooks/use-image-ingestion';
 import { MAX_REFERENCE_IMAGES } from '@/ai/image/lib/input-images';
+import { MODEL_DISPLAY_NAMES } from '@/ai/image/lib/provider-config';
 import { isTemporaryId } from '@/ai/image/lib/temp-ids';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,6 +37,7 @@ export function ConversationInput() {
     setDraftImage,
     setImageQuality,
     setAspectRatio,
+    setSelectedModel,
     clearDraft,
   } = useProjectStore();
 
@@ -265,8 +267,10 @@ export function ConversationInput() {
               <GenerationSettings
                 imageQuality={imageQuality}
                 aspectRatio={aspectRatio}
+                selectedModel={selectedModel}
                 onImageQualityChange={setImageQuality}
                 onAspectRatioChange={setAspectRatio}
+                onModelChange={setSelectedModel}
               />
             </div>
 
@@ -295,7 +299,8 @@ export function ConversationInput() {
         {/* Quick settings chips */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           <div className="text-xs text-muted-foreground px-2">
-            {imageQuality} · {aspectRatio}
+            {MODEL_DISPLAY_NAMES[selectedModel]} · {imageQuality} ·{' '}
+            {aspectRatio}
           </div>
         </div>
       </div>

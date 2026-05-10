@@ -5,6 +5,7 @@ describe('normalizeGeminiModelId', () => {
   it('keeps supported model ids unchanged', () => {
     expect(normalizeGeminiModelId('forma')).toBe('forma');
     expect(normalizeGeminiModelId('flash')).toBe('flash');
+    expect(normalizeGeminiModelId('gpt-image-2')).toBe('gpt-image-2');
   });
 
   it('maps legacy and unknown model ids back to the default registry key', () => {

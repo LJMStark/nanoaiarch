@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-> **Last verified**: 2026-05-09 against commit `0cf3f81`
+> **Last verified**: 2026-05-11 against commit `3f18de62`
 > **Maintenance rule**: 任何 PR 修改了支付/认证/AI Provider/i18n 配置时，必须同步更新本文件并刷新顶部时间戳与 commit hash。
 
 本文件为 Claude Code (claude.ai/code) 在此仓库内工作时提供项目级上下文。
@@ -60,7 +60,7 @@
 - **Database**: PostgreSQL + Drizzle ORM
 - **Auth**: Better Auth — **仅 email/password**（Google/GitHub 社交登录在 `src/lib/auth.ts:87-105` 注释禁用）
 - **Payments**: **zpay (Alipay)** — 仅支持一次性付款，**不支持订阅**。`src/payment/provider/zpay.ts:194` 显式抛出 "does not support subscription payments"
-- **AI Provider**: Gemini API via `@ai-sdk/google` — 模型为 `gemini-3-pro-image-preview`（forma）和 `gemini-2.5-flash-image`（flash），见 `src/ai/image/lib/provider-config.ts`
+- **AI Provider**: Gemini API + Duomi API — 模型为 `gemini-3-pro-image-preview`（forma）、`gemini-3.1-flash-image-preview`（flash）和 `gpt-image-2`，见 `src/ai/image/lib/provider-config.ts`
 - **UI**: Radix UI + TailwindCSS
 - **State**: Zustand（含 localStorage 持久化）
 - **i18n**: next-intl — **仅中文 (zh)**，英文版已删除
@@ -74,8 +74,8 @@
 产品核心功能，多层架构：
 
 **Provider 层** (`src/ai/image/lib/provider-config.ts`)
-- Gemini API（via `@ai-sdk/google`）
-- 支持模型：`forma` (gemini-3-pro-image-preview)、`flash` (gemini-2.5-flash-image)
+- Gemini API 与 Duomi API
+- 支持模型：`forma` (gemini-3-pro-image-preview)、`flash` (gemini-3.1-flash-image-preview)、`gpt-image-2` (Duomi async)
 - 图片质量配置：1K / 2K / 4K
 - **积分消耗：1 credit/张**（`src/ai/image/lib/credit-costs.ts`）
 
@@ -300,6 +300,7 @@ describe('ComponentName', () => {
 - `BETTER_AUTH_SECRET` — Auth 加密密钥
 - `GEMINI_API_KEY` — Gemini AI Provider key
 - `GEMINI_DEFAULT_MODEL` — 默认 `gemini-3-pro-image-preview`
+- `DUOMI_API_KEY` — Duomi GPT Image 2 key
 - `ZPAY_PID` / `ZPAY_KEY` — zpay 商户 ID 与密钥
 - `ZPAY_NOTIFY_URL` / `ZPAY_RETURN_URL` — zpay 回调地址
 - `ZPAY_PRICE_*` — 9 个套餐价格配置
@@ -310,7 +311,6 @@ describe('ComponentName', () => {
 
 **已废弃变量**（仍在 env.example 中，待 Week 8 删除）：
 - ❌ `STRIPE_SECRET_KEY`、`STRIPE_*` — 项目用 zpay
-- ❌ `DUOMI_API_KEY` — 实际用 Gemini
 - ❌ `AI_GATEWAY_API_KEY` / `FAL_API_KEY` / `FIREWORKS_API_KEY` / `OPENAI_API_KEY` / `REPLICATE_API_TOKEN` / `DEEPSEEK_API_KEY` — Legacy 模板残留
 
 **图片上传**：
@@ -392,6 +392,7 @@ describe('ComponentName', () => {
 - Better Auth 文档：https://www.better-auth.com/docs
 - zpay 文档：参见 `src/payment/provider/zpay.ts` 内联注释
 - Gemini API 文档：https://ai.google.dev/
+- Duomi API 文档：https://duomiapi.com/
 
 ---
 

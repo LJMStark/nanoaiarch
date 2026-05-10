@@ -1,4 +1,4 @@
-// Arch AI 配置 - 使用官方 Google Gemini API
+// Arch AI 配置 - 支持 Gemini 与 Duomi 图片模型
 export type ProviderKey = 'gemini';
 
 // 官方 Gemini 模型 ID
@@ -9,10 +9,22 @@ export const GEMINI_MODEL_IDS = {
   flash: 'gemini-3.1-flash-image-preview',
 } as const;
 
-export type GeminiModelId = keyof typeof GEMINI_MODEL_IDS;
+export type GeminiBackendModelId = keyof typeof GEMINI_MODEL_IDS;
+
+export const DUOMI_MODEL_IDS = {
+  gptImage2: 'gpt-image-2',
+} as const;
+
+export type GeminiModelId =
+  | GeminiBackendModelId
+  | (typeof DUOMI_MODEL_IDS)[keyof typeof DUOMI_MODEL_IDS];
 
 // 模型列表 (用于验证)
-export const GEMINI_MODELS: GeminiModelId[] = ['forma', 'flash'];
+export const GEMINI_MODELS: GeminiModelId[] = [
+  'forma',
+  'flash',
+  DUOMI_MODEL_IDS.gptImage2,
+];
 
 // 检查是否为有效模型
 export function isGeminiModel(modelId: string): boolean {
@@ -41,7 +53,7 @@ export const PROVIDERS: Record<
     displayName: 'Arch AI',
     iconPath: '/provider-icons/gemini.svg',
     color: 'from-violet-500 to-purple-600',
-    models: ['forma', 'flash'],
+    models: ['forma', 'flash', DUOMI_MODEL_IDS.gptImage2],
   },
 };
 
@@ -49,12 +61,14 @@ export const PROVIDERS: Record<
 export const MODEL_DISPLAY_NAMES: Record<GeminiModelId, string> = {
   forma: 'Arch AI Pro',
   flash: 'Arch AI Flash',
+  'gpt-image-2': 'GPT Image 2',
 };
 
 // 模型描述
 export const MODEL_DESCRIPTIONS: Record<GeminiModelId, string> = {
   forma: '高质量图像生成，支持 1K/2K/4K (Nano Banana Pro)',
   flash: '高速图像生成，性价比优选 (Nano Banana 2)',
+  'gpt-image-2': 'Duomi 异步图像生成模型',
 };
 
 // 默认配置

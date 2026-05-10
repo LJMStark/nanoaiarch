@@ -2,10 +2,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConversationInput } from '../ConversationInput';
 
-const { submitMock, compressAcceptedImageFilesMock } = vi.hoisted(() => ({
-  submitMock: vi.fn(),
-  compressAcceptedImageFilesMock: vi.fn(),
-}));
+const { submitMock, compressAcceptedImageFilesMock, setSelectedModelMock } =
+  vi.hoisted(() => ({
+    submitMock: vi.fn(),
+    compressAcceptedImageFilesMock: vi.fn(),
+    setSelectedModelMock: vi.fn(),
+  }));
 
 vi.mock('../use-conversation-submit', () => ({
   useConversationSubmit: () => submitMock,
@@ -28,6 +30,7 @@ vi.mock('@/stores/project-store', () => ({
     setDraftImage: vi.fn(),
     setImageQuality: vi.fn(),
     setAspectRatio: vi.fn(),
+    setSelectedModel: setSelectedModelMock,
     clearDraft: vi.fn(),
   }),
 }));
@@ -56,12 +59,28 @@ const VALID_PNG_BASE64 =
 describe('ConversationInput', () => {
   beforeEach(() => {
     submitMock.mockClear();
+    setSelectedModelMock.mockClear();
     compressAcceptedImageFilesMock.mockReset();
   });
 
   it('renders the input textarea', () => {
     render(<ConversationInput />);
     expect(screen.getByPlaceholderText('controls.prompt')).toBeInTheDocument();
+  });
+
+  it('shows GPT Image 2 in the generation settings model selector', () => {
+    render(<ConversationInput />);
+
+    expect(screen.getByText('Arch AI Pro · 2K · 1:1')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'sidebar.settings' }));
+
+    expect(screen.getByText('模型')).toBeInTheDocument();
+    expect(screen.getByText('Arch AI Pro')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('combobox'));
+
+    expect(screen.getByText('GPT Image 2')).toBeInTheDocument();
   });
 
   it('does not submit while IME composition is active', () => {

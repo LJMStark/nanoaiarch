@@ -1,6 +1,6 @@
 # 仓库协作规范
 
-> **Last verified**: 2026-05-09 against commit `0cf3f81`
+> **Last verified**: 2026-05-11 against commit `3f18de62`
 > 任何 PR 修改了项目级约定时同步更新本文件。
 
 ## 项目结构
@@ -53,18 +53,19 @@
 - 复制 `env.example` 为 `.env.local`，设置必需值：
   - `DATABASE_URL`、`BETTER_AUTH_SECRET`
   - `GEMINI_API_KEY`、`GEMINI_DEFAULT_MODEL`
+  - `DUOMI_API_KEY`（GPT Image 2）
   - `ZPAY_PID`、`ZPAY_KEY`、`ZPAY_NOTIFY_URL`、`ZPAY_RETURN_URL`
   - `ZPAY_PRICE_*`（套餐价格）
   - `NEXT_PUBLIC_BASE_URL`
 - 可选维护变量：
   - `CRON_SECRET`（保护手动维护接口；图片生成超时恢复不依赖外部定时任务）
 - ❌ 严禁提交密钥或生产凭证
-- ⚠️ env.example 中的 `STRIPE_*`、`DUOMI_API_KEY`、`OPENAI_API_KEY` 等是模板残留，**不再使用**（计划 Week 8 删除）
+- ⚠️ env.example 中的 `STRIPE_*`、`OPENAI_API_KEY` 等是模板残留，**不再使用**（计划 Week 8 删除）
 
 ## 关键技术决策提醒
 
 - 支付：**zpay (Alipay)**，仅一次性付款，**不支持订阅**
 - 认证：**Better Auth**，仅 email/password（社交登录已禁用）
-- AI Provider：**Gemini**（via `@ai-sdk/google`）
+- AI Provider：**Gemini** + **Duomi GPT Image 2**
 - 语言：**仅中文**，不支持英文版
 - 详细产品定位与架构见 [CLAUDE.md](./CLAUDE.md)

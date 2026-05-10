@@ -60,6 +60,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error }, { status: 400 });
     }
 
+    if (modelId === 'gpt-image-2') {
+      return NextResponse.json(
+        { error: 'GPT Image 2 暂不支持图片编辑' },
+        { status: 400 }
+      );
+    }
+
     const conversationValidation = validateConversationMessages(messages);
     if (!conversationValidation.valid) {
       return NextResponse.json(

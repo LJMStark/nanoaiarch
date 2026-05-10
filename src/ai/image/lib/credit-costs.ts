@@ -8,6 +8,8 @@ export const CREDIT_COSTS: Record<GeminiModelId, number> = {
   forma: 1,
   // Arch AI Flash (Gemini 3.1 Flash / Nano Banana 2) - 1 credit/张
   flash: 1,
+  // GPT Image 2 (Duomi async API) - 1 credit/张
+  'gpt-image-2': 1,
 };
 
 /**

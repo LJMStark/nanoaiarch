@@ -74,8 +74,13 @@ interface UseConversationSubmitParams {
 
 function getInputImages(
   referenceImages: string[],
-  getLastOutputImage: () => string | null
+  getLastOutputImage: () => string | null,
+  selectedModel: string
 ): string[] {
+  if (selectedModel === 'gpt-image-2') {
+    return referenceImages;
+  }
+
   if (referenceImages.length > 0) {
     return referenceImages;
   }
@@ -198,7 +203,11 @@ export function useConversationSubmit({
 
     inFlightRef.current = true;
     const prompt = draftPrompt.trim();
-    const inputImages = getInputImages(referenceImages, getLastOutputImage);
+    const inputImages = getInputImages(
+      referenceImages,
+      getLastOutputImage,
+      selectedModel
+    );
     const referenceImagesSnapshot = referenceImages;
 
     try {
@@ -284,7 +293,8 @@ export function useConversationSubmit({
       setGenerationStage('queued');
 
       try {
-        const conversationHistory = getConversationHistory();
+        const conversationHistory =
+          selectedModel === 'gpt-image-2' ? [] : getConversationHistory();
         setGenerationStage('generating');
 
         const result = await generateImage({

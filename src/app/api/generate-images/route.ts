@@ -6,6 +6,7 @@ import {
   mapModelIdToGeminiModel,
   validatePrompt,
 } from '@/ai/image/lib/api-utils';
+import { generateImageWithDuomi } from '@/ai/image/lib/duomi-client';
 import {
   editImageWithConversationGemini,
   editImageWithGemini,
@@ -199,12 +200,11 @@ export async function POST(req: NextRequest) {
     }
 
     const startstamp = performance.now();
-    const geminiModel = mapModelIdToGeminiModel(modelId);
     const geminiAspectRatio = mapAspectRatioToGemini(aspectRatio);
     const selectedImageSize = imageSizeValidation.value;
 
     logger.api.info(
-      `Starting image generation [requestId=${requestId}, userId=${ctx.userId}, model=${modelId}, geminiModel=${geminiModel}, creditCost=${ctx.creditCost}]`
+      `Starting image generation [requestId=${requestId}, userId=${ctx.userId}, model=${modelId}, creditCost=${ctx.creditCost}]`
     );
 
     // Collect all reference images (base64)
@@ -215,67 +215,90 @@ export async function POST(req: NextRequest) {
         : [];
 
     // Build generation promise based on context
-    let generatePromise: ReturnType<typeof generateImageWithGemini>;
+    let generatePromise:
+      | ReturnType<typeof generateImageWithGemini>
+      | ReturnType<typeof generateImageWithDuomi>;
 
-    if (
-      conversationHistory &&
-      conversationHistory.length > 0 &&
-      conversationHistory.some(
-        (m) => m.image || (Array.isArray(m.images) && m.images.length > 0)
-      )
-    ) {
-      // Multi-turn conversation mode with images
-      // Gemini API supports inline_data directly - no S3 upload needed
-      const messages: ConversationHistoryMessage[] = conversationHistory.map(
-        (msg) => ({
-          role: msg.role,
-          content: msg.content,
-          image: msg.image,
-          images: msg.images,
-          parts: msg.parts,
-        })
-      );
-
-      messages.push({
-        role: 'user',
-        content: prompt,
-        images: allReferenceImages.length > 0 ? allReferenceImages : undefined,
-        parts: undefined,
-      });
-
-      logger.api.info(
-        `[requestId=${requestId}] Using conversation mode with ${messages.length} messages`
-      );
-
-      generatePromise = editImageWithConversationGemini({
-        messages,
-        model: geminiModel,
-        aspectRatio: geminiAspectRatio,
-        imageSize: selectedImageSize,
-        signal: req.signal,
-      });
-    } else if (allReferenceImages.length > 0) {
-      // Image editing mode - pass base64 directly to Gemini API
-      logger.api.info(
-        `[requestId=${requestId}] Using edit API with ${allReferenceImages.length} reference images`
-      );
-      generatePromise = editImageWithGemini({
-        prompt,
-        referenceImages: allReferenceImages,
-        model: geminiModel,
-        aspectRatio: geminiAspectRatio,
-        imageSize: selectedImageSize,
-        signal: req.signal,
-      });
+    if (modelId === 'gpt-image-2') {
+      if (
+        (conversationHistory?.length ?? 0) > 0 ||
+        allReferenceImages.length > 0
+      ) {
+        generatePromise = Promise.resolve({
+          success: false,
+          error: 'GPT Image 2 暂不支持参考图或多轮编辑',
+        });
+      } else {
+        generatePromise = generateImageWithDuomi({
+          prompt,
+          aspectRatio: geminiAspectRatio,
+          signal: req.signal,
+        });
+      }
     } else {
-      // Text-to-image generation
-      generatePromise = generateImageWithGemini({
-        prompt,
-        model: geminiModel,
-        aspectRatio: geminiAspectRatio,
-        imageSize: selectedImageSize,
-        signal: req.signal,
-      });
+      const geminiModel = mapModelIdToGeminiModel(modelId);
+
+      if (
+        conversationHistory &&
+        conversationHistory.length > 0 &&
+        conversationHistory.some(
+          (m) => m.image || (Array.isArray(m.images) && m.images.length > 0)
+        )
+      ) {
+        // Multi-turn conversation mode with images
+        // Gemini API supports inline_data directly - no S3 upload needed
+        const messages: ConversationHistoryMessage[] = conversationHistory.map(
+          (msg) => ({
+            role: msg.role,
+            content: msg.content,
+            image: msg.image,
+            images: msg.images,
+            parts: msg.parts,
+          })
+        );
+
+        messages.push({
+          role: 'user',
+          content: prompt,
+          images:
+            allReferenceImages.length > 0 ? allReferenceImages : undefined,
+          parts: undefined,
+        });
+
+        logger.api.info(
+          `[requestId=${requestId}] Using conversation mode with ${messages.length} messages`
+        );
+
+        generatePromise = editImageWithConversationGemini({
+          messages,
+          model: geminiModel,
+          aspectRatio: geminiAspectRatio,
+          imageSize: selectedImageSize,
+          signal: req.signal,
+        });
+      } else if (allReferenceImages.length > 0) {
+        // Image editing mode - pass base64 directly to Gemini API
+        logger.api.info(
+          `[requestId=${requestId}] Using edit API with ${allReferenceImages.length} reference images`
+        );
+        generatePromise = editImageWithGemini({
+          prompt,
+          referenceImages: allReferenceImages,
+          model: geminiModel,
+          aspectRatio: geminiAspectRatio,
+          imageSize: selectedImageSize,
+          signal: req.signal,
+        });
+      } else {
+        // Text-to-image generation
+        generatePromise = generateImageWithGemini({
+          prompt,
+          model: geminiModel,
+          aspectRatio: geminiAspectRatio,
+          imageSize: selectedImageSize,
+          signal: req.signal,
+        });
+      }
     }
 
     // Execute with timeout and credit consumption

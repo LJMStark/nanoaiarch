@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Zap } from 'lucide-react';
+import { Sparkles, Zap } from 'lucide-react';
 import { CREDIT_COSTS } from '../lib/credit-costs';
 import {
   type GeminiModelId,
@@ -29,6 +29,7 @@ interface ModelSelectorProps {
 const MODEL_ICONS: Record<GeminiModelId, React.ReactNode> = {
   forma: <Zap className="h-4 w-4 text-violet-500" />,
   flash: <Zap className="h-4 w-4 text-blue-500" />,
+  'gpt-image-2': <Sparkles className="h-4 w-4 text-emerald-500" />,
 };
 
 export function ModelSelector({

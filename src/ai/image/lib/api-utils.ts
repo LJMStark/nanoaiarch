@@ -9,7 +9,7 @@ import type {
   PersistedAssistantMessagePayload,
 } from './api-types';
 import type { GeminiAspectRatio, GeminiImageModelId } from './gemini-client';
-import { GEMINI_MODEL_IDS, type GeminiModelId } from './provider-config';
+import { GEMINI_MODEL_IDS, type GeminiBackendModelId } from './provider-config';
 import type { ConversationHistoryMessage } from './workspace-types';
 
 /**
@@ -43,9 +43,8 @@ export function generateRequestId(): string {
  * Map frontend model ID (forma/flash) to Gemini API model ID
  */
 export function mapModelIdToGeminiModel(modelId: string): GeminiImageModelId {
-  const id = modelId as GeminiModelId;
-  if (id in GEMINI_MODEL_IDS) {
-    return GEMINI_MODEL_IDS[id];
+  if (modelId in GEMINI_MODEL_IDS) {
+    return GEMINI_MODEL_IDS[modelId as GeminiBackendModelId];
   }
   return GEMINI_MODEL_IDS.forma;
 }
@@ -76,7 +75,7 @@ export function mapAspectRatioToGemini(
 }
 
 // Keep backward-compatible type alias
-export type GeminiModelKey = GeminiModelId;
+export type GeminiModelKey = GeminiBackendModelId;
 
 /**
  * Prompt validation constants and utilities

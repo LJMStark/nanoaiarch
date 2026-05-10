@@ -17,6 +17,10 @@ vi.mock('@/ai/image/lib/gemini-client', () => ({
   generateImageWithGemini: vi.fn(),
 }));
 
+vi.mock('@/ai/image/lib/duomi-client', () => ({
+  generateImageWithDuomi: vi.fn(),
+}));
+
 vi.mock('@/ai/image/lib/image-api-helpers', () => ({
   createErrorResponse: vi.fn(),
   createImageResponse: vi.fn(),
@@ -51,6 +55,7 @@ import {
   mapModelIdToGeminiModel,
   validatePrompt,
 } from '@/ai/image/lib/api-utils';
+import { generateImageWithDuomi } from '@/ai/image/lib/duomi-client';
 import { editImageWithConversationGemini } from '@/ai/image/lib/gemini-client';
 import {
   createErrorResponse,
@@ -351,6 +356,90 @@ describe('/api/generate-images POST', () => {
             images: ['new-reference', 'second-reference'],
           },
         ],
+      })
+    );
+  });
+
+  it('routes gpt-image-2 text generation to Duomi async client', async () => {
+    vi.mocked(validatePrompt).mockReturnValue({ valid: true });
+    vi.mocked(resolveRequestedImageSize).mockReturnValue({
+      valid: true,
+      value: '1K',
+    });
+    vi.mocked(validateReferenceImages).mockReturnValue({ valid: true });
+    vi.mocked(validateConversationMessages).mockReturnValue({ valid: true });
+    vi.mocked(verifyRequestContext).mockResolvedValue({
+      requestId: 'req-1',
+      userId: 'user-1',
+      modelId: 'gpt-image-2',
+      creditCost: 1,
+    });
+    vi.mocked(applyRateLimit).mockResolvedValue({
+      success: true,
+      limit: 10,
+      remaining: 9,
+      resetAt: Date.now() + 60_000,
+    });
+    vi.mocked(getRateLimitHeaders).mockReturnValue({});
+    vi.mocked(generateImageWithDuomi).mockResolvedValue({
+      success: true,
+      image: 'https://cdn.example.com/generated.png',
+    });
+    vi.mocked(executeImageGeneration).mockResolvedValue({
+      image: 'https://cdn.example.com/generated.png',
+      creditsUsed: 1,
+    });
+    vi.mocked(updateAssistantMessage).mockResolvedValue({
+      success: true,
+      data: {
+        id: 'assistant-1',
+        projectId: 'project-1',
+        role: 'assistant',
+        content: '',
+        inputImage: null,
+        inputImages: [],
+        outputImage: 'https://cdn.example.com/generated.png',
+        maskImage: null,
+        generationParams: JSON.stringify({
+          prompt: '生成一个现代座椅',
+        }),
+        creditsUsed: 1,
+        generationTime: 1200,
+        status: 'completed',
+        errorMessage: null,
+        orderIndex: 1,
+        createdAt: new Date(),
+      },
+    });
+
+    const response = await POST(
+      new Request('http://localhost/api/generate-images', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: '生成一个现代座椅',
+          modelId: 'gpt-image-2',
+          aspectRatio: '1:1',
+          imageSize: '1K',
+          projectId: 'project-1',
+          assistantMessageId: 'assistant-1',
+        }),
+      }) as any
+    );
+
+    expect(response.status).toBe(200);
+    expect(mapModelIdToGeminiModel).not.toHaveBeenCalled();
+    expect(editImageWithConversationGemini).not.toHaveBeenCalled();
+    expect(generateImageWithDuomi).toHaveBeenCalledWith({
+      prompt: '生成一个现代座椅',
+      aspectRatio: '1:1',
+      signal: expect.any(AbortSignal),
+    });
+    expect(executeImageGeneration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        generatePromise: expect.any(Promise),
       })
     );
   });

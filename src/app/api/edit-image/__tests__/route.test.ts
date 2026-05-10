@@ -61,4 +61,29 @@ describe('/api/edit-image POST', () => {
       error: '请求体格式错误',
     });
   });
+
+  it('rejects gpt-image-2 because the edit endpoint only supports Gemini editing', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/edit-image', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          modelId: 'gpt-image-2',
+          messages: [
+            {
+              role: 'user',
+              content: '把图片改成日落色调',
+            },
+          ],
+        }),
+      }) as any
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: 'GPT Image 2 暂不支持图片编辑',
+    });
+  });
 });

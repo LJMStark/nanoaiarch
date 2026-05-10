@@ -3,7 +3,9 @@ import {
   type ImageQuality,
   ImageQualitySelect,
 } from '@/ai/image/components/ImageQualitySelect';
+import { ModelSelector } from '@/ai/image/components/ModelSelector';
 import type { AspectRatioId } from '@/ai/image/lib/arch-types';
+import type { GeminiModelId } from '@/ai/image/lib/provider-config';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -16,15 +18,19 @@ import { useTranslations } from 'next-intl';
 interface GenerationSettingsProps {
   imageQuality: ImageQuality;
   aspectRatio: AspectRatioId;
+  selectedModel: GeminiModelId;
   onImageQualityChange: (quality: ImageQuality) => void;
   onAspectRatioChange: (ratio: AspectRatioId) => void;
+  onModelChange: (model: GeminiModelId) => void;
 }
 
 export function GenerationSettings({
   imageQuality,
   aspectRatio,
+  selectedModel,
   onImageQualityChange,
   onAspectRatioChange,
+  onModelChange,
 }: GenerationSettingsProps) {
   const t = useTranslations('ArchPage');
 
@@ -40,8 +46,12 @@ export function GenerationSettings({
           <Settings2 className="h-5 w-5" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-72">
+      <PopoverContent align="end" className="w-80">
         <div className="space-y-4">
+          <ModelSelector
+            selectedModel={selectedModel}
+            onModelChange={onModelChange}
+          />
           <div className="space-y-2">
             <div className="text-sm font-medium">{t('controls.quality')}</div>
             <ImageQualitySelect

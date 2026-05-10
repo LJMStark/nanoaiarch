@@ -286,4 +286,103 @@ describe('useConversationSubmit', () => {
     expect(removeMessageMock).toHaveBeenCalledTimes(2);
     expect(setDraftPromptMock).toHaveBeenCalledWith('draw a chair');
   });
+
+  it('submits gpt-image-2 as text-only without implicit previous image or history', async () => {
+    createPendingGenerationRequestMock.mockResolvedValue({
+      success: true,
+      data: {
+        userMessage: {
+          id: 'user-1',
+          projectId: 'project-1',
+          role: 'user',
+          content: 'draw a chair',
+          inputImage: null,
+          inputImages: [],
+          outputImage: null,
+          maskImage: null,
+          generationParams: null,
+          creditsUsed: null,
+          generationTime: null,
+          status: 'completed',
+          errorMessage: null,
+          orderIndex: 0,
+          createdAt: new Date(),
+        },
+        assistantMessage: {
+          id: 'assistant-1',
+          projectId: 'project-1',
+          role: 'assistant',
+          content: '',
+          inputImage: null,
+          inputImages: [],
+          outputImage: null,
+          maskImage: null,
+          generationParams: JSON.stringify({ prompt: 'draw a chair' }),
+          creditsUsed: null,
+          generationTime: null,
+          status: 'generating',
+          errorMessage: null,
+          orderIndex: 1,
+          createdAt: new Date(),
+        },
+      },
+    });
+    generateImageMock.mockResolvedValue({
+      success: false,
+      error: 'generation failed',
+    });
+
+    const { result } = renderHook(() =>
+      useConversationSubmit({
+        t: (key) => key,
+        currentProjectId: 'project-1',
+        draftPrompt: 'draw a chair',
+        referenceImages: [],
+        aspectRatio: '1:1',
+        selectedModel: 'gpt-image-2',
+        imageQuality: '2K',
+        isGenerating: false,
+        clearDraft: vi.fn(),
+        setDraftPrompt: vi.fn(),
+        setReferenceImages: vi.fn(),
+        setShowImageUpload: vi.fn(),
+        addMessage: vi.fn(),
+        updateMessage: vi.fn(),
+        removeMessage: vi.fn(),
+        replaceMessageId: vi.fn(),
+        setGenerating: vi.fn(),
+        getLastOutputImage: () => 'https://cdn.example.com/previous.png',
+        getConversationHistory: () => [
+          {
+            role: 'user',
+            content: 'previous prompt',
+          },
+          {
+            role: 'model',
+            content: '',
+            image: 'https://cdn.example.com/previous.png',
+          },
+        ],
+        setAbortController: vi.fn(),
+        setGenerationRequestToken: vi.fn(),
+        setGenerationStage: vi.fn(),
+      })
+    );
+
+    await result.current();
+
+    expect(createPendingGenerationRequestMock).toHaveBeenCalledWith(
+      'project-1',
+      expect.objectContaining({
+        inputImages: undefined,
+      })
+    );
+    expect(generateImageMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: 'gpt-image-2',
+        referenceImages: undefined,
+        conversationHistory: undefined,
+      })
+    );
+  });
 });

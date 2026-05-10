@@ -112,6 +112,27 @@ describe('executeImageGeneration', () => {
       expect(mocks.consumeCredits).not.toHaveBeenCalled();
     });
 
+    it('keeps generated image URLs without re-uploading them', async () => {
+      mocks.confirmHold.mockResolvedValue(undefined);
+
+      const result = await executeImageGeneration({
+        ctx,
+        generatePromise: Promise.resolve({
+          success: true,
+          image: 'https://duomi.example.com/generated.png',
+          text: 'ok',
+        }),
+        operationType: 'generation',
+        startstamp: performance.now(),
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.image).toBe('https://duomi.example.com/generated.png');
+      expect(result.creditsUsed).toBe(1);
+      expect(mocks.confirmHold).toHaveBeenCalledWith('hold-123');
+      expect(mocks.uploadGeneratedImage).not.toHaveBeenCalled();
+    });
+
     it('releases hold when generation fails', async () => {
       mocks.releaseHold.mockResolvedValue(undefined);
 

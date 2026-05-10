@@ -235,6 +235,10 @@ interface ExecuteGenerationOptions {
   startstamp: number;
 }
 
+function isRemoteImageUrl(image: string): boolean {
+  return image.startsWith('http://') || image.startsWith('https://');
+}
+
 /**
  * Executes image generation with timeout, credit hold confirm/release,
  * and logging.
@@ -342,17 +346,19 @@ export async function executeImageGeneration({
   // Upload the generated image to object storage. Failures fall back to the
   // raw base64 so the user still gets their image — credits already confirmed.
   let imageData = genResult.image;
-  try {
-    const imageUrl = await uploadGeneratedImage(
-      genResult.image,
-      ctx.requestId,
-      `gen-${Date.now()}`
-    );
-    imageData = imageUrl;
-  } catch (uploadError) {
-    logger.api.warn(
-      `[requestId=${ctx.requestId}] Failed to upload generated image to storage, falling back to base64: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`
-    );
+  if (!isRemoteImageUrl(genResult.image)) {
+    try {
+      const imageUrl = await uploadGeneratedImage(
+        genResult.image,
+        ctx.requestId,
+        `gen-${Date.now()}`
+      );
+      imageData = imageUrl;
+    } catch (uploadError) {
+      logger.api.warn(
+        `[requestId=${ctx.requestId}] Failed to upload generated image to storage, falling back to base64: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`
+      );
+    }
   }
 
   logger.api.info(
