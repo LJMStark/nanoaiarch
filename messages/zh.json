@@ -1767,11 +1767,13 @@
       "generating": "正在生成图像...",
       "detailing": "正在补充细节...",
       "almost": "马上完成...",
+      "title": "正在生成预览",
       "elapsed": "已用时 {seconds}s",
       "stage_submitting": "准备请求中...",
       "stage_queued": "请求排队中...",
       "stage_generating": "图片生成中...",
       "stage_finishing": "处理完成中...",
+      "keepOpen": "生成完成后会自动显示结果",
       "cancel": "取消",
       "cancelled": "生成已取消"
     },

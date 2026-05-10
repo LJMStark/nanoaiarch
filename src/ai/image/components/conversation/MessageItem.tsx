@@ -19,12 +19,12 @@ import {
   getOptionalInputImages,
   resolveInputImages,
 } from '@/ai/image/lib/input-images';
+import { getGenerationCssAspectRatio } from '@/ai/image/lib/message-aspect-ratio';
 import { updateAssistantMessageRequest } from '@/ai/image/lib/workspace-client';
 import type {
   GenerationParams,
   ProjectMessageItem,
 } from '@/ai/image/lib/workspace-types';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -49,8 +49,6 @@ import {
   Loader2,
   RefreshCw,
   Share2,
-  Sparkles,
-  User,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
@@ -408,7 +406,7 @@ function AssistantMessage({
   );
 
   if (isGeneratingNow) {
-    return <LoadingMessage />;
+    return <LoadingMessage message={message} />;
   }
 
   return (
@@ -444,17 +442,21 @@ function AssistantMessage({
             <div className="relative overflow-hidden rounded-xl border bg-muted">
               <button
                 type="button"
-                className="block w-full cursor-zoom-in"
+                className="relative block w-full cursor-zoom-in"
+                style={{
+                  aspectRatio: getGenerationCssAspectRatio(
+                    message.generationParams
+                  ),
+                }}
                 onClick={() => setIsPreviewOpen(true)}
                 aria-label={t('canvas.openPreview')}
               >
                 <Image
                   src={getImageSrc(message.outputImage)}
                   alt={t('canvas.generatedImageAlt')}
-                  width={512}
-                  height={512}
+                  fill
                   sizes="(max-width: 640px) 100vw, 512px"
-                  className="h-auto w-full"
+                  className="object-contain"
                 />
               </button>
               <div
