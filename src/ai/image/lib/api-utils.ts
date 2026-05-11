@@ -342,6 +342,7 @@ export interface GenerateImageParams {
   conversationHistory?: ConversationHistoryMessage[];
   projectId?: string;
   assistantMessageId?: string;
+  generationAttemptId?: string;
 }
 
 export interface GenerateImageResult {
@@ -394,6 +395,7 @@ export async function generateImage(
         conversationHistory: params.conversationHistory,
         projectId: params.projectId,
         assistantMessageId: params.assistantMessageId,
+        generationAttemptId: params.generationAttemptId,
       }),
       signal: internalController.signal,
     });

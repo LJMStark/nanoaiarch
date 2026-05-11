@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { executeImageGeneration, verifyCredits } from '../image-api-helpers';
+import {
+  buildGenerationHoldIdempotencyKey,
+  executeImageGeneration,
+  verifyCredits,
+} from '../image-api-helpers';
 
 const mocks = vi.hoisted(() => ({
   consumeCredits: vi.fn(),
@@ -243,5 +247,28 @@ describe('executeImageGeneration', () => {
     expect(result.error).toBeUndefined();
     expect(result.image).toBe('https://cdn.example.com/gen.png');
     expect(result.creditsUsed).toBe(1);
+  });
+});
+
+describe('buildGenerationHoldIdempotencyKey', () => {
+  it('scopes message retries by attempt so a released hold does not block retry', () => {
+    expect(
+      buildGenerationHoldIdempotencyKey('assistant-1', 'req-1', 'attempt-1')
+    ).toBe('gen-hold:assistant-1:attempt-1');
+    expect(
+      buildGenerationHoldIdempotencyKey('assistant-1', 'req-2', 'attempt-2')
+    ).toBe('gen-hold:assistant-1:attempt-2');
+  });
+
+  it('falls back to request id for non-message generation paths', () => {
+    expect(buildGenerationHoldIdempotencyKey(undefined, 'req-1')).toBe(
+      'img-gen-req-1'
+    );
+  });
+
+  it('falls back to request id when the client attempt id is unsafe', () => {
+    expect(
+      buildGenerationHoldIdempotencyKey('assistant-1', 'req-1', '../bad')
+    ).toBe('gen-hold:assistant-1:req-1');
   });
 });

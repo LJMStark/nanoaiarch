@@ -282,6 +282,7 @@ function AssistantMessage({
 
     const controller = new AbortController();
     const requestToken = crypto.randomUUID();
+    const generationAttemptId = crypto.randomUUID();
 
     setAbortController(controller);
     setGenerationRequestToken(requestToken);
@@ -290,15 +291,21 @@ function AssistantMessage({
     setGenerationStage('queued');
 
     try {
-      const conversationHistory = getConversationHistory();
+      const conversationHistory =
+        model === 'gpt-image-2' ? [] : getConversationHistory();
+      const retryInputImages =
+        model === 'gpt-image-2'
+          ? []
+          : (getOptionalInputImages(
+              userMessage.inputImages,
+              userMessage.inputImage
+            ) ?? []);
       setGenerationStage('generating');
 
       const result = await generateImage({
         prompt,
-        referenceImages: getOptionalInputImages(
-          userMessage.inputImages,
-          userMessage.inputImage
-        ),
+        referenceImages:
+          retryInputImages.length > 0 ? retryInputImages : undefined,
         aspectRatio,
         model,
         imageSize: imageQuality,
@@ -307,6 +314,7 @@ function AssistantMessage({
           conversationHistory.length > 0 ? conversationHistory : undefined,
         projectId: message.projectId,
         assistantMessageId: message.id,
+        generationAttemptId,
       });
 
       if (!isActiveGenerationRequest(requestToken, message.id)) {

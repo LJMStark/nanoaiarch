@@ -10,11 +10,13 @@ import { addDays } from 'date-fns';
 import {
   and,
   asc,
+  desc,
   eq,
   gt,
   gte,
   inArray,
   isNull,
+  like,
   not,
   or,
   sql,
@@ -1267,6 +1269,29 @@ export async function findHoldRecordByIdempotencyKey(
         eq(creditTransaction.userId, userId)
       )
     )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function findLatestHoldRecordByIdempotencyKeyPrefix(
+  idempotencyKeyPrefix: string,
+  userId: string
+): Promise<{ id: string; holdStatus: string | null } | null> {
+  if (!idempotencyKeyPrefix || !userId) return null;
+  const db = await getDb();
+  const rows = await db
+    .select({
+      id: creditTransaction.id,
+      holdStatus: creditTransaction.holdStatus,
+    })
+    .from(creditTransaction)
+    .where(
+      and(
+        like(creditTransaction.idempotencyKey, `${idempotencyKeyPrefix}%`),
+        eq(creditTransaction.userId, userId)
+      )
+    )
+    .orderBy(desc(creditTransaction.createdAt))
     .limit(1);
   return rows[0] ?? null;
 }

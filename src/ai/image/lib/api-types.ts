@@ -39,6 +39,7 @@ export interface GenerateImageRequest {
   conversationHistory?: ConversationHistoryMessage[];
   projectId?: string;
   assistantMessageId?: string;
+  generationAttemptId?: string;
 }
 
 // 图像生成响应

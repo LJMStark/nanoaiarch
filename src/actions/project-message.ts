@@ -14,7 +14,11 @@ import type {
   GeminiConversationPart,
   ProjectMessageItem as SharedProjectMessageItem,
 } from '@/ai/image/lib/workspace-types';
-import { findHoldRecordByIdempotencyKey, releaseHold } from '@/credits/credits';
+import {
+  findHoldRecordByIdempotencyKey,
+  findLatestHoldRecordByIdempotencyKeyPrefix,
+  releaseHold,
+} from '@/credits/credits';
 import { HOLD_STATUS } from '@/credits/types';
 import { getDb } from '@/db';
 import { imageProject, projectMessage } from '@/db/schema';
@@ -303,10 +307,17 @@ export async function recoverExpiredGeneratingMessages(opts: {
 
   for (const row of expired) {
     try {
-      const hold = await findHoldRecordByIdempotencyKey(
+      const exactHold = await findHoldRecordByIdempotencyKey(
         `gen-hold:${row.id}`,
         row.userId
       );
+      const hold =
+        exactHold?.holdStatus === HOLD_STATUS.PENDING
+          ? exactHold
+          : ((await findLatestHoldRecordByIdempotencyKeyPrefix(
+              `gen-hold:${row.id}:`,
+              row.userId
+            )) ?? exactHold);
       const holdId = hold?.id ?? null;
 
       if (hold?.holdStatus === HOLD_STATUS.PENDING) {

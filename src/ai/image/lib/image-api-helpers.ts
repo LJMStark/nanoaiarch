@@ -19,6 +19,7 @@ import type { GeminiConversationPart } from './workspace-types';
 
 // Valid model IDs for validation
 const VALID_MODEL_IDS: readonly string[] = GEMINI_MODELS;
+const GENERATION_ATTEMPT_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 
 // ============================================================================
 // Types
@@ -31,6 +32,7 @@ export interface ApiContext {
   creditCost: number;
   holdId?: string;
   messageId?: string;
+  attemptId?: string;
 }
 
 export interface ImageGenerationResult {
@@ -117,16 +119,24 @@ export async function verifyCredits(
 /**
  * Build the idempotency key used for the credit hold.
  *
- * Prefer the assistant messageId when available. That gives recovery a stable
- * handle to find and release the hold for an orphaned generating message.
+ * Prefer the assistant messageId when available and scope it by attempt. That
+ * lets failed messages retry after a released hold while recovery can still
+ * find the newest hold by message prefix.
  * Falls back to the per-request UUID for paths that don't pass a messageId
  * (legacy/edge cases).
  */
 export function buildGenerationHoldIdempotencyKey(
   messageId: string | undefined,
-  requestId: string
+  requestId: string,
+  attemptId?: string
 ): string {
-  return messageId ? `gen-hold:${messageId}` : `img-gen-${requestId}`;
+  const safeAttemptId =
+    attemptId && GENERATION_ATTEMPT_ID_PATTERN.test(attemptId)
+      ? attemptId
+      : requestId;
+  return messageId
+    ? `gen-hold:${messageId}:${safeAttemptId}`
+    : `img-gen-${requestId}`;
 }
 
 /**
@@ -137,7 +147,7 @@ export async function verifyRequestContext(
   headers: Headers,
   modelId: string,
   requestId: string,
-  options?: { messageId?: string }
+  options?: { messageId?: string; attemptId?: string }
 ): Promise<ApiContext | NextResponse> {
   // Validate modelId to prevent invalid model attacks
   if (!VALID_MODEL_IDS.includes(modelId)) {
@@ -171,7 +181,8 @@ export async function verifyRequestContext(
       amount: creditResult.creditCost,
       idempotencyKey: buildGenerationHoldIdempotencyKey(
         options?.messageId,
-        requestId
+        requestId,
+        options?.attemptId
       ),
       description: `Image generation hold: ${modelId}`,
     });
@@ -182,6 +193,7 @@ export async function verifyRequestContext(
       modelId,
       creditCost: creditResult.creditCost,
       holdId: hold.holdId,
+      attemptId: options?.attemptId,
     };
   } catch (holdError) {
     const message =

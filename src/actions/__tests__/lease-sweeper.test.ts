@@ -10,6 +10,7 @@ import {
 const mocks = vi.hoisted(() => ({
   getDb: vi.fn(),
   findHoldRecordByIdempotencyKey: vi.fn(),
+  findLatestHoldRecordByIdempotencyKeyPrefix: vi.fn(),
   releaseHold: vi.fn(),
   recordAudit: vi.fn(),
 }));
@@ -20,6 +21,8 @@ vi.mock('@/db', () => ({
 
 vi.mock('@/credits/credits', () => ({
   findHoldRecordByIdempotencyKey: mocks.findHoldRecordByIdempotencyKey,
+  findLatestHoldRecordByIdempotencyKeyPrefix:
+    mocks.findLatestHoldRecordByIdempotencyKeyPrefix,
   releaseHold: mocks.releaseHold,
 }));
 
@@ -36,6 +39,7 @@ vi.mock('@/lib/logger', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.findLatestHoldRecordByIdempotencyKeyPrefix.mockResolvedValue(null);
 });
 
 describe('findExpiredGeneratingMessages', () => {
@@ -181,6 +185,7 @@ describe('recoverExpiredGeneratingMessages', () => {
       id: 'hold-1',
       holdStatus: HOLD_STATUS.PENDING,
     });
+    mocks.findLatestHoldRecordByIdempotencyKeyPrefix.mockResolvedValue(null);
     mocks.releaseHold.mockResolvedValue(undefined);
     mocks.recordAudit.mockResolvedValue(undefined);
 
@@ -205,6 +210,66 @@ describe('recoverExpiredGeneratingMessages', () => {
           holdId: 'hold-1',
           projectId: 'project-1',
           trigger: 'lazy-create',
+        }),
+      })
+    );
+  });
+
+  it('releases the latest retry hold when attempt-scoped idempotency is used', async () => {
+    mockExpiredMessageQuery([
+      { id: 'msg-1', projectId: 'project-1', userId: 'user-1' },
+    ]);
+    mocks.findHoldRecordByIdempotencyKey.mockResolvedValue(null);
+    mocks.findLatestHoldRecordByIdempotencyKeyPrefix.mockResolvedValue({
+      id: 'hold-attempt-2',
+      holdStatus: HOLD_STATUS.PENDING,
+    });
+    mocks.releaseHold.mockResolvedValue(undefined);
+    mocks.recordAudit.mockResolvedValue(undefined);
+
+    const result = await recoverExpiredGeneratingMessages({
+      userId: 'user-1',
+      projectId: 'project-1',
+      now: new Date('2026-05-09T12:00:00Z'),
+      trigger: 'lazy-create',
+    });
+
+    expect(result).toEqual({ scanned: 1, recovered: 1, errors: 0 });
+    expect(
+      mocks.findLatestHoldRecordByIdempotencyKeyPrefix
+    ).toHaveBeenCalledWith('gen-hold:msg-1:', 'user-1');
+    expect(mocks.releaseHold).toHaveBeenCalledWith('hold-attempt-2');
+  });
+
+  it('prefers a pending retry hold over a released legacy message hold', async () => {
+    mockExpiredMessageQuery([
+      { id: 'msg-1', projectId: 'project-1', userId: 'user-1' },
+    ]);
+    mocks.findHoldRecordByIdempotencyKey.mockResolvedValue({
+      id: 'released-legacy-hold',
+      holdStatus: HOLD_STATUS.RELEASED,
+    });
+    mocks.findLatestHoldRecordByIdempotencyKeyPrefix.mockResolvedValue({
+      id: 'hold-attempt-2',
+      holdStatus: HOLD_STATUS.PENDING,
+    });
+    mocks.releaseHold.mockResolvedValue(undefined);
+    mocks.recordAudit.mockResolvedValue(undefined);
+
+    const result = await recoverExpiredGeneratingMessages({
+      userId: 'user-1',
+      projectId: 'project-1',
+      now: new Date('2026-05-09T12:00:00Z'),
+      trigger: 'lazy-create',
+    });
+
+    expect(result).toEqual({ scanned: 1, recovered: 1, errors: 0 });
+    expect(mocks.releaseHold).toHaveBeenCalledWith('hold-attempt-2');
+    expect(mocks.recordAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          holdId: 'hold-attempt-2',
+          holdStatus: HOLD_STATUS.PENDING,
         }),
       })
     );

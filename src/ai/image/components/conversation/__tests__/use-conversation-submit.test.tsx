@@ -382,6 +382,7 @@ describe('useConversationSubmit', () => {
         model: 'gpt-image-2',
         referenceImages: undefined,
         conversationHistory: undefined,
+        generationAttemptId: expect.any(String),
       })
     );
   });

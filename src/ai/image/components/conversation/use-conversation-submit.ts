@@ -234,6 +234,7 @@ export function useConversationSubmit({
 
       const controller = new AbortController();
       const requestToken = crypto.randomUUID();
+      const generationAttemptId = crypto.randomUUID();
 
       setAbortController(controller);
       setGenerationRequestToken(requestToken);
@@ -308,6 +309,7 @@ export function useConversationSubmit({
             conversationHistory.length > 0 ? conversationHistory : undefined,
           projectId: currentProjectId,
           assistantMessageId: generatingMessageId,
+          generationAttemptId,
         });
 
         if (isGenerationCancelled(result.error)) {

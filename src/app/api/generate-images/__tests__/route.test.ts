@@ -425,6 +425,7 @@ describe('/api/generate-images POST', () => {
           imageSize: '1K',
           projectId: 'project-1',
           assistantMessageId: 'assistant-1',
+          generationAttemptId: 'attempt-1',
         }),
       }) as any
     );
@@ -439,6 +440,9 @@ describe('/api/generate-images POST', () => {
     });
     expect(executeImageGeneration).toHaveBeenCalledWith(
       expect.objectContaining({
+        ctx: expect.objectContaining({
+          attemptId: 'attempt-1',
+        }),
         generatePromise: expect.any(Promise),
       })
     );

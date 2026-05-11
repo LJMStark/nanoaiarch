@@ -112,6 +112,7 @@ export async function POST(req: NextRequest) {
       conversationHistory,
       projectId: payloadProjectId,
       assistantMessageId: payloadAssistantMessageId,
+      generationAttemptId,
     } = payload;
     projectId = payloadProjectId;
     assistantMessageId = payloadAssistantMessageId;
@@ -173,10 +174,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Verify session and credits. Passing assistantMessageId here lets
-    // recovery derive the hold idempotency key from the message id.
+    // Verify session and credits. The message id keeps holds recoverable; the
+    // attempt id lets the same failed message retry after its prior hold was released.
     const ctx = await verifyRequestContext(req.headers, modelId, requestId, {
       messageId: assistantMessageId,
+      attemptId: generationAttemptId,
     });
     if (ctx instanceof NextResponse) {
       return ctx;
@@ -306,6 +308,7 @@ export async function POST(req: NextRequest) {
       ctx: {
         ...ctx,
         messageId: assistantMessageId,
+        attemptId: generationAttemptId,
       },
       generatePromise,
       operationType: 'generation',
