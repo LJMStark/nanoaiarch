@@ -430,6 +430,18 @@ export async function recoverExpiredGeneratingMessages(opts: {
         continue;
       }
 
+      // If settleDuomiTaskMessage returned null for a row that has a Duomi
+      // task ID, the task is still running (or a transient query error
+      // occurred). Either way, do not apply the normal lease-expiry kill path
+      // — the task will be settled on the next poll or sweep cycle.
+      const rowParams = parseGenerationParams(row.generationParams);
+      if (settled === null && rowParams?.duomiTaskId) {
+        logger.actions.info(
+          `generation recovery: Duomi task still in-flight, skipping kill [messageId=${row.id}, taskId=${rowParams.duomiTaskId}, trigger=${trigger}]`
+        );
+        continue;
+      }
+
       const exactHold = await findHoldRecordByIdempotencyKey(
         `gen-hold:${row.id}`,
         row.userId
@@ -554,6 +566,11 @@ async function settleDuomiTaskMessage(
   }
 
   const task = await getDuomiImageTaskStatus(generationParams.duomiTaskId);
+  if (task.status === 'query_error') {
+    // Transient API error (429, 503, network) — do not treat as task failure.
+    // Return null so the caller retries on the next poll/sweep cycle.
+    return null;
+  }
   if (task.status === 'pending' || task.status === 'running') {
     if (task.status !== generationParams.duomiTaskStatus) {
       const now = new Date();

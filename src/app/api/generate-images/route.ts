@@ -303,7 +303,7 @@ export async function POST(req: NextRequest) {
                 taskMessage.error
               );
               return NextResponse.json(
-                { error: taskMessage.error || '保存生成任务失败' },
+                { error: '保存生成任务失败' },
                 { status: 500, headers: getRateLimitHeaders(rateLimitResult) }
               );
             }

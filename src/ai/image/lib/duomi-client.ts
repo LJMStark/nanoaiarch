@@ -46,7 +46,7 @@ export interface CreateDuomiImageTaskResult {
 }
 
 export interface DuomiImageTaskStatusResult {
-  status: 'pending' | 'running' | 'succeeded' | 'failed';
+  status: 'pending' | 'running' | 'succeeded' | 'failed' | 'query_error';
   image?: string;
   error?: string;
 }
@@ -202,8 +202,10 @@ export async function getDuomiImageTaskStatus(
       taskId,
       errorText,
     });
+    // Use query_error (not 'failed') for HTTP transport failures so callers
+    // can retry instead of permanently terminating the task.
     return {
-      status: 'failed',
+      status: 'query_error',
       error: '查询图片生成任务失败，请稍后重试',
     };
   }

@@ -513,7 +513,7 @@ describe('/api/generate-images POST', () => {
     expect(response.status).toBe(500);
     expect(releaseHold).toHaveBeenCalledWith('hold-1');
     await expect(response.json()).resolves.toEqual({
-      error: 'db unavailable',
+      error: '保存生成任务失败',
     });
   });
 
