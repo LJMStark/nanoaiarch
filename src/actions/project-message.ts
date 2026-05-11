@@ -565,13 +565,73 @@ async function settleDuomiTaskMessage(
     return null;
   }
 
-  const task = await getDuomiImageTaskStatus(generationParams.duomiTaskId);
+  // 5-second timeout per query so a slow/hung Duomi API call never blocks the
+  // bootstrap path (lazy-create) or status checks indefinitely.
+  const ac = new AbortController();
+  const timeoutId = setTimeout(() => ac.abort(), 5000);
+  let task: Awaited<ReturnType<typeof getDuomiImageTaskStatus>>;
+  try {
+    task = await getDuomiImageTaskStatus(
+      generationParams.duomiTaskId,
+      ac.signal
+    );
+  } catch {
+    // AbortError or unexpected fetch throw → treat as transient query error.
+    task = { status: 'query_error', error: 'Task status query timed out' };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
   if (task.status === 'query_error') {
-    // Transient API error (429, 503, network) — do not treat as task failure.
-    // Return null so the caller retries on the next poll/sweep cycle.
+    // Transient API error (429, 503, network, timeout) — do not treat as task
+    // failure. Return null so the caller retries on the next poll/sweep cycle.
     return null;
   }
   if (task.status === 'pending' || task.status === 'running') {
+    // Force-kill tasks that have been in-flight for more than 3× the lease
+    // duration (15 min). At that point the Duomi task is effectively stuck and
+    // will never complete; continuing to skip it only accumulates zombie rows
+    // that slow down every subsequent recovery sweep.
+    const elapsed = getGenerationElapsedMs(generationParams);
+    const MAX_DUOMI_TASK_AGE_MS = 3 * GENERATION_LEASE_DURATION_MS;
+    if (elapsed !== null && elapsed > MAX_DUOMI_TASK_AGE_MS) {
+      logger.actions.warn(
+        `generation recovery: Duomi task exceeded max age, force-killing [messageId=${params.messageId}, elapsed=${elapsed}ms, taskId=${generationParams.duomiTaskId}]`
+      );
+      const hold = await findLatestHoldForMessage(
+        params.messageId,
+        params.userId
+      );
+      if (hold?.holdStatus === HOLD_STATUS.PENDING) {
+        await releaseHold(hold.id);
+      }
+      const updated = await updateAssistantMessageDirect(
+        params.messageId,
+        params.userId,
+        {
+          status: 'failed',
+          content: '生成超时，请重试',
+          errorMessage: 'Duomi task exceeded maximum age (force-killed)',
+        }
+      );
+      if (!updated) {
+        return null;
+      }
+      return {
+        success: true,
+        data: {
+          id: params.messageId,
+          status: 'failed' as const,
+          outputImage: null,
+          errorMessage: 'Duomi task exceeded maximum age (force-killed)',
+          creditsUsed: row.creditsUsed,
+          generationTime: row.generationTime,
+          generationLeaseExpiresAt: null,
+          updatedAt: new Date(),
+        },
+      };
+    }
+
     if (task.status !== generationParams.duomiTaskStatus) {
       const now = new Date();
       const db = await getDb();
@@ -1065,10 +1125,14 @@ export async function createPendingGeneration(
   };
 
   try {
+    // Keep limit small for lazy-create: each expired Duomi row requires an
+    // HTTP call which would delay the user's generation bootstrap. 3 is enough
+    // to release any stuck holds while keeping latency bounded. Remaining
+    // expired rows are picked up by the next sweep or lazy-status call.
     await recoverExpiredGeneratingMessages({
       userId: session.user.id,
       projectId,
-      limit: 50,
+      limit: 3,
       trigger: 'lazy-create',
     });
 

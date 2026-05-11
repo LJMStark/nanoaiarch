@@ -9,8 +9,12 @@ import { useConversationStore } from '@/stores/conversation-store';
 import { useCallback, useEffect, useRef } from 'react';
 
 export function useGenerationRecovery(projectId: string | null): void {
-  const { generatingMessageId, setGenerating, updateMessage } =
-    useConversationStore();
+  const {
+    generatingMessageId,
+    setGenerating,
+    setGenerationStage,
+    updateMessage,
+  } = useConversationStore();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retryCountRef = useRef(0);
   // Tracks consecutive "message not found" responses separately from generic
@@ -40,6 +44,7 @@ export function useGenerationRecovery(projectId: string | null): void {
         errorMessage,
       });
       setGenerating(false);
+      setGenerationStage(null);
       stopPolling();
 
       const result = await updateAssistantMessageRequest(messageId, {
@@ -55,7 +60,7 @@ export function useGenerationRecovery(projectId: string | null): void {
         );
       }
     },
-    [setGenerating, stopPolling, updateMessage]
+    [setGenerating, setGenerationStage, stopPolling, updateMessage]
   );
 
   useEffect(() => {
@@ -179,6 +184,7 @@ export function useGenerationRecovery(projectId: string | null): void {
                 `Lease expired for generating message [messageId=${activeMessageId}, leaseExpiry=${new Date(leaseExpiry).toISOString()}]`
               );
               setGenerating(false);
+              setGenerationStage(null);
               stopPolling();
               return;
             }
@@ -191,6 +197,7 @@ export function useGenerationRecovery(projectId: string | null): void {
           );
           updateMessage(activeMessageId, result.data);
           setGenerating(false);
+          setGenerationStage(null);
           stopPolling();
           return;
         }
@@ -218,6 +225,7 @@ export function useGenerationRecovery(projectId: string | null): void {
     markGenerationFailed,
     projectId,
     setGenerating,
+    setGenerationStage,
     stopPolling,
     updateMessage,
   ]);
