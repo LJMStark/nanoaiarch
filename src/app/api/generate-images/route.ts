@@ -6,7 +6,10 @@ import {
   mapModelIdToGeminiModel,
   validatePrompt,
 } from '@/ai/image/lib/api-utils';
-import { generateImageWithDuomi } from '@/ai/image/lib/duomi-client';
+import {
+  createDuomiImageTask,
+  generateImageWithDuomi,
+} from '@/ai/image/lib/duomi-client';
 import {
   editImageWithConversationGemini,
   editImageWithGemini,
@@ -25,6 +28,7 @@ import {
   validateReferenceImages,
 } from '@/ai/image/lib/request-validation';
 import type { ConversationHistoryMessage } from '@/ai/image/lib/workspace-types';
+import { releaseHold } from '@/credits/credits';
 import { logger } from '@/lib/logger';
 import { applyRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -72,6 +76,25 @@ async function persistFailedAssistantMessage(
     logger.api.error(
       `Failed to persist assistant failure state [requestId=${requestId}, assistantMessageId=${assistantMessageId}]`,
       result.error
+    );
+  }
+}
+
+async function releaseHeldCreditsOnFailure(
+  holdId: string | undefined,
+  requestId: string,
+  reason: string
+): Promise<void> {
+  if (!holdId) {
+    return;
+  }
+
+  try {
+    await releaseHold(holdId);
+  } catch (error) {
+    logger.api.error(
+      `Failed to release credit hold [requestId=${requestId}, holdId=${holdId}, reason=${reason}]`,
+      error
     );
   }
 }
@@ -231,11 +254,75 @@ export async function POST(req: NextRequest) {
           error: 'GPT Image 2 暂不支持参考图或多轮编辑',
         });
       } else {
-        generatePromise = generateImageWithDuomi({
-          prompt,
-          aspectRatio: geminiAspectRatio,
-          signal: req.signal,
-        });
+        if (!assistantMessageId) {
+          generatePromise = generateImageWithDuomi({
+            prompt,
+            aspectRatio: geminiAspectRatio,
+            signal: req.signal,
+          });
+        } else {
+          const task = await createDuomiImageTask({
+            prompt,
+            aspectRatio: geminiAspectRatio,
+            signal: req.signal,
+          });
+
+          if (!task.success || !task.taskId) {
+            generatePromise = Promise.resolve({
+              success: false,
+              error: task.error || '创建图片生成任务失败',
+            });
+          } else {
+            const taskStartedAt = new Date().toISOString();
+            const taskMessage = await updateAssistantMessage(
+              assistantMessageId,
+              {
+                content: '',
+                generationParams: {
+                  prompt,
+                  aspectRatio,
+                  model: modelId,
+                  imageQuality: selectedImageSize,
+                  duomiTaskId: task.taskId,
+                  duomiTaskStatus: 'pending',
+                  duomiTaskStartedAt: taskStartedAt,
+                  duomiTaskUpdatedAt: taskStartedAt,
+                },
+                status: 'generating',
+              }
+            );
+
+            if (!taskMessage.success || !taskMessage.data) {
+              await releaseHeldCreditsOnFailure(
+                ctx.holdId,
+                requestId,
+                'duomi-task-persist-failed'
+              );
+              logger.api.error(
+                `Failed to persist Duomi task [requestId=${requestId}, assistantMessageId=${assistantMessageId}]`,
+                taskMessage.error
+              );
+              return NextResponse.json(
+                { error: taskMessage.error || '保存生成任务失败' },
+                { status: 500, headers: getRateLimitHeaders(rateLimitResult) }
+              );
+            }
+
+            return NextResponse.json(
+              {
+                status: 'generating',
+                message: {
+                  ...taskMessage.data,
+                  createdAt:
+                    taskMessage.data.createdAt instanceof Date
+                      ? taskMessage.data.createdAt.toISOString()
+                      : new Date(taskMessage.data.createdAt).toISOString(),
+                },
+              },
+              { status: 200, headers: getRateLimitHeaders(rateLimitResult) }
+            );
+          }
+        }
       }
     } else {
       const geminiModel = mapModelIdToGeminiModel(modelId);

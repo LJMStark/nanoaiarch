@@ -81,6 +81,10 @@ export type GenerationParams = {
   imageQuality?: string;
   inputImages?: string[];
   modelResponseParts?: GeminiConversationPart[];
+  duomiTaskId?: string;
+  duomiTaskStatus?: 'pending' | 'running' | 'succeeded' | 'failed';
+  duomiTaskStartedAt?: string;
+  duomiTaskUpdatedAt?: string;
 };
 
 export type ConversationInitData = {

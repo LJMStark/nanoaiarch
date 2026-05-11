@@ -3,6 +3,7 @@
 import { generateImage } from '@/ai/image/lib/api-utils';
 import {
   clearFinishedGeneration,
+  clearSubmittedGenerationRequest,
   isActiveGenerationRequest,
   isGenerationCancelled,
   normalizePersistedAssistantMessage,
@@ -292,6 +293,7 @@ export function useConversationSubmit({
       const generatingMessageId = assistantMessage.id;
       setGenerating(true, generatingMessageId);
       setGenerationStage('queued');
+      let keepRecoveryPolling = false;
 
       try {
         const conversationHistory =
@@ -335,6 +337,21 @@ export function useConversationSubmit({
         }
 
         if (result.message) {
+          if (result.message.status === 'generating') {
+            updateMessage(
+              result.message.id,
+              normalizePersistedAssistantMessage(result.message)
+            );
+            clearSubmittedGenerationRequest(requestToken, generatingMessageId, {
+              setAbortController,
+              setGenerationRequestToken,
+              setGenerating,
+              setGenerationStage,
+            });
+            keepRecoveryPolling = true;
+            return;
+          }
+
           setGenerationStage('finishing');
           if (result.message.outputImage) {
             await preloadImage(result.message.outputImage);
@@ -365,12 +382,14 @@ export function useConversationSubmit({
           errorMessage: failureState.errorMessage,
         });
       } finally {
-        clearFinishedGeneration(requestToken, generatingMessageId, {
-          setAbortController,
-          setGenerationRequestToken,
-          setGenerating,
-          setGenerationStage,
-        });
+        if (!keepRecoveryPolling) {
+          clearFinishedGeneration(requestToken, generatingMessageId, {
+            setAbortController,
+            setGenerationRequestToken,
+            setGenerating,
+            setGenerationStage,
+          });
+        }
       }
     } finally {
       inFlightRef.current = false;

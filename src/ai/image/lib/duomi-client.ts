@@ -39,6 +39,18 @@ export interface GenerateDuomiImageResult {
   error?: string;
 }
 
+export interface CreateDuomiImageTaskResult {
+  success: boolean;
+  taskId?: string;
+  error?: string;
+}
+
+export interface DuomiImageTaskStatusResult {
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+  image?: string;
+  error?: string;
+}
+
 function getDuomiApiKey(): string {
   const apiKey = process.env.DUOMI_API_KEY;
   if (!apiKey) {
@@ -85,6 +97,145 @@ function extractImageUrl(task: DuomiTaskResponse): string | undefined {
   return task.data?.images?.find((image) => image.url)?.url;
 }
 
+function normalizeTaskState(
+  state: DuomiTaskResponse['state']
+): DuomiImageTaskStatusResult['status'] {
+  if (state === 'succeeded') {
+    return 'succeeded';
+  }
+
+  if (state === 'failed' || state === 'error') {
+    return 'failed';
+  }
+
+  if (state === 'running') {
+    return 'running';
+  }
+
+  return 'pending';
+}
+
+export async function createDuomiImageTask(params: {
+  prompt: string;
+  aspectRatio?: GeminiAspectRatio;
+  signal?: AbortSignal;
+}): Promise<CreateDuomiImageTaskResult> {
+  const apiKey = getDuomiApiKey();
+  const body: Record<string, string> = {
+    model: DUOMI_MODEL,
+    prompt: params.prompt,
+  };
+  const size = mapAspectRatioToDuomiSize(params.aspectRatio);
+  if (size) {
+    body.size = size;
+  }
+
+  logger.ai.info(`[Duomi] Creating async image task [model=${DUOMI_MODEL}]`);
+
+  try {
+    const createResponse = await fetch(DUOMI_GENERATIONS_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: params.signal,
+    });
+
+    if (!createResponse.ok) {
+      const errorText = await createResponse.text();
+      logger.ai.error(`[Duomi] Create task error: ${createResponse.status}`, {
+        errorText,
+      });
+      return {
+        success: false,
+        error: '创建图片生成任务失败，请稍后重试',
+      };
+    }
+
+    const task = await readJson<DuomiCreateTaskResponse>(createResponse);
+    if (!task.id) {
+      return {
+        success: false,
+        error: task.error || task.message || '创建图片生成任务失败',
+      };
+    }
+
+    return {
+      success: true,
+      taskId: task.id,
+    };
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      logger.ai.info('[Duomi] Create task aborted by caller');
+      return { success: false, error: '生成已取消' };
+    }
+
+    logger.ai.error('[Duomi] Create task error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '未知错误',
+    };
+  }
+}
+
+export async function getDuomiImageTaskStatus(
+  taskId: string,
+  signal?: AbortSignal
+): Promise<DuomiImageTaskStatusResult> {
+  const apiKey = getDuomiApiKey();
+
+  const response = await fetch(
+    `${DUOMI_API_BASE}/tasks/${encodeURIComponent(taskId)}`,
+    {
+      headers: {
+        Authorization: apiKey,
+      },
+      signal,
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    logger.ai.error(`[Duomi] Task query error: ${response.status}`, {
+      taskId,
+      errorText,
+    });
+    return {
+      status: 'failed',
+      error: '查询图片生成任务失败，请稍后重试',
+    };
+  }
+
+  const task = await readJson<DuomiTaskResponse>(response);
+  const status = normalizeTaskState(task.state);
+
+  if (status === 'succeeded') {
+    const imageUrl = extractImageUrl(task);
+    if (!imageUrl) {
+      return {
+        status: 'failed',
+        error: '图片生成成功但未返回图片地址',
+      };
+    }
+
+    return {
+      status: 'succeeded',
+      image: imageUrl,
+    };
+  }
+
+  if (status === 'failed') {
+    return {
+      status: 'failed',
+      error: getTaskError(task),
+    };
+  }
+
+  return { status };
+}
+
 async function pollDuomiTask(
   taskId: string,
   apiKey: string,
@@ -117,7 +268,8 @@ async function pollDuomiTask(
     }
 
     const task = await readJson<DuomiTaskResponse>(response);
-    if (task.state === 'succeeded') {
+    const status = normalizeTaskState(task.state);
+    if (status === 'succeeded') {
       const imageUrl = extractImageUrl(task);
       if (!imageUrl) {
         return {
@@ -132,7 +284,7 @@ async function pollDuomiTask(
       };
     }
 
-    if (task.state === 'failed') {
+    if (status === 'failed') {
       return {
         success: false,
         error: getTaskError(task),
@@ -163,48 +315,20 @@ export async function generateImageWithDuomi(
   }
 
   try {
-    const body: Record<string, string> = {
-      model: DUOMI_MODEL,
+    const task = await createDuomiImageTask({
       prompt: params.prompt,
-    };
-    const size = mapAspectRatioToDuomiSize(params.aspectRatio);
-    if (size) {
-      body.size = size;
-    }
-
-    logger.ai.info(`[Duomi] Creating async image task [model=${DUOMI_MODEL}]`);
-
-    const createResponse = await fetch(DUOMI_GENERATIONS_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+      aspectRatio: params.aspectRatio,
       signal: controller.signal,
     });
-
-    if (!createResponse.ok) {
-      const errorText = await createResponse.text();
-      logger.ai.error(`[Duomi] Create task error: ${createResponse.status}`, {
-        errorText,
-      });
+    if (!task.success || !task.taskId) {
       return {
         success: false,
-        error: '创建图片生成任务失败，请稍后重试',
-      };
-    }
-
-    const task = await readJson<DuomiCreateTaskResponse>(createResponse);
-    if (!task.id) {
-      return {
-        success: false,
-        error: task.error || task.message || '创建图片生成任务失败',
+        error: task.error || '创建图片生成任务失败',
       };
     }
 
     return await pollDuomiTask(
-      task.id,
+      task.taskId,
       apiKey,
       controller.signal,
       params.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS

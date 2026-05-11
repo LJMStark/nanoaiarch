@@ -18,6 +18,7 @@ type ProjectMessageRecord = {
   generationTime: number | null;
   status: string;
   errorMessage: string | null;
+  generationLeaseExpiresAt?: Date | null;
   orderIndex: number;
   createdAt: Date;
 };

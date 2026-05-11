@@ -18,6 +18,7 @@ vi.mock('@/ai/image/lib/gemini-client', () => ({
 }));
 
 vi.mock('@/ai/image/lib/duomi-client', () => ({
+  createDuomiImageTask: vi.fn(),
   generateImageWithDuomi: vi.fn(),
 }));
 
@@ -32,6 +33,10 @@ vi.mock('@/ai/image/lib/request-validation', () => ({
   resolveRequestedImageSize: vi.fn(),
   validateConversationMessages: vi.fn(),
   validateReferenceImages: vi.fn(),
+}));
+
+vi.mock('@/credits/credits', () => ({
+  releaseHold: vi.fn(),
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -55,7 +60,10 @@ import {
   mapModelIdToGeminiModel,
   validatePrompt,
 } from '@/ai/image/lib/api-utils';
-import { generateImageWithDuomi } from '@/ai/image/lib/duomi-client';
+import {
+  createDuomiImageTask,
+  generateImageWithDuomi,
+} from '@/ai/image/lib/duomi-client';
 import { editImageWithConversationGemini } from '@/ai/image/lib/gemini-client';
 import {
   createErrorResponse,
@@ -67,6 +75,7 @@ import {
   validateConversationMessages,
   validateReferenceImages,
 } from '@/ai/image/lib/request-validation';
+import { releaseHold } from '@/credits/credits';
 import { applyRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { POST } from '../route';
 
@@ -360,7 +369,7 @@ describe('/api/generate-images POST', () => {
     );
   });
 
-  it('routes gpt-image-2 text generation to Duomi async client', async () => {
+  it('creates a Duomi task for gpt-image-2 and returns the generating message immediately', async () => {
     vi.mocked(validatePrompt).mockReturnValue({ valid: true });
     vi.mocked(resolveRequestedImageSize).mockReturnValue({
       valid: true,
@@ -381,13 +390,9 @@ describe('/api/generate-images POST', () => {
       resetAt: Date.now() + 60_000,
     });
     vi.mocked(getRateLimitHeaders).mockReturnValue({});
-    vi.mocked(generateImageWithDuomi).mockResolvedValue({
+    vi.mocked(createDuomiImageTask).mockResolvedValue({
       success: true,
-      image: 'https://cdn.example.com/generated.png',
-    });
-    vi.mocked(executeImageGeneration).mockResolvedValue({
-      image: 'https://cdn.example.com/generated.png',
-      creditsUsed: 1,
+      taskId: 'duomi-task-1',
     });
     vi.mocked(updateAssistantMessage).mockResolvedValue({
       success: true,
@@ -398,14 +403,16 @@ describe('/api/generate-images POST', () => {
         content: '',
         inputImage: null,
         inputImages: [],
-        outputImage: 'https://cdn.example.com/generated.png',
+        outputImage: null,
         maskImage: null,
         generationParams: JSON.stringify({
           prompt: '生成一个现代座椅',
+          duomiTaskId: 'duomi-task-1',
+          duomiTaskStatus: 'pending',
         }),
-        creditsUsed: 1,
-        generationTime: 1200,
-        status: 'completed',
+        creditsUsed: null,
+        generationTime: null,
+        status: 'generating',
         errorMessage: null,
         orderIndex: 1,
         createdAt: new Date(),
@@ -433,19 +440,81 @@ describe('/api/generate-images POST', () => {
     expect(response.status).toBe(200);
     expect(mapModelIdToGeminiModel).not.toHaveBeenCalled();
     expect(editImageWithConversationGemini).not.toHaveBeenCalled();
-    expect(generateImageWithDuomi).toHaveBeenCalledWith({
+    expect(createDuomiImageTask).toHaveBeenCalledWith({
       prompt: '生成一个现代座椅',
       aspectRatio: '1:1',
       signal: expect.any(AbortSignal),
     });
-    expect(executeImageGeneration).toHaveBeenCalledWith(
-      expect.objectContaining({
-        ctx: expect.objectContaining({
-          attemptId: 'attempt-1',
+    expect(generateImageWithDuomi).not.toHaveBeenCalled();
+    expect(executeImageGeneration).not.toHaveBeenCalled();
+    expect(updateAssistantMessage).toHaveBeenCalledWith('assistant-1', {
+      content: '',
+      generationParams: expect.objectContaining({
+        prompt: '生成一个现代座椅',
+        duomiTaskId: 'duomi-task-1',
+        duomiTaskStatus: 'pending',
+        duomiTaskStartedAt: expect.any(String),
+      }),
+      status: 'generating',
+    });
+  });
+
+  it('releases the held credits if a Duomi task cannot be persisted', async () => {
+    vi.mocked(validatePrompt).mockReturnValue({ valid: true });
+    vi.mocked(resolveRequestedImageSize).mockReturnValue({
+      valid: true,
+      value: '1K',
+    });
+    vi.mocked(validateReferenceImages).mockReturnValue({ valid: true });
+    vi.mocked(validateConversationMessages).mockReturnValue({ valid: true });
+    vi.mocked(verifyRequestContext).mockResolvedValue({
+      requestId: 'req-1',
+      userId: 'user-1',
+      modelId: 'gpt-image-2',
+      creditCost: 1,
+      holdId: 'hold-1',
+    });
+    vi.mocked(applyRateLimit).mockResolvedValue({
+      success: true,
+      limit: 10,
+      remaining: 9,
+      resetAt: Date.now() + 60_000,
+    });
+    vi.mocked(getRateLimitHeaders).mockReturnValue({});
+    vi.mocked(mapAspectRatioToGemini).mockReturnValue('1:1');
+    vi.mocked(createDuomiImageTask).mockResolvedValue({
+      success: true,
+      taskId: 'duomi-task-1',
+    });
+    vi.mocked(updateAssistantMessage).mockResolvedValue({
+      success: false,
+      error: 'db unavailable',
+    });
+    vi.mocked(releaseHold).mockResolvedValue(undefined);
+
+    const response = await POST(
+      new Request('http://localhost/api/generate-images', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: '生成一个现代座椅',
+          modelId: 'gpt-image-2',
+          aspectRatio: '1:1',
+          imageSize: '1K',
+          projectId: 'project-1',
+          assistantMessageId: 'assistant-1',
+          generationAttemptId: 'attempt-1',
         }),
-        generatePromise: expect.any(Promise),
-      })
+      }) as any
     );
+
+    expect(response.status).toBe(500);
+    expect(releaseHold).toHaveBeenCalledWith('hold-1');
+    await expect(response.json()).resolves.toEqual({
+      error: 'db unavailable',
+    });
   });
 
   it('marks the assistant message as failed when generation throws unexpectedly', async () => {

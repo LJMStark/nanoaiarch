@@ -406,7 +406,9 @@ export async function generateImage(
 
     if (data.message) {
       return {
-        success: data.message.status === 'completed',
+        success:
+          data.message.status === 'completed' ||
+          data.message.status === 'generating',
         image: data.message.outputImage ?? undefined,
         text: data.message.content || data.text,
         error: data.error || data.message.errorMessage || undefined,

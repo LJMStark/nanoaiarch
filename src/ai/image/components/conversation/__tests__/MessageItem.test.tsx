@@ -237,4 +237,83 @@ describe('MessageItem', () => {
       })
     );
   });
+
+  it('keeps recovery polling active when a gpt-image-2 retry returns a queued task', async () => {
+    const userMessage: ProjectMessageItem = {
+      id: 'user-1',
+      projectId: 'proj-1',
+      role: 'user',
+      content: '生成一个庭院',
+      inputImage: null,
+      inputImages: [],
+      outputImage: null,
+      maskImage: null,
+      generationParams: null,
+      creditsUsed: null,
+      generationTime: null,
+      status: 'completed',
+      errorMessage: null,
+      orderIndex: 0,
+      createdAt: new Date(),
+    };
+    const failedAssistant = {
+      ...createAssistantMessage(),
+      id: 'assistant-1',
+      projectId: 'proj-1',
+      outputImage: null,
+      generationParams: JSON.stringify({
+        prompt: '生成一个庭院',
+        aspectRatio: '1:1',
+        model: 'gpt-image-2',
+        imageQuality: '2K',
+      }),
+      creditsUsed: null,
+      generationTime: null,
+      status: 'failed',
+      errorMessage: '生成失败',
+      orderIndex: 1,
+    } satisfies ProjectMessageItem;
+
+    storeSnapshot.messages = [userMessage, failedAssistant];
+    updateAssistantMessageRequestMock.mockResolvedValue({
+      success: true,
+      data: failedAssistant,
+    });
+    generateImageMock.mockResolvedValue({
+      success: true,
+      message: {
+        ...failedAssistant,
+        content: '',
+        errorMessage: null,
+        generationParams: JSON.stringify({
+          prompt: '生成一个庭院',
+          duomiTaskId: 'task-1',
+        }),
+        status: 'generating',
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    render(<MessageItem message={failedAssistant} isLast={true} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /canvas.retry/ }));
+
+    await waitFor(() => {
+      expect(storeSnapshot.updateMessage).toHaveBeenCalledWith(
+        'assistant-1',
+        expect.objectContaining({
+          status: 'generating',
+        })
+      );
+    });
+
+    expect(storeSnapshot.setGenerating).toHaveBeenCalledWith(
+      true,
+      'assistant-1'
+    );
+    expect(storeSnapshot.setGenerating).not.toHaveBeenCalledWith(false);
+    expect(storeSnapshot.isGenerating).toBe(true);
+    expect(storeSnapshot.generatingMessageId).toBe('assistant-1');
+    expect(storeSnapshot.generationRequestToken).toBeNull();
+  });
 });

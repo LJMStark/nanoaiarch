@@ -2,6 +2,8 @@
 
 import { GENERATION_LEASE_DURATION_MS } from '@/ai/image/config/generation-recovery';
 import { validateBase64Image, validatePrompt } from '@/ai/image/lib/api-utils';
+import { getCreditCost } from '@/ai/image/lib/credit-costs';
+import { getDuomiImageTaskStatus } from '@/ai/image/lib/duomi-client';
 import {
   getPrimaryInputImage,
   resolveInputImages,
@@ -12,9 +14,11 @@ import { validateReferenceImages } from '@/ai/image/lib/request-validation';
 import { generateProjectTitle } from '@/ai/image/lib/title-generator';
 import type {
   GeminiConversationPart,
+  GenerationParams as SharedGenerationParams,
   ProjectMessageItem as SharedProjectMessageItem,
 } from '@/ai/image/lib/workspace-types';
 import {
+  confirmHold,
   findHoldRecordByIdempotencyKey,
   findLatestHoldRecordByIdempotencyKeyPrefix,
   releaseHold,
@@ -36,6 +40,23 @@ function nextLeaseExpiry(now: Date = new Date()): Date {
   return new Date(now.getTime() + GENERATION_LEASE_DURATION_MS);
 }
 
+function parseGenerationParams(
+  params: string | null
+): SharedGenerationParams | null {
+  if (!params) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(params) as SharedGenerationParams;
+  } catch (error) {
+    logger.actions.warn('Failed to parse generation params', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
 export type MessageRole = 'user' | 'assistant';
 
 export type ProjectMessageItem = SharedProjectMessageItem;
@@ -50,6 +71,10 @@ export type GenerationParams = {
   imageQuality?: string;
   inputImages?: string[];
   modelResponseParts?: GeminiConversationPart[];
+  duomiTaskId?: string;
+  duomiTaskStatus?: 'pending' | 'running' | 'succeeded' | 'failed';
+  duomiTaskStartedAt?: string;
+  duomiTaskUpdatedAt?: string;
 };
 
 type ClientAssistantMessageUpdate = {
@@ -70,8 +95,45 @@ type ExpiredGeneratingMessageRow = {
   id: string;
   projectId: string;
   userId: string;
+  status: string;
+  outputImage: string | null;
+  errorMessage: string | null;
+  creditsUsed: number | null;
+  generationTime: number | null;
+  generationLeaseExpiresAt: Date | null;
+  updatedAt: Date;
+  generationParams: string | null;
 };
 type RecoveryTrigger = 'lazy-project' | 'lazy-status' | 'lazy-create' | 'cron';
+type MessageStatusResult =
+  | {
+      success: true;
+      data: {
+        id: string;
+        status: string;
+        outputImage: string | null;
+        errorMessage: string | null;
+        creditsUsed: number | null;
+        generationTime: number | null;
+        generationLeaseExpiresAt: Date | null;
+        updatedAt: Date;
+      } | null;
+    }
+  | { success: false; error: string };
+
+type MessageStatusRow = {
+  id: string;
+  status: string;
+  outputImage: string | null;
+  errorMessage: string | null;
+  creditsUsed: number | null;
+  generationTime: number | null;
+  generationLeaseExpiresAt: Date | null;
+  updatedAt: Date;
+};
+type GeneratingMessageRow = MessageStatusRow & {
+  generationParams: string | null;
+};
 
 function getValidatedInputImages(
   images: Array<string | null | undefined>
@@ -208,7 +270,7 @@ export async function updateAssistantMessageDirect(
     errorMessage?: string;
     leaseExpiredBefore?: Date;
   }
-): Promise<boolean> {
+): Promise<MessageStatusRow | null> {
   const db = await getDb();
   const conditions = [
     eq(projectMessage.id, messageId),
@@ -233,9 +295,18 @@ export async function updateAssistantMessageDirect(
       updatedAt: new Date(),
     })
     .where(and(...conditions))
-    .returning({ id: projectMessage.id });
+    .returning({
+      id: projectMessage.id,
+      status: projectMessage.status,
+      outputImage: projectMessage.outputImage,
+      errorMessage: projectMessage.errorMessage,
+      creditsUsed: projectMessage.creditsUsed,
+      generationTime: projectMessage.generationTime,
+      generationLeaseExpiresAt: projectMessage.generationLeaseExpiresAt,
+      updatedAt: projectMessage.updatedAt,
+    });
 
-  return result.length > 0;
+  return result[0] ?? null;
 }
 
 /**
@@ -283,12 +354,43 @@ export async function findExpiredGeneratingMessages(opts: {
       id: projectMessage.id,
       projectId: projectMessage.projectId,
       userId: projectMessage.userId,
+      status: projectMessage.status,
+      outputImage: projectMessage.outputImage,
+      errorMessage: projectMessage.errorMessage,
+      creditsUsed: projectMessage.creditsUsed,
+      generationTime: projectMessage.generationTime,
+      generationLeaseExpiresAt: projectMessage.generationLeaseExpiresAt,
+      updatedAt: projectMessage.updatedAt,
+      generationParams: projectMessage.generationParams,
     })
     .from(projectMessage)
     .where(and(...conditions))
     .limit(limit);
 
   return rows;
+}
+
+async function recordLeaseSweepAudit(params: {
+  row: ExpiredGeneratingMessageRow;
+  holdId: string | null;
+  holdStatus: string | null;
+  trigger: RecoveryTrigger;
+  resolution?: string;
+}): Promise<void> {
+  await recordAudit({
+    userId: params.row.userId,
+    actorId: null,
+    action: AUDIT_ACTIONS.CREDIT_LEASE_SWEEP,
+    entityType: 'project_message',
+    entityId: params.row.id,
+    metadata: {
+      holdId: params.holdId,
+      holdStatus: params.holdStatus,
+      projectId: params.row.projectId,
+      trigger: params.trigger,
+      resolution: params.resolution ?? 'lease-expired',
+    },
+  });
 }
 
 export async function recoverExpiredGeneratingMessages(opts: {
@@ -307,6 +409,27 @@ export async function recoverExpiredGeneratingMessages(opts: {
 
   for (const row of expired) {
     try {
+      const settled = await settleDuomiTaskMessage(
+        {
+          projectId: row.projectId,
+          messageId: row.id,
+          userId: row.userId,
+        },
+        row
+      );
+
+      if (settled?.success === true && settled.data?.status !== 'generating') {
+        await recordLeaseSweepAudit({
+          row,
+          holdId: null,
+          holdStatus: null,
+          trigger,
+          resolution: `duomi-${settled.data?.status ?? 'settled'}`,
+        });
+        recovered += 1;
+        continue;
+      }
+
       const exactHold = await findHoldRecordByIdempotencyKey(
         `gen-hold:${row.id}`,
         row.userId
@@ -359,18 +482,11 @@ export async function recoverExpiredGeneratingMessages(opts: {
         continue;
       }
 
-      await recordAudit({
-        userId: row.userId,
-        actorId: null,
-        action: AUDIT_ACTIONS.CREDIT_LEASE_SWEEP,
-        entityType: 'project_message',
-        entityId: row.id,
-        metadata: {
-          holdId,
-          holdStatus: hold?.holdStatus ?? null,
-          projectId: row.projectId,
-          trigger,
-        },
+      await recordLeaseSweepAudit({
+        row,
+        holdId,
+        holdStatus: hold?.holdStatus ?? null,
+        trigger,
       });
 
       recovered += 1;
@@ -384,6 +500,217 @@ export async function recoverExpiredGeneratingMessages(opts: {
   }
 
   return { scanned: expired.length, recovered, errors };
+}
+
+async function findLatestHoldForMessage(
+  messageId: string,
+  userId: string
+): Promise<{ id: string; holdStatus: string | null } | null> {
+  const exactHold = await findHoldRecordByIdempotencyKey(
+    `gen-hold:${messageId}`,
+    userId
+  );
+
+  if (exactHold?.holdStatus === HOLD_STATUS.PENDING) {
+    return exactHold;
+  }
+
+  return (
+    (await findLatestHoldRecordByIdempotencyKeyPrefix(
+      `gen-hold:${messageId}:`,
+      userId
+    )) ?? exactHold
+  );
+}
+
+function getGenerationElapsedMs(params: SharedGenerationParams): number | null {
+  if (!params.duomiTaskStartedAt) {
+    return null;
+  }
+
+  const startedAt = new Date(params.duomiTaskStartedAt).getTime();
+  if (Number.isNaN(startedAt)) {
+    return null;
+  }
+
+  return Math.max(0, Date.now() - startedAt);
+}
+
+async function settleDuomiTaskMessage(
+  params: {
+    projectId: string;
+    messageId: string;
+    userId: string;
+  },
+  row: GeneratingMessageRow
+): Promise<MessageStatusResult | null> {
+  if (row.status !== 'generating') {
+    return null;
+  }
+
+  const generationParams = parseGenerationParams(row.generationParams);
+  if (!generationParams?.duomiTaskId) {
+    return null;
+  }
+
+  const task = await getDuomiImageTaskStatus(generationParams.duomiTaskId);
+  if (task.status === 'pending' || task.status === 'running') {
+    if (task.status !== generationParams.duomiTaskStatus) {
+      const now = new Date();
+      const db = await getDb();
+      await db
+        .update(projectMessage)
+        .set({
+          generationParams: JSON.stringify({
+            ...generationParams,
+            duomiTaskStatus: task.status,
+            duomiTaskUpdatedAt: now.toISOString(),
+          }),
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(projectMessage.id, params.messageId),
+            eq(projectMessage.userId, params.userId),
+            eq(projectMessage.status, 'generating')
+          )
+        );
+    }
+
+    return null;
+  }
+
+  const hold = await findLatestHoldForMessage(params.messageId, params.userId);
+  if (task.status === 'failed') {
+    if (hold?.holdStatus === HOLD_STATUS.PENDING) {
+      await releaseHold(hold.id);
+    }
+
+    const updated = await updateAssistantMessageDirect(
+      params.messageId,
+      params.userId,
+      {
+        status: 'failed',
+        content: task.error || '生成失败，请重试',
+        errorMessage: task.error || 'Duomi task failed',
+      }
+    );
+
+    if (!updated) {
+      return null;
+    }
+
+    const now = new Date();
+    return {
+      success: true,
+      data: {
+        id: params.messageId,
+        status: 'failed',
+        outputImage: null,
+        errorMessage: task.error || 'Duomi task failed',
+        creditsUsed: row.creditsUsed,
+        generationTime: row.generationTime,
+        generationLeaseExpiresAt: null,
+        updatedAt: now,
+      },
+    };
+  }
+
+  if (!task.image) {
+    return null;
+  }
+
+  if (hold?.holdStatus === HOLD_STATUS.PENDING) {
+    await confirmHold(hold.id);
+  }
+
+  const elapsed = getGenerationElapsedMs(generationParams);
+  const creditsUsed =
+    hold?.holdStatus === HOLD_STATUS.CONFIRMED && row.creditsUsed !== null
+      ? row.creditsUsed
+      : getCreditCost('gpt-image-2');
+  const completedGenerationParams = {
+    ...generationParams,
+    duomiTaskStatus: 'succeeded' as const,
+    duomiTaskUpdatedAt: new Date().toISOString(),
+  };
+
+  const db = await getDb();
+  const result = await db.transaction(
+    async (tx): Promise<MessageStatusRow | null> => {
+      const updatedMessages = await tx
+        .update(projectMessage)
+        .set({
+          status: 'completed',
+          content: '',
+          outputImage: task.image,
+          generationParams: JSON.stringify(completedGenerationParams),
+          creditsUsed,
+          generationTime: elapsed,
+          errorMessage: null,
+          generationLeaseExpiresAt: null,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(projectMessage.id, params.messageId),
+            eq(projectMessage.userId, params.userId),
+            eq(projectMessage.projectId, params.projectId),
+            eq(projectMessage.status, 'generating')
+          )
+        )
+        .returning({
+          id: projectMessage.id,
+          status: projectMessage.status,
+          outputImage: projectMessage.outputImage,
+          errorMessage: projectMessage.errorMessage,
+          creditsUsed: projectMessage.creditsUsed,
+          generationTime: projectMessage.generationTime,
+          generationLeaseExpiresAt: projectMessage.generationLeaseExpiresAt,
+          updatedAt: projectMessage.updatedAt,
+        });
+
+      if (!updatedMessages.length) {
+        return null;
+      }
+
+      await tx
+        .update(imageProject)
+        .set({
+          generationCount: sql`${imageProject.generationCount} + 1`,
+          totalCreditsUsed: sql`${imageProject.totalCreditsUsed} + ${creditsUsed}`,
+          coverImage: task.image,
+          lastActiveAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(imageProject.id, params.projectId),
+            eq(imageProject.userId, params.userId)
+          )
+        );
+
+      return updatedMessages[0];
+    }
+  );
+
+  if (!result) {
+    return null;
+  }
+
+  return {
+    success: true,
+    data: {
+      id: result.id,
+      status: result.status,
+      outputImage: result.outputImage,
+      errorMessage: result.errorMessage,
+      creditsUsed: result.creditsUsed,
+      generationTime: result.generationTime,
+      generationLeaseExpiresAt: result.generationLeaseExpiresAt,
+      updatedAt: result.updatedAt,
+    },
+  };
 }
 
 export async function getMessageStatus(projectId: string, messageId: string) {
@@ -411,6 +738,7 @@ export async function getMessageStatus(projectId: string, messageId: string) {
         errorMessage: projectMessage.errorMessage,
         creditsUsed: projectMessage.creditsUsed,
         generationTime: projectMessage.generationTime,
+        generationParams: projectMessage.generationParams,
         // Lease expiry surfaces to the client so the recovery hook can decide
         // whether a "still generating" row is genuinely live or already past
         // its lease window. getMessageStatus also triggers server-side
@@ -432,7 +760,22 @@ export async function getMessageStatus(projectId: string, messageId: string) {
       return { success: false, error: 'Message not found' };
     }
 
-    return { success: true, data: message[0] };
+    const settled = await settleDuomiTaskMessage(
+      {
+        projectId,
+        messageId,
+        userId: session.user.id,
+      },
+      message[0]
+    );
+
+    if (settled) {
+      return settled;
+    }
+
+    const { generationParams: _generationParams, ...statusMessage } =
+      message[0];
+    return { success: true, data: statusMessage };
   } catch (error) {
     logger.actions.error('Failed to get message status', error);
     return { success: false, error: 'Failed to get message status' };

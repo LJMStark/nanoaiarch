@@ -5,6 +5,7 @@ import { generateImage } from '@/ai/image/lib/api-utils';
 import { parseErrorMessage } from '@/ai/image/lib/error-utils';
 import {
   clearFinishedGeneration,
+  clearSubmittedGenerationRequest,
   isActiveGenerationRequest,
   isGenerationCancelled,
   normalizePersistedAssistantMessage,
@@ -289,6 +290,7 @@ function AssistantMessage({
     setGenerating(true, message.id);
     setGenerationStage('submitting');
     setGenerationStage('queued');
+    let keepRecoveryPolling = false;
 
     try {
       const conversationHistory =
@@ -322,6 +324,21 @@ function AssistantMessage({
       }
 
       if (result.message) {
+        if (result.message.status === 'generating') {
+          updateMessage(
+            message.id,
+            normalizePersistedAssistantMessage(result.message)
+          );
+          clearSubmittedGenerationRequest(requestToken, message.id, {
+            setAbortController,
+            setGenerationRequestToken,
+            setGenerating,
+            setGenerationStage,
+          });
+          keepRecoveryPolling = true;
+          return;
+        }
+
         setGenerationStage('finishing');
         if (result.message.outputImage) {
           await preloadImage(result.message.outputImage);
@@ -358,12 +375,14 @@ function AssistantMessage({
           error instanceof Error ? error.message : t('errors.unknown'),
       });
     } finally {
-      clearFinishedGeneration(requestToken, message.id, {
-        setAbortController,
-        setGenerationRequestToken,
-        setGenerating,
-        setGenerationStage,
-      });
+      if (!keepRecoveryPolling) {
+        clearFinishedGeneration(requestToken, message.id, {
+          setAbortController,
+          setGenerationRequestToken,
+          setGenerating,
+          setGenerationStage,
+        });
+      }
 
       if (isMountedRef.current) {
         setIsRetrying(false);

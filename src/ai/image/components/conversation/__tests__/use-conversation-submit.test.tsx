@@ -386,4 +386,124 @@ describe('useConversationSubmit', () => {
       })
     );
   });
+
+  it('keeps polling when gpt-image-2 returns a queued generating message', async () => {
+    const updateMessageMock = vi.fn();
+    const setGeneratingMock = vi.fn(
+      (isGenerating: boolean, generatingMessageId?: string | null) => {
+        storeState.isGenerating = isGenerating;
+        storeState.generatingMessageId = isGenerating
+          ? (generatingMessageId ?? null)
+          : null;
+      }
+    );
+    const setGenerationRequestTokenMock = vi.fn((token: string | null) => {
+      storeState.generationRequestToken = token;
+    });
+
+    createPendingGenerationRequestMock.mockResolvedValue({
+      success: true,
+      data: {
+        userMessage: {
+          id: 'user-1',
+          projectId: 'project-1',
+          role: 'user',
+          content: 'draw a chair',
+          inputImage: null,
+          inputImages: [],
+          outputImage: null,
+          maskImage: null,
+          generationParams: null,
+          creditsUsed: null,
+          generationTime: null,
+          status: 'completed',
+          errorMessage: null,
+          orderIndex: 0,
+          createdAt: new Date(),
+        },
+        assistantMessage: {
+          id: 'assistant-1',
+          projectId: 'project-1',
+          role: 'assistant',
+          content: '',
+          inputImage: null,
+          inputImages: [],
+          outputImage: null,
+          maskImage: null,
+          generationParams: JSON.stringify({ prompt: 'draw a chair' }),
+          creditsUsed: null,
+          generationTime: null,
+          status: 'generating',
+          errorMessage: null,
+          orderIndex: 1,
+          createdAt: new Date(),
+        },
+      },
+    });
+    generateImageMock.mockResolvedValue({
+      success: true,
+      message: {
+        id: 'assistant-1',
+        projectId: 'project-1',
+        role: 'assistant',
+        content: '',
+        inputImage: null,
+        inputImages: [],
+        outputImage: null,
+        maskImage: null,
+        generationParams: JSON.stringify({
+          prompt: 'draw a chair',
+          duomiTaskId: 'task-1',
+        }),
+        creditsUsed: null,
+        generationTime: null,
+        status: 'generating',
+        errorMessage: null,
+        orderIndex: 1,
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useConversationSubmit({
+        t: (key) => key,
+        currentProjectId: 'project-1',
+        draftPrompt: 'draw a chair',
+        referenceImages: [],
+        aspectRatio: '1:1',
+        selectedModel: 'gpt-image-2',
+        imageQuality: '2K',
+        isGenerating: false,
+        clearDraft: vi.fn(),
+        setDraftPrompt: vi.fn(),
+        setReferenceImages: vi.fn(),
+        setShowImageUpload: vi.fn(),
+        addMessage: vi.fn(),
+        updateMessage: updateMessageMock,
+        removeMessage: vi.fn(),
+        replaceMessageId: vi.fn(),
+        setGenerating: setGeneratingMock,
+        getLastOutputImage: () => null,
+        getConversationHistory: () => [],
+        setAbortController: vi.fn(),
+        setGenerationRequestToken: setGenerationRequestTokenMock,
+        setGenerationStage: vi.fn(),
+      })
+    );
+
+    await result.current();
+
+    expect(updateMessageMock).toHaveBeenCalledWith(
+      'assistant-1',
+      expect.objectContaining({
+        status: 'generating',
+      })
+    );
+    expect(updateAssistantMessageRequestMock).not.toHaveBeenCalled();
+    expect(setGeneratingMock).toHaveBeenCalledWith(true, 'assistant-1');
+    expect(setGeneratingMock).not.toHaveBeenCalledWith(false);
+    expect(storeState.isGenerating).toBe(true);
+    expect(storeState.generatingMessageId).toBe('assistant-1');
+    expect(storeState.generationRequestToken).toBeNull();
+  });
 });

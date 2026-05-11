@@ -47,6 +47,7 @@ export interface GenerateImageResponse {
   image?: string; // base64 编码的图像
   text?: string; // 模型返回的文本描述（如果有）
   error?: string;
+  status?: 'generating' | 'completed' | 'failed';
   /** Stable error code for client-side branching (e.g. INSUFFICIENT_CREDITS). */
   errorCode?: string;
   /** Required credits for this generation; populated for INSUFFICIENT_CREDITS. */

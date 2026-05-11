@@ -3,6 +3,7 @@ import { HOLD_STATUS } from '@/credits/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   findExpiredGeneratingMessages,
+  getMessageStatus,
   recoverExpiredGeneratingMessages,
   updateAssistantMessageDirect,
 } from '../project-message';
@@ -11,8 +12,11 @@ const mocks = vi.hoisted(() => ({
   getDb: vi.fn(),
   findHoldRecordByIdempotencyKey: vi.fn(),
   findLatestHoldRecordByIdempotencyKeyPrefix: vi.fn(),
+  confirmHold: vi.fn(),
   releaseHold: vi.fn(),
+  getDuomiImageTaskStatus: vi.fn(),
   recordAudit: vi.fn(),
+  getSession: vi.fn(),
 }));
 
 vi.mock('@/db', () => ({
@@ -20,10 +24,15 @@ vi.mock('@/db', () => ({
 }));
 
 vi.mock('@/credits/credits', () => ({
+  confirmHold: mocks.confirmHold,
   findHoldRecordByIdempotencyKey: mocks.findHoldRecordByIdempotencyKey,
   findLatestHoldRecordByIdempotencyKeyPrefix:
     mocks.findLatestHoldRecordByIdempotencyKeyPrefix,
   releaseHold: mocks.releaseHold,
+}));
+
+vi.mock('@/ai/image/lib/duomi-client', () => ({
+  getDuomiImageTaskStatus: mocks.getDuomiImageTaskStatus,
 }));
 
 vi.mock('@/lib/audit', () => ({
@@ -37,9 +46,22 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
+vi.mock('@/lib/auth', () => ({
+  auth: {
+    api: {
+      getSession: mocks.getSession,
+    },
+  },
+}));
+
+vi.mock('next/headers', () => ({
+  headers: vi.fn(async () => new Headers()),
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.findLatestHoldRecordByIdempotencyKeyPrefix.mockResolvedValue(null);
+  mocks.getSession.mockResolvedValue({ user: { id: 'user-1' } });
 });
 
 describe('findExpiredGeneratingMessages', () => {
@@ -111,7 +133,26 @@ describe('findExpiredGeneratingMessages', () => {
 
 describe('updateAssistantMessageDirect', () => {
   it('only finalizes still-generating messages for the same user', async () => {
-    const returningMock = vi.fn().mockResolvedValue([{ id: 'msg-1' }]);
+    const returningMock = vi.fn().mockResolvedValue([
+      {
+        id: 'msg-1',
+        projectId: 'project-1',
+        role: 'assistant',
+        content: '生成超时，请重试',
+        inputImage: null,
+        inputImages: null,
+        outputImage: null,
+        maskImage: null,
+        generationParams: null,
+        creditsUsed: 0,
+        generationTime: null,
+        status: 'failed',
+        errorMessage: 'Generation timed out (lease expired)',
+        generationLeaseExpiresAt: null,
+        orderIndex: 1,
+        createdAt: new Date('2026-05-09T12:00:00Z'),
+      },
+    ]);
     const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
     const setMock = vi.fn().mockReturnValue({ where: whereMock });
     const updateMock = vi.fn().mockReturnValue({ set: setMock });
@@ -124,7 +165,7 @@ describe('updateAssistantMessageDirect', () => {
       leaseExpiredBefore: new Date('2026-05-09T12:00:00Z'),
     });
 
-    expect(updated).toBe(true);
+    expect(updated?.id).toBe('msg-1');
     expect(setMock).toHaveBeenCalledWith(
       expect.objectContaining({
         status: 'failed',
@@ -149,13 +190,34 @@ describe('updateAssistantMessageDirect', () => {
         status: 'failed',
         leaseExpiredBefore: new Date('2026-05-09T12:00:00Z'),
       })
-    ).resolves.toBe(false);
+    ).resolves.toBeNull();
   });
 });
 
 describe('recoverExpiredGeneratingMessages', () => {
+  function createExpiredMessageRow(overrides: {
+    id: string;
+    projectId: string;
+    userId: string;
+    generationParams?: string | null;
+  }) {
+    return {
+      id: overrides.id,
+      projectId: overrides.projectId,
+      userId: overrides.userId,
+      status: 'generating',
+      outputImage: null,
+      errorMessage: null,
+      creditsUsed: null,
+      generationTime: null,
+      generationLeaseExpiresAt: new Date('2026-05-09T11:59:00Z'),
+      updatedAt: new Date('2026-05-09T11:58:00Z'),
+      generationParams: overrides.generationParams ?? null,
+    };
+  }
+
   function mockExpiredMessageQuery(
-    rows: Array<{ id: string; projectId: string; userId: string }>
+    rows: Array<ReturnType<typeof createExpiredMessageRow>>
   ) {
     const limitMock = vi.fn().mockResolvedValue(rows);
     mocks.getDb
@@ -179,7 +241,11 @@ describe('recoverExpiredGeneratingMessages', () => {
 
   it('releases pending hold and finalizes expired message', async () => {
     mockExpiredMessageQuery([
-      { id: 'msg-1', projectId: 'project-1', userId: 'user-1' },
+      createExpiredMessageRow({
+        id: 'msg-1',
+        projectId: 'project-1',
+        userId: 'user-1',
+      }),
     ]);
     mocks.findHoldRecordByIdempotencyKey.mockResolvedValue({
       id: 'hold-1',
@@ -217,7 +283,11 @@ describe('recoverExpiredGeneratingMessages', () => {
 
   it('releases the latest retry hold when attempt-scoped idempotency is used', async () => {
     mockExpiredMessageQuery([
-      { id: 'msg-1', projectId: 'project-1', userId: 'user-1' },
+      createExpiredMessageRow({
+        id: 'msg-1',
+        projectId: 'project-1',
+        userId: 'user-1',
+      }),
     ]);
     mocks.findHoldRecordByIdempotencyKey.mockResolvedValue(null);
     mocks.findLatestHoldRecordByIdempotencyKeyPrefix.mockResolvedValue({
@@ -243,7 +313,11 @@ describe('recoverExpiredGeneratingMessages', () => {
 
   it('prefers a pending retry hold over a released legacy message hold', async () => {
     mockExpiredMessageQuery([
-      { id: 'msg-1', projectId: 'project-1', userId: 'user-1' },
+      createExpiredMessageRow({
+        id: 'msg-1',
+        projectId: 'project-1',
+        userId: 'user-1',
+      }),
     ]);
     mocks.findHoldRecordByIdempotencyKey.mockResolvedValue({
       id: 'released-legacy-hold',
@@ -288,11 +362,13 @@ describe('recoverExpiredGeneratingMessages', () => {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockReturnValue({
             where: vi.fn().mockReturnValue({
-              limit: vi
-                .fn()
-                .mockResolvedValue([
-                  { id: 'msg-1', projectId: 'project-1', userId: 'user-1' },
-                ]),
+              limit: vi.fn().mockResolvedValue([
+                createExpiredMessageRow({
+                  id: 'msg-1',
+                  projectId: 'project-1',
+                  userId: 'user-1',
+                }),
+              ]),
             }),
           }),
         }),
@@ -325,7 +401,11 @@ describe('recoverExpiredGeneratingMessages', () => {
 
   it('keeps message generating when release fails so credits are not double-counted', async () => {
     mockExpiredMessageQuery([
-      { id: 'msg-1', projectId: 'project-1', userId: 'user-1' },
+      createExpiredMessageRow({
+        id: 'msg-1',
+        projectId: 'project-1',
+        userId: 'user-1',
+      }),
     ]);
     mocks.findHoldRecordByIdempotencyKey.mockResolvedValue({
       id: 'hold-1',
@@ -341,5 +421,267 @@ describe('recoverExpiredGeneratingMessages', () => {
 
     expect(result).toEqual({ scanned: 1, recovered: 0, errors: 1 });
     expect(mocks.recordAudit).not.toHaveBeenCalled();
+  });
+
+  it('settles an expired Duomi task before treating the lease as timed out', async () => {
+    const completedAt = new Date('2026-05-11T08:00:00Z');
+    const completedRow = {
+      id: 'msg-1',
+      status: 'completed',
+      outputImage: 'https://cdn.example.com/generated.png',
+      errorMessage: null,
+      creditsUsed: 1,
+      generationTime: 10_000,
+      generationLeaseExpiresAt: null,
+      updatedAt: completedAt,
+    };
+    const messageReturningMock = vi.fn().mockResolvedValue([completedRow]);
+    const updateMock = vi
+      .fn()
+      .mockReturnValueOnce({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: messageReturningMock,
+          }),
+        }),
+      })
+      .mockReturnValueOnce({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue(undefined),
+        }),
+      });
+    const transactionMock = vi.fn(async (callback) => {
+      return await callback({
+        update: updateMock,
+      });
+    });
+    const expiredRow = createExpiredMessageRow({
+      id: 'msg-1',
+      projectId: 'project-1',
+      userId: 'user-1',
+      generationParams: JSON.stringify({
+        prompt: 'draw a chair',
+        model: 'gpt-image-2',
+        duomiTaskId: 'task-1',
+        duomiTaskStatus: 'running',
+        duomiTaskStartedAt: '2026-05-11T07:59:50Z',
+      }),
+    });
+    mocks.getDb
+      .mockResolvedValueOnce({
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([expiredRow]),
+            }),
+          }),
+        }),
+      })
+      .mockResolvedValue({
+        transaction: transactionMock,
+      });
+    mocks.getDuomiImageTaskStatus.mockResolvedValue({
+      status: 'succeeded',
+      image: 'https://cdn.example.com/generated.png',
+    });
+    mocks.findHoldRecordByIdempotencyKey.mockResolvedValue(null);
+    mocks.findLatestHoldRecordByIdempotencyKeyPrefix.mockResolvedValue({
+      id: 'hold-1',
+      holdStatus: HOLD_STATUS.PENDING,
+    });
+    mocks.confirmHold.mockResolvedValue(undefined);
+    mocks.recordAudit.mockResolvedValue(undefined);
+
+    const result = await recoverExpiredGeneratingMessages({
+      userId: 'user-1',
+      projectId: 'project-1',
+      now: new Date('2026-05-11T08:05:00Z'),
+      trigger: 'lazy-project',
+    });
+
+    expect(result).toEqual({ scanned: 1, recovered: 1, errors: 0 });
+    expect(mocks.confirmHold).toHaveBeenCalledWith('hold-1');
+    expect(mocks.releaseHold).not.toHaveBeenCalled();
+    expect(updateMock).toHaveBeenCalledTimes(2);
+    expect(mocks.recordAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          resolution: 'duomi-completed',
+        }),
+      })
+    );
+  });
+});
+
+describe('getMessageStatus Duomi polling', () => {
+  const generatingMessageRow = {
+    id: 'msg-1',
+    status: 'generating',
+    outputImage: null,
+    errorMessage: null,
+    creditsUsed: null,
+    generationTime: null,
+    generationParams: JSON.stringify({
+      prompt: 'draw a chair',
+      model: 'gpt-image-2',
+      duomiTaskId: 'task-1',
+      duomiTaskStatus: 'pending',
+      duomiTaskStartedAt: new Date(Date.now() - 10_000).toISOString(),
+    }),
+    generationLeaseExpiresAt: new Date(Date.now() + 60_000),
+    updatedAt: new Date(),
+  };
+
+  function mockStatusSelect(row = generatingMessageRow) {
+    return vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([row]),
+        }),
+      }),
+    });
+  }
+
+  function mockExpiredQuerySelect() {
+    return vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    });
+  }
+
+  function mockUpdateReturning(row: Record<string, unknown>) {
+    return vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([row]),
+        }),
+      }),
+    });
+  }
+
+  function mockCompletionTransactionDb(row: Record<string, unknown>) {
+    const messageReturningMock = vi.fn().mockResolvedValue([row]);
+    const projectWhereMock = vi.fn().mockResolvedValue(undefined);
+    const projectSetMock = vi.fn().mockReturnValue({ where: projectWhereMock });
+    const updateMock = vi
+      .fn()
+      .mockReturnValueOnce({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: messageReturningMock,
+          }),
+        }),
+      })
+      .mockReturnValueOnce({
+        set: projectSetMock,
+      });
+    const transactionMock = vi.fn(async (callback) => {
+      return await callback({
+        update: updateMock,
+      });
+    });
+
+    return {
+      db: {
+        select: mockStatusSelect(),
+        transaction: transactionMock,
+      },
+      updateMock,
+      messageReturningMock,
+      projectSetMock,
+      projectWhereMock,
+      transactionMock,
+    };
+  }
+
+  it('confirms the hold and completes the message when the Duomi task succeeds', async () => {
+    const completedAt = new Date('2026-05-11T08:00:00Z');
+    const completionDb = mockCompletionTransactionDb({
+      id: 'msg-1',
+      status: 'completed',
+      outputImage: 'https://cdn.example.com/generated.png',
+      errorMessage: null,
+      creditsUsed: 1,
+      generationTime: 10_000,
+      generationLeaseExpiresAt: null,
+      updatedAt: completedAt,
+    });
+
+    mocks.getDb
+      .mockResolvedValueOnce({
+        select: mockExpiredQuerySelect(),
+      })
+      .mockResolvedValue(completionDb.db);
+    mocks.getDuomiImageTaskStatus.mockResolvedValue({
+      status: 'succeeded',
+      image: 'https://cdn.example.com/generated.png',
+    });
+    mocks.findHoldRecordByIdempotencyKey.mockResolvedValue(null);
+    mocks.findLatestHoldRecordByIdempotencyKeyPrefix.mockResolvedValue({
+      id: 'hold-1',
+      holdStatus: HOLD_STATUS.PENDING,
+    });
+    mocks.confirmHold.mockResolvedValue(undefined);
+
+    const result = await getMessageStatus('project-1', 'msg-1');
+
+    expect(result.success).toBe(true);
+    expect(result.data?.status).toBe('completed');
+    expect(result.data?.outputImage).toBe(
+      'https://cdn.example.com/generated.png'
+    );
+    expect(mocks.confirmHold).toHaveBeenCalledWith('hold-1');
+    expect(mocks.releaseHold).not.toHaveBeenCalled();
+    expect(completionDb.transactionMock).toHaveBeenCalledTimes(1);
+    expect(completionDb.updateMock).toHaveBeenCalledTimes(2);
+    expect(completionDb.projectSetMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        coverImage: 'https://cdn.example.com/generated.png',
+      })
+    );
+  });
+
+  it('releases the hold and fails the message when the Duomi task fails', async () => {
+    const failedAt = new Date('2026-05-11T08:01:00Z');
+    const updateMock = mockUpdateReturning({
+      id: 'msg-1',
+      status: 'failed',
+      outputImage: null,
+      errorMessage: 'bad prompt',
+      creditsUsed: null,
+      generationTime: null,
+      generationLeaseExpiresAt: null,
+      updatedAt: failedAt,
+    });
+
+    mocks.getDb
+      .mockResolvedValueOnce({
+        select: mockExpiredQuerySelect(),
+      })
+      .mockResolvedValue({
+        select: mockStatusSelect(),
+        update: updateMock,
+      });
+    mocks.getDuomiImageTaskStatus.mockResolvedValue({
+      status: 'failed',
+      error: 'bad prompt',
+    });
+    mocks.findHoldRecordByIdempotencyKey.mockResolvedValue(null);
+    mocks.findLatestHoldRecordByIdempotencyKeyPrefix.mockResolvedValue({
+      id: 'hold-1',
+      holdStatus: HOLD_STATUS.PENDING,
+    });
+    mocks.releaseHold.mockResolvedValue(undefined);
+
+    const result = await getMessageStatus('project-1', 'msg-1');
+
+    expect(result.success).toBe(true);
+    expect(result.data?.status).toBe('failed');
+    expect(result.data?.errorMessage).toBe('bad prompt');
+    expect(mocks.releaseHold).toHaveBeenCalledWith('hold-1');
+    expect(mocks.confirmHold).not.toHaveBeenCalled();
   });
 });

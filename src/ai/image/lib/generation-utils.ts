@@ -123,3 +123,25 @@ export function clearFinishedGeneration(
     deps.setGenerationStage(null);
   }
 }
+
+/**
+ * Clear the short-lived request controls after an async provider has accepted
+ * the job, while keeping the message in generating state so recovery polling
+ * can settle it later.
+ */
+export function clearSubmittedGenerationRequest(
+  requestToken: string,
+  generatingMessageId: string,
+  deps: ClearGenerationDeps
+): void {
+  const state = useConversationStore.getState();
+
+  if (state.generationRequestToken === requestToken) {
+    deps.setAbortController(null);
+    deps.setGenerationRequestToken(null);
+  }
+
+  if (state.generatingMessageId === generatingMessageId) {
+    deps.setGenerationStage('generating');
+  }
+}
