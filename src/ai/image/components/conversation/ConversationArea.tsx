@@ -15,6 +15,10 @@ export function ConversationArea() {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const messageListRef = useRef<MessageListHandle>(null);
   const [showJumpToBottom, setShowJumpToBottom] = useState(false);
+  // TanStack Virtual reads getScrollElement once at init; if the ref is
+  // still null then, it never recovers. Gate MessageList rendering on a
+  // confirmed viewport so the virtualizer initializes with a real element.
+  const [viewportReady, setViewportReady] = useState(false);
   const { currentProjectId } = useProjectStore();
   const { messages, isLoadingMessages, isGenerating } = useConversationStore();
 
@@ -51,6 +55,7 @@ export function ConversationArea() {
       return;
     }
 
+    setViewportReady(true);
     updateScrollState();
     viewport.addEventListener('scroll', updateScrollState, { passive: true });
 
@@ -107,7 +112,12 @@ export function ConversationArea() {
       <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
         <div className="p-4">
           <div className="max-w-3xl mx-auto">
-            <MessageList ref={messageListRef} scrollViewportRef={viewportRef} />
+            {viewportReady && (
+              <MessageList
+                ref={messageListRef}
+                scrollViewportRef={viewportRef}
+              />
+            )}
           </div>
         </div>
       </ScrollArea>
