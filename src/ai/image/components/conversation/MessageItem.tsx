@@ -488,7 +488,7 @@ function AssistantMessage({
               </button>
               <div
                 className={cn(
-                  'absolute inset-0 hidden items-center justify-center gap-2 bg-black/50 transition-opacity sm:flex',
+                  'pointer-events-none absolute inset-0 hidden items-center justify-center gap-2 bg-black/50 transition-opacity sm:flex',
                   isHovered ? 'opacity-100' : 'opacity-0'
                 )}
               >
@@ -502,7 +502,7 @@ function AssistantMessage({
                           event.stopPropagation();
                           void handleDownload();
                         }}
-                        className="h-10 w-10"
+                        className="pointer-events-auto h-10 w-10"
                         aria-label={t('canvas.download')}
                       >
                         <Download className="h-5 w-5" />
@@ -520,7 +520,7 @@ function AssistantMessage({
                           event.stopPropagation();
                           void handleShare();
                         }}
-                        className="h-10 w-10"
+                        className="pointer-events-auto h-10 w-10"
                         aria-label={t('canvas.share')}
                       >
                         <Share2 className="h-5 w-5" />
@@ -535,7 +535,7 @@ function AssistantMessage({
                         <Button
                           variant="secondary"
                           size="icon"
-                          className="h-10 w-10"
+                          className="pointer-events-auto h-10 w-10"
                           onClick={handleEdit}
                           aria-label={t('canvas.edit')}
                         >
