@@ -14,7 +14,7 @@ export const websiteConfig: WebsiteConfig = {
       enableSwitch: true,
     },
     mode: {
-      defaultMode: 'dark',
+      defaultMode: 'light',
       enableSwitch: true,
     },
   },
