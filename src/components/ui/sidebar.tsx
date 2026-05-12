@@ -569,7 +569,7 @@ function SidebarMenuAction({
         "peer-data-[size=lg]/menu-button:top-2.5",
         "group-data-[collapsible=icon]:hidden",
         showOnHover &&
-          "peer-data-[active=true]/menu-button:text-sidebar-accent-foreground group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 md:opacity-0",
+          "opacity-100 peer-data-[active=true]/menu-button:text-sidebar-accent-foreground md:pointer-events-none md:opacity-0 md:group-focus-within/menu-item:pointer-events-auto md:group-focus-within/menu-item:opacity-100 md:group-hover/menu-item:pointer-events-auto md:group-hover/menu-item:opacity-100 md:data-[state=open]:pointer-events-auto md:data-[state=open]:opacity-100",
         className
       )}
       {...props}

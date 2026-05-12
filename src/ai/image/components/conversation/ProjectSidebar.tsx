@@ -482,7 +482,11 @@ function ProjectListItem({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <SidebarMenuAction aria-label="项目操作" disabled={isBusy}>
+          <SidebarMenuAction
+            aria-label="项目操作"
+            disabled={isBusy}
+            showOnHover
+          >
             <MoreHorizontal className="h-4 w-4" />
           </SidebarMenuAction>
         </DropdownMenuTrigger>
