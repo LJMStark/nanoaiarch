@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 // Newsletter schema for validation
 const newsletterSchema = z.object({
-  email: z.email({ error: 'Please enter a valid email address' }),
+  email: z.email({ error: '请输入有效的邮箱地址' }),
 });
 
 // Create a safe action for newsletter subscription
@@ -24,7 +24,7 @@ export const subscribeNewsletterAction = actionClient
         logger.actions.error('subscribe newsletter error:', null, { email });
         return {
           success: false,
-          error: 'Failed to subscribe to the newsletter',
+          error: '订阅失败',
         };
       }
 

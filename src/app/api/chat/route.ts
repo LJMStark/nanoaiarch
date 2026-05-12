@@ -87,7 +87,7 @@ export async function POST(req: Request) {
 
   const requestBody = await parseChatRequest(req);
   if (!requestBody) {
-    return createChatErrorResponse('Invalid request body', 400);
+    return createChatErrorResponse('请求参数无效', 400);
   }
 
   const { messages, model, webSearch = false } = requestBody;

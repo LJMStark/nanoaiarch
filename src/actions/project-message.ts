@@ -204,7 +204,7 @@ function scheduleProjectTitleGeneration(
 export async function getProjectMessages(projectId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized', data: [] };
+    return { success: false, error: '未授权访问', data: [] };
   }
 
   try {
@@ -223,7 +223,7 @@ export async function getProjectMessages(projectId: string) {
       .limit(1);
 
     if (!project.length) {
-      return { success: false, error: 'Project not found', data: [] };
+      return { success: false, error: '项目不存在', data: [] };
     }
 
     await recoverExpiredGeneratingMessages({
@@ -242,7 +242,7 @@ export async function getProjectMessages(projectId: string) {
     return { success: true, data: messages.map(hydrateProjectMessage) };
   } catch (error) {
     logger.actions.error('Failed to get messages', error);
-    return { success: false, error: 'Failed to get messages', data: [] };
+    return { success: false, error: '获取消息列表失败', data: [] };
   }
 }
 
@@ -611,7 +611,7 @@ async function settleDuomiTaskMessage(
         {
           status: 'failed',
           content: '生成超时，请重试',
-          errorMessage: 'Duomi task exceeded maximum age (force-killed)',
+          errorMessage: '生成超时，请重试',
         }
       );
       if (!updated) {
@@ -623,7 +623,7 @@ async function settleDuomiTaskMessage(
           id: params.messageId,
           status: 'failed' as const,
           outputImage: null,
-          errorMessage: 'Duomi task exceeded maximum age (force-killed)',
+          errorMessage: '生成超时，请重试',
           creditsUsed: row.creditsUsed,
           generationTime: row.generationTime,
           generationLeaseExpiresAt: null,
@@ -669,7 +669,7 @@ async function settleDuomiTaskMessage(
       {
         status: 'failed',
         content: task.error || '生成失败，请重试',
-        errorMessage: task.error || 'Duomi task failed',
+        errorMessage: '生成失败，请重试',
       }
     );
 
@@ -684,7 +684,7 @@ async function settleDuomiTaskMessage(
         id: params.messageId,
         status: 'failed',
         outputImage: null,
-        errorMessage: task.error || 'Duomi task failed',
+        errorMessage: '生成失败，请重试',
         creditsUsed: row.creditsUsed,
         generationTime: row.generationTime,
         generationLeaseExpiresAt: null,
@@ -793,7 +793,7 @@ async function settleDuomiTaskMessage(
 export async function getMessageStatus(projectId: string, messageId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -834,7 +834,7 @@ export async function getMessageStatus(projectId: string, messageId: string) {
       .limit(1);
 
     if (!message.length) {
-      return { success: false, error: 'Message not found' };
+      return { success: false, error: '消息不存在' };
     }
 
     const settled = await settleDuomiTaskMessage(
@@ -855,7 +855,7 @@ export async function getMessageStatus(projectId: string, messageId: string) {
     return { success: true, data: statusMessage };
   } catch (error) {
     logger.actions.error('Failed to get message status', error);
-    return { success: false, error: 'Failed to get message status' };
+    return { success: false, error: '获取消息状态失败' };
   }
 }
 
@@ -871,7 +871,7 @@ export async function addUserMessage(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   const inputImagesResult = getValidatedInputImages(data.inputImages ?? []);
@@ -923,7 +923,7 @@ export async function addUserMessage(
     });
 
     if (nextOrderIndex === null) {
-      return { success: false, error: 'Project not found' };
+      return { success: false, error: '项目不存在' };
     }
 
     if (nextOrderIndex === 0) {
@@ -951,7 +951,7 @@ export async function addUserMessage(
     return { success: true, data: message };
   } catch (error) {
     logger.actions.error('Failed to add user message', error);
-    return { success: false, error: 'Failed to add message' };
+    return { success: false, error: '添加消息失败' };
   }
 }
 
@@ -972,7 +972,7 @@ export async function addAssistantMessage(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   // Validate output image size
@@ -1045,7 +1045,7 @@ export async function addAssistantMessage(
     });
 
     if (nextOrderIndex === null) {
-      return { success: false, error: 'Project not found' };
+      return { success: false, error: '项目不存在' };
     }
 
     const message: ProjectMessageItem = {
@@ -1071,7 +1071,7 @@ export async function addAssistantMessage(
     return { success: true, data: message };
   } catch (error) {
     logger.actions.error('Failed to add assistant message', error);
-    return { success: false, error: 'Failed to add message' };
+    return { success: false, error: '添加消息失败' };
   }
 }
 
@@ -1085,7 +1085,7 @@ export async function createPendingGeneration(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   const promptValidation = validatePrompt(data.content);
@@ -1255,7 +1255,7 @@ export async function createPendingGeneration(
     });
 
     if (!result) {
-      return { success: false, error: 'Project not found' };
+      return { success: false, error: '项目不存在' };
     }
 
     if (result.shouldGenerateTitle) {
@@ -1271,7 +1271,7 @@ export async function createPendingGeneration(
     };
   } catch (error) {
     logger.actions.error('Failed to create pending generation', error);
-    return { success: false, error: 'Failed to create pending generation' };
+    return { success: false, error: '创建生成任务失败' };
   }
 }
 
@@ -1292,7 +1292,7 @@ export async function updateAssistantMessage(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -1316,13 +1316,13 @@ export async function updateAssistantMessage(
       .limit(1);
 
     if (!message.length) {
-      return { success: false, error: 'Message not found' };
+      return { success: false, error: '消息不存在' };
     }
 
     if (message[0].role !== 'assistant') {
       return {
         success: false,
-        error: 'Only assistant messages can be updated',
+        error: '只能更新 AI 回复消息',
       };
     }
 
@@ -1417,7 +1417,7 @@ export async function updateAssistantMessage(
     return { success: true, data: updatedMessage };
   } catch (error) {
     logger.actions.error('Failed to update message', error);
-    return { success: false, error: 'Failed to update message' };
+    return { success: false, error: '更新消息失败' };
   }
 }
 
@@ -1434,7 +1434,7 @@ export async function updateAssistantMessageFromClient(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -1451,13 +1451,13 @@ export async function updateAssistantMessageFromClient(
       .limit(1);
 
     if (!currentMessage.length) {
-      return { success: false, error: 'Message not found' };
+      return { success: false, error: '消息不存在' };
     }
 
     if (currentMessage[0].role !== 'assistant') {
       return {
         success: false,
-        error: 'Only assistant messages can be updated',
+        error: '只能更新 AI 回复消息',
       };
     }
 
@@ -1512,7 +1512,7 @@ export async function updateAssistantMessageFromClient(
           };
         }
 
-        return { success: false, error: 'Message state changed' };
+        return { success: false, error: '消息状态已变更' };
       }
 
       return { success: true, data: hydrateProjectMessage(result[0]) };
@@ -1569,16 +1569,16 @@ export async function updateAssistantMessageFromClient(
           };
         }
 
-        return { success: false, error: 'Message state changed' };
+        return { success: false, error: '消息状态已变更' };
       }
 
       return { success: true, data: hydrateProjectMessage(result[0]) };
     }
 
-    return { success: false, error: 'Invalid assistant message update' };
+    return { success: false, error: '消息更新参数无效' };
   } catch (error) {
     logger.actions.error('Failed to update client assistant message', error);
-    return { success: false, error: 'Failed to update message' };
+    return { success: false, error: '更新消息失败' };
   }
 }
 
@@ -1588,7 +1588,7 @@ export async function updateAssistantMessageFromClient(
 export async function deleteMessage(messageId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -1623,13 +1623,13 @@ export async function deleteMessage(messageId: string) {
     });
 
     if (!deletedProjectId) {
-      return { success: false, error: 'Message not found' };
+      return { success: false, error: '消息不存在' };
     }
 
     return { success: true };
   } catch (error) {
     logger.actions.error('Failed to delete message', error);
-    return { success: false, error: 'Failed to delete' };
+    return { success: false, error: '删除失败' };
   }
 }
 
@@ -1639,7 +1639,7 @@ export async function deleteMessage(messageId: string) {
 export async function getLastGeneratedImage(projectId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -1658,7 +1658,7 @@ export async function getLastGeneratedImage(projectId: string) {
       .limit(1);
 
     if (!project.length) {
-      return { success: false, error: 'Project not found' };
+      return { success: false, error: '项目不存在' };
     }
 
     const message = await db
@@ -1677,12 +1677,12 @@ export async function getLastGeneratedImage(projectId: string) {
       .limit(1);
 
     if (!message.length) {
-      return { success: false, error: 'No generated image found' };
+      return { success: false, error: '未找到生成的图片' };
     }
 
     return { success: true, data: hydrateProjectMessage(message[0]) };
   } catch (error) {
     logger.actions.error('Failed to get last image', error);
-    return { success: false, error: 'Failed to get image' };
+    return { success: false, error: '获取图片失败' };
   }
 }

@@ -18,7 +18,7 @@ import { and, desc, eq, or } from 'drizzle-orm';
 import { z } from 'zod';
 
 const schema = z.object({
-  userId: z.string().min(1, { error: 'User ID is required' }),
+  userId: z.string().min(1, { error: '用户 ID 不能为空' }),
 });
 
 /**

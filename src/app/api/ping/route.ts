@@ -19,7 +19,7 @@ export async function GET(request: Request) {
 
   if (!rateLimitResult.success) {
     return NextResponse.json(
-      { error: 'Too many requests' },
+      { error: '请求过多，请稍后再试' },
       {
         status: 429,
         headers: getRateLimitHeaders(rateLimitResult),

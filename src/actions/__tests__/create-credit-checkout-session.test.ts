@@ -91,7 +91,7 @@ describe('createCreditCheckoutSession', () => {
 
     expect(result).toEqual({
       success: false,
-      error: 'Invalid price for credit package',
+      error: '积分包价格不匹配',
     });
     expect(mocks.createCreditCheckout).not.toHaveBeenCalled();
   });

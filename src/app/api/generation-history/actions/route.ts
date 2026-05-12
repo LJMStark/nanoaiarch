@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     if (!body.generationId) {
       return createResultResponse({
         success: false,
-        error: 'Generation not found',
+        error: '生成记录不存在',
       });
     }
 
@@ -31,13 +31,13 @@ export async function POST(request: Request) {
       default:
         return createResultResponse({
           success: false,
-          error: 'Invalid action',
+          error: '无效操作',
         });
     }
   } catch {
     return createResultResponse({
       success: false,
-      error: 'Invalid request body',
+      error: '请求参数无效',
     });
   }
 }

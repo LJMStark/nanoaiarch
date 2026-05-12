@@ -15,13 +15,13 @@ import { z } from 'zod';
 const contactFormSchema = z.object({
   name: z
     .string()
-    .min(3, { error: 'Name must be at least 3 characters' })
-    .max(30, { error: 'Name must not exceed 30 characters' }),
-  email: z.email({ error: 'Please enter a valid email address' }),
+    .min(3, { error: '姓名至少 3 个字符' })
+    .max(30, { error: '姓名最多 30 个字符' }),
+  email: z.email({ error: '请输入有效的邮箱地址' }),
   message: z
     .string()
-    .min(10, { error: 'Message must be at least 10 characters' })
-    .max(500, { error: 'Message must not exceed 500 characters' }),
+    .min(10, { error: '消息至少 10 个字符' })
+    .max(500, { error: '消息最多 500 个字符' }),
 });
 
 // Create a safe action for contact form submission
@@ -55,7 +55,7 @@ export const sendMessageAction = actionClient
         logger.actions.error('send message error');
         return {
           success: false,
-          error: 'Failed to send the message',
+          error: '发送消息失败',
         };
       }
 

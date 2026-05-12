@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   if (!projectId || !messageId) {
     return createResultResponse({
       success: false,
-      error: 'Message not found',
+      error: '消息不存在',
     });
   }
 

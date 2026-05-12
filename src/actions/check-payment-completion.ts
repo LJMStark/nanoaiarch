@@ -44,7 +44,7 @@ export const checkPaymentCompletionAction = userActionClient
       logger.actions.error('Check payment completion error:', error);
       return {
         success: false,
-        error: 'Failed to check payment completion',
+        error: '查询支付状态失败',
       };
     }
   });

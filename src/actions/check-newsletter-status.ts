@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 // Newsletter schema for validation
 const newsletterSchema = z.object({
-  email: z.email({ error: 'Please enter a valid email address' }),
+  email: z.email({ error: '请输入有效的邮箱地址' }),
 });
 
 // Create a safe action to check if a user is subscribed to the newsletter

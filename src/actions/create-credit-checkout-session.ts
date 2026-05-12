@@ -16,9 +16,9 @@ import { z } from 'zod';
 // Credit checkout schema for validation
 // metadata is optional, and may contain referral information if you need
 const creditCheckoutSchema = z.object({
-  userId: z.string().min(1, { error: 'User ID is required' }),
-  packageId: z.string().min(1, { error: 'Package ID is required' }),
-  priceId: z.string().min(1, { error: 'Price ID is required' }),
+  userId: z.string().min(1, { error: '用户 ID 不能为空' }),
+  packageId: z.string().min(1, { error: '套餐 ID 不能为空' }),
+  priceId: z.string().min(1, { error: '价格 ID 不能为空' }),
   metadata: z.record(z.string(), z.string()).optional(),
 });
 
@@ -40,7 +40,7 @@ export const createCreditCheckoutSession = userActionClient
       if (!creditPackage) {
         return {
           success: false,
-          error: 'Credit package not found',
+          error: '积分包不存在',
         };
       }
 
@@ -53,7 +53,7 @@ export const createCreditCheckoutSession = userActionClient
         });
         return {
           success: false,
-          error: 'Invalid price for credit package',
+          error: '积分包价格不匹配',
         };
       }
 
@@ -65,7 +65,7 @@ export const createCreditCheckoutSession = userActionClient
         });
         return {
           success: false,
-          error: 'This package is no longer available',
+          error: '该套餐已下架',
         };
       }
 

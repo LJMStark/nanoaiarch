@@ -68,7 +68,7 @@ export async function handleUnverifiedRegistration(
     if (!existingUser) {
       return {
         status: 'not_found',
-        message: 'User not found',
+        message: '用户不存在',
         success: false,
       };
     }
@@ -80,8 +80,7 @@ export async function handleUnverifiedRegistration(
       });
       return {
         status: 'verified',
-        message:
-          'Account already exists and is verified. Please sign in instead.',
+        message: '该邮箱已注册并完成验证，请直接登录',
         success: false,
       };
     }
@@ -130,7 +129,7 @@ export async function handleUnverifiedRegistration(
 
       return {
         status: 'unverified',
-        message: 'Verification email has been resent to your inbox',
+        message: '验证邮件已重新发送，请查收',
         success: true,
       };
     } catch (emailError) {

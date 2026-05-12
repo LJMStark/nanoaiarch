@@ -30,7 +30,7 @@ export async function GET(request: Request): Promise<Response> {
   const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
 
   if (!rateLimitResult.success) {
-    return createErrorResponse('Too many requests', 429, rateLimitHeaders);
+    return createErrorResponse('请求过多，请稍后再试', 429, rateLimitHeaders);
   }
 
   const requestUrl = new URL(request.url);

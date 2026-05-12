@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 // Captcha validation schema
 const captchaSchema = z.object({
-  captchaToken: z.string().min(1, { error: 'Captcha token is required' }),
+  captchaToken: z.string().min(1, { error: '验证码不能为空' }),
 });
 
 // Create a safe action for captcha validation

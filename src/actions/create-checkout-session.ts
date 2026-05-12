@@ -16,9 +16,9 @@ import { z } from 'zod';
 // Checkout schema for validation
 // metadata is optional, and may contain referral information if you need
 const checkoutSchema = z.object({
-  userId: z.string().min(1, { error: 'User ID is required' }),
-  planId: z.string().min(1, { error: 'Plan ID is required' }),
-  priceId: z.string().min(1, { error: 'Price ID is required' }),
+  userId: z.string().min(1, { error: '用户 ID 不能为空' }),
+  planId: z.string().min(1, { error: '套餐 ID 不能为空' }),
+  priceId: z.string().min(1, { error: '价格 ID 不能为空' }),
   metadata: z.record(z.string(), z.string()).optional(),
 });
 
@@ -40,7 +40,7 @@ export const createCheckoutAction = userActionClient
       if (!plan) {
         return {
           success: false,
-          error: 'Price plan not found',
+          error: '套餐不存在',
         };
       }
 

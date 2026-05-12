@@ -23,7 +23,7 @@ export async function getOnboardingStatus(): Promise<{
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
-      return { success: false, error: 'Unauthorized' };
+      return { success: false, error: '未授权访问' };
     }
 
     const db = await getDb();
@@ -37,7 +37,7 @@ export async function getOnboardingStatus(): Promise<{
       .limit(1);
 
     if (result.length === 0) {
-      return { success: false, error: 'User not found' };
+      return { success: false, error: '用户不存在' };
     }
 
     return {
@@ -49,7 +49,7 @@ export async function getOnboardingStatus(): Promise<{
     };
   } catch (error) {
     logger.actions.error('Failed to get onboarding status', error);
-    return { success: false, error: 'Failed to get onboarding status' };
+    return { success: false, error: '获取引导状态失败' };
   }
 }
 
@@ -63,13 +63,13 @@ export async function updateOnboardingStep(step: number): Promise<{
   // Validate step value (0-3 for welcome, template, generate, complete)
   const VALID_STEPS = [0, 1, 2, 3];
   if (!VALID_STEPS.includes(step) || !Number.isInteger(step)) {
-    return { success: false, error: 'Invalid step value' };
+    return { success: false, error: '引导步骤参数无效' };
   }
 
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
-      return { success: false, error: 'Unauthorized' };
+      return { success: false, error: '未授权访问' };
     }
 
     const db = await getDb();
@@ -89,7 +89,7 @@ export async function updateOnboardingStep(step: number): Promise<{
     return { success: true };
   } catch (error) {
     logger.actions.error('Failed to update onboarding step', error);
-    return { success: false, error: 'Failed to update onboarding step' };
+    return { success: false, error: '更新引导步骤失败' };
   }
 }
 
@@ -103,7 +103,7 @@ export async function completeOnboarding(): Promise<{
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
-      return { success: false, error: 'Unauthorized' };
+      return { success: false, error: '未授权访问' };
     }
 
     const db = await getDb();
@@ -121,7 +121,7 @@ export async function completeOnboarding(): Promise<{
     return { success: true };
   } catch (error) {
     logger.actions.error('Failed to complete onboarding', error);
-    return { success: false, error: 'Failed to complete onboarding' };
+    return { success: false, error: '完成引导流程失败' };
   }
 }
 
@@ -135,7 +135,7 @@ export async function skipOnboarding(): Promise<{
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
-      return { success: false, error: 'Unauthorized' };
+      return { success: false, error: '未授权访问' };
     }
 
     const db = await getDb();
@@ -153,6 +153,6 @@ export async function skipOnboarding(): Promise<{
     return { success: true };
   } catch (error) {
     logger.actions.error('Failed to skip onboarding', error);
-    return { success: false, error: 'Failed to skip onboarding' };
+    return { success: false, error: '跳过引导流程失败' };
   }
 }

@@ -136,7 +136,7 @@ async function fetchPublicGenerations(
       data: [],
       total: 0,
       totalPages: 0,
-      error: 'Failed to load gallery',
+      error: '加载图库失败',
     };
   }
 }
@@ -210,7 +210,7 @@ export async function getPublicGeneration(id: string): Promise<{
       .limit(1);
 
     if (result.length === 0) {
-      return { success: false, error: 'Generation not found' };
+      return { success: false, error: '生成记录不存在' };
     }
 
     const g = result[0];
@@ -219,7 +219,7 @@ export async function getPublicGeneration(id: string): Promise<{
     if (!g.isPublic) {
       const session = await auth.api.getSession({ headers: await headers() });
       if (!session?.user?.id || session.user.id !== g.userId) {
-        return { success: false, error: 'Generation not found' };
+        return { success: false, error: '生成记录不存在' };
       }
     }
 
@@ -244,7 +244,7 @@ export async function getPublicGeneration(id: string): Promise<{
     };
   } catch (error) {
     logger.general.error('Failed to get public generation', { error, id });
-    return { success: false, error: 'Failed to load generation' };
+    return { success: false, error: '加载作品失败' };
   }
 }
 
@@ -259,7 +259,7 @@ export async function togglePublicStatus(
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
-      return { success: false, error: 'Unauthorized' };
+      return { success: false, error: '未授权访问' };
     }
 
     const db = await getDb();
@@ -278,7 +278,7 @@ export async function togglePublicStatus(
 
     // No rows updated means either not found or not owned
     if (result.length === 0) {
-      return { success: false, error: 'Generation not found or unauthorized' };
+      return { success: false, error: '作品不存在或无权访问' };
     }
 
     logger.general.info('Toggled public status', {
@@ -290,7 +290,7 @@ export async function togglePublicStatus(
     return { success: true };
   } catch (error) {
     logger.general.error('Failed to toggle public status', { error, id });
-    return { success: false, error: 'Failed to update' };
+    return { success: false, error: '更新失败' };
   }
 }
 

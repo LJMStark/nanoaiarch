@@ -24,14 +24,14 @@ export async function getReferralCode(): Promise<{
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
-      return { success: false, error: 'Not authenticated' };
+      return { success: false, error: '未授权访问' };
     }
 
     const code = await getOrCreateReferralCode(session.user.id);
     return { success: true, code };
   } catch (error) {
     logger.actions.error('getReferralCode error', error);
-    return { success: false, error: 'Failed to get referral code' };
+    return { success: false, error: '获取邀请码失败' };
   }
 }
 
@@ -48,7 +48,7 @@ export async function validateReferralCode(code: string): Promise<{
     return { success: true, valid: result.valid };
   } catch (error) {
     logger.actions.error('validateReferralCode error', error);
-    return { success: false, valid: false, error: 'Failed to validate code' };
+    return { success: false, valid: false, error: '验证邀请码失败' };
   }
 }
 
@@ -62,13 +62,13 @@ export async function applyReferralCode(
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
-      return { success: false, error: 'Not authenticated' };
+      return { success: false, error: '未授权访问' };
     }
 
     return await applyReferral(session.user.id, code);
   } catch (error) {
     logger.actions.error('applyReferralCode error', error);
-    return { success: false, error: 'Failed to apply referral code' };
+    return { success: false, error: '应用邀请码失败' };
   }
 }
 
@@ -88,7 +88,7 @@ export async function getReferralStats(): Promise<{
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
-      return { success: false, error: 'Not authenticated' };
+      return { success: false, error: '未授权访问' };
     }
 
     const db = await getDb();
@@ -136,7 +136,7 @@ export async function getReferralStats(): Promise<{
     };
   } catch (error) {
     logger.actions.error('getReferralStats error', error);
-    return { success: false, error: 'Failed to get referral stats' };
+    return { success: false, error: '获取邀请统计失败' };
   }
 }
 
@@ -157,7 +157,7 @@ export async function getReferralList(): Promise<{
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
-      return { success: false, error: 'Not authenticated' };
+      return { success: false, error: '未授权访问' };
     }
 
     const db = await getDb();
@@ -189,7 +189,7 @@ export async function getReferralList(): Promise<{
     };
   } catch (error) {
     logger.actions.error('getReferralList error', error);
-    return { success: false, error: 'Failed to get referral list' };
+    return { success: false, error: '获取邀请列表失败' };
   }
 }
 

@@ -135,12 +135,12 @@ export async function getUserProfile(userId: string): Promise<{
     const profileData = await getCachedUserProfileData(userId);
 
     if (!profileData) {
-      return { success: false, error: 'User not found' };
+      return { success: false, error: '用户不存在' };
     }
 
     // Check if profile is public (or owner)
     if (!profileData.isProfilePublic && !isOwner) {
-      return { success: false, error: 'Profile is private' };
+      return { success: false, error: '该资料未公开' };
     }
 
     return {
@@ -158,7 +158,7 @@ export async function getUserProfile(userId: string): Promise<{
     };
   } catch (error) {
     logger.general.error('Failed to get user profile', { error, userId });
-    return { success: false, error: 'Failed to load profile' };
+    return { success: false, error: '加载用户资料失败' };
   }
 }
 
@@ -195,7 +195,7 @@ export async function getUserPublicGenerations(
           data: [],
           total: 0,
           totalPages: 0,
-          error: 'User not found',
+          error: '用户不存在',
         };
       }
 
@@ -205,7 +205,7 @@ export async function getUserPublicGenerations(
           data: [],
           total: 0,
           totalPages: 0,
-          error: 'Profile is private',
+          error: '该资料未公开',
         };
       }
     }
@@ -258,7 +258,7 @@ export async function getUserPublicGenerations(
       data: [],
       total: 0,
       totalPages: 0,
-      error: 'Failed to load generations',
+      error: '加载作品失败',
     };
   }
 }
@@ -273,12 +273,12 @@ export async function updateUserBio(bio: string): Promise<{
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
-      return { success: false, error: 'Unauthorized' };
+      return { success: false, error: '未授权访问' };
     }
 
     // Validate bio length (max 200 characters)
     if (bio.length > 200) {
-      return { success: false, error: 'Bio must be 200 characters or less' };
+      return { success: false, error: '简介不能超过 200 字' };
     }
 
     const db = await getDb();
@@ -291,7 +291,7 @@ export async function updateUserBio(bio: string): Promise<{
     return { success: true };
   } catch (error) {
     logger.general.error('Failed to update user bio', { error });
-    return { success: false, error: 'Failed to update bio' };
+    return { success: false, error: '更新简介失败' };
   }
 }
 
@@ -305,7 +305,7 @@ export async function toggleProfilePublic(isPublic: boolean): Promise<{
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
-      return { success: false, error: 'Unauthorized' };
+      return { success: false, error: '未授权访问' };
     }
 
     const db = await getDb();
@@ -321,6 +321,6 @@ export async function toggleProfilePublic(isPublic: boolean): Promise<{
     return { success: true };
   } catch (error) {
     logger.general.error('Failed to toggle profile public status', { error });
-    return { success: false, error: 'Failed to update profile' };
+    return { success: false, error: '更新资料失败' };
   }
 }

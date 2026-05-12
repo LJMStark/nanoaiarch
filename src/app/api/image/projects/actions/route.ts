@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return createResultResponse({
         success: false,
-        error: 'Invalid request body',
+        error: '请求参数无效',
       });
     }
 
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       default:
         return createResultResponse({
           success: false,
-          error: 'Invalid action',
+          error: '无效操作',
         });
     }
   } catch (error) {
@@ -83,8 +83,8 @@ export async function POST(request: Request) {
       success: false,
       error:
         error instanceof Error && error.message === 'Request body too large'
-          ? 'Request body too large'
-          : 'Invalid request body',
+          ? '请求体过大，请减少图片数量或大小'
+          : '请求参数无效',
     });
   }
 }

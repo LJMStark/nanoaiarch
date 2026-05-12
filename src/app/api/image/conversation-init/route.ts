@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   } catch {
     return createResultResponse({
       success: false,
-      error: 'Invalid request body',
+      error: '请求参数无效',
       data: {
         projects: [],
         messages: [],

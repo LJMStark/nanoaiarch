@@ -147,7 +147,7 @@ describe('updateAssistantMessageDirect', () => {
         creditsUsed: 0,
         generationTime: null,
         status: 'failed',
-        errorMessage: 'Generation timed out (lease expired)',
+        errorMessage: '生成超时，请重试',
         generationLeaseExpiresAt: null,
         orderIndex: 1,
         createdAt: new Date('2026-05-09T12:00:00Z'),
@@ -161,7 +161,7 @@ describe('updateAssistantMessageDirect', () => {
     const updated = await updateAssistantMessageDirect('msg-1', 'user-1', {
       status: 'failed',
       content: '生成超时，请重试',
-      errorMessage: 'Generation timed out (lease expired)',
+      errorMessage: '生成超时，请重试',
       leaseExpiredBefore: new Date('2026-05-09T12:00:00Z'),
     });
 
@@ -650,7 +650,7 @@ describe('getMessageStatus Duomi polling', () => {
       id: 'msg-1',
       status: 'failed',
       outputImage: null,
-      errorMessage: 'bad prompt',
+      errorMessage: '生成失败，请重试',
       creditsUsed: null,
       generationTime: null,
       generationLeaseExpiresAt: null,
@@ -667,7 +667,7 @@ describe('getMessageStatus Duomi polling', () => {
       });
     mocks.getDuomiImageTaskStatus.mockResolvedValue({
       status: 'failed',
-      error: 'bad prompt',
+      error: '生成失败，请重试',
     });
     mocks.findHoldRecordByIdempotencyKey.mockResolvedValue(null);
     mocks.findLatestHoldRecordByIdempotencyKeyPrefix.mockResolvedValue({
@@ -680,7 +680,7 @@ describe('getMessageStatus Duomi polling', () => {
 
     expect(result.success).toBe(true);
     expect(result.data?.status).toBe('failed');
-    expect(result.data?.errorMessage).toBe('bad prompt');
+    expect(result.data?.errorMessage).toBe('生成失败，请重试');
     expect(mocks.releaseHold).toHaveBeenCalledWith('hold-1');
     expect(mocks.confirmHold).not.toHaveBeenCalled();
   });

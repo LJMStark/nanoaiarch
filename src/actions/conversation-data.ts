@@ -50,7 +50,7 @@ export async function getConversationInitData(
     return {
       success: false,
       data: { projects: [], messages: [], currentProjectId: null },
-      error: 'Unauthorized',
+      error: '未授权访问',
     };
   }
 
@@ -144,7 +144,7 @@ export async function getConversationInitData(
     return {
       success: false,
       data: { projects: [], messages: [], currentProjectId: null },
-      error: 'Failed to load data',
+      error: '加载数据失败',
     };
   }
 }

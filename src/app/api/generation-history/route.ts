@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   if (limit === null || offset === null) {
     return createResultResponse({
       success: false,
-      error: 'Invalid pagination params',
+      error: '分页参数无效',
       data: [],
     });
   }

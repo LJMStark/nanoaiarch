@@ -131,7 +131,7 @@ describe('checkPaymentCompletionAction', () => {
 
     expect(result).toEqual({
       success: false,
-      error: 'Failed to check payment completion',
+      error: '查询支付状态失败',
     });
   });
 });

@@ -5,11 +5,11 @@ function getStatusCode(error?: string): number {
     return 400;
   }
 
-  if (error === 'Unauthorized') {
+  if (error === '未授权访问') {
     return 401;
   }
 
-  if (/not found/i.test(error)) {
+  if (/not found/i.test(error) || /不存在|未找到/.test(error)) {
     return 404;
   }
 

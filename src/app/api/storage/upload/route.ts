@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session?.user?.id) {
-      return createUploadErrorResponse('Unauthorized', 401);
+      return createUploadErrorResponse('未授权访问', 401);
     }
 
     const rateLimitResult = await applyRateLimit({

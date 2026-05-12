@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   if (body === null) {
     return createResultResponse({
       success: false,
-      error: 'Invalid request body',
+      error: '请求参数无效',
     });
   }
 

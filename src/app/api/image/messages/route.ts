@@ -87,7 +87,7 @@ async function verifyMutationRateLimit(request: Request, action: string) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id) {
     return NextResponse.json(
-      { success: false, error: 'Unauthorized' },
+      { success: false, error: '未授权访问' },
       { status: 401 }
     );
   }
@@ -115,7 +115,7 @@ export async function GET(request: Request) {
   if (!projectId) {
     return createResultResponse({
       success: false,
-      error: 'Project not found',
+      error: '项目不存在',
       data: [],
     });
   }
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return createResultResponse({
         success: false,
-        error: 'Invalid action',
+        error: '无效操作',
       });
     }
 
@@ -149,8 +149,8 @@ export async function POST(request: Request) {
       success: false,
       error:
         error instanceof Error && error.message === 'Request body too large'
-          ? 'Request body too large'
-          : 'Invalid request body',
+          ? '请求体过大，请减少图片数量或大小'
+          : '请求参数无效',
     });
   }
 }
@@ -163,7 +163,7 @@ export async function PATCH(request: Request) {
     if (!parsed.success) {
       return createResultResponse({
         success: false,
-        error: 'Invalid action',
+        error: '无效操作',
       });
     }
 
@@ -184,8 +184,8 @@ export async function PATCH(request: Request) {
       success: false,
       error:
         error instanceof Error && error.message === 'Request body too large'
-          ? 'Request body too large'
-          : 'Invalid request body',
+          ? '请求体过大，请减少图片数量或大小'
+          : '请求参数无效',
     });
   }
 }

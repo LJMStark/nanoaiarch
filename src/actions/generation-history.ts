@@ -54,7 +54,7 @@ export async function saveGeneration(data: {
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -81,7 +81,7 @@ export async function saveGeneration(data: {
     return { success: true, id };
   } catch (error) {
     logger.actions.error('Failed to save generation', error);
-    return { success: false, error: 'Failed to save generation' };
+    return { success: false, error: '保存作品失败' };
   }
 }
 
@@ -95,7 +95,7 @@ export async function getGenerationHistory(options?: {
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized', data: [] };
+    return { success: false, error: '未授权访问', data: [] };
   }
 
   const limit = options?.limit ?? 20;
@@ -120,7 +120,7 @@ export async function getGenerationHistory(options?: {
     return { success: true, data: items as GenerationHistoryItem[] };
   } catch (error) {
     logger.actions.error('Failed to get generation history', error);
-    return { success: false, error: 'Failed to get history', data: [] };
+    return { success: false, error: '获取历史失败', data: [] };
   }
 }
 
@@ -134,7 +134,7 @@ export async function getGenerationStats(): Promise<{
 }> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -186,7 +186,7 @@ export async function getGenerationStats(): Promise<{
     };
   } catch (error) {
     logger.actions.error('Failed to get generation stats', error);
-    return { success: false, error: 'Failed to get stats' };
+    return { success: false, error: '获取统计失败' };
   }
 }
 
@@ -196,7 +196,7 @@ export async function getGenerationStats(): Promise<{
 export async function toggleFavorite(generationId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -215,7 +215,7 @@ export async function toggleFavorite(generationId: string) {
       .limit(1);
 
     if (!current.length) {
-      return { success: false, error: 'Generation not found' };
+      return { success: false, error: '生成记录不存在' };
     }
 
     // Toggle the status
@@ -235,7 +235,7 @@ export async function toggleFavorite(generationId: string) {
     return { success: true, isFavorite: !current[0].isFavorite };
   } catch (error) {
     logger.actions.error('Failed to toggle favorite', error);
-    return { success: false, error: 'Failed to update' };
+    return { success: false, error: '更新失败' };
   }
 }
 
@@ -245,7 +245,7 @@ export async function toggleFavorite(generationId: string) {
 export async function deleteGeneration(generationId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -262,7 +262,7 @@ export async function deleteGeneration(generationId: string) {
     return { success: true };
   } catch (error) {
     logger.actions.error('Failed to delete generation', error);
-    return { success: false, error: 'Failed to delete' };
+    return { success: false, error: '删除失败' };
   }
 }
 
@@ -272,7 +272,7 @@ export async function deleteGeneration(generationId: string) {
 export async function togglePublic(generationId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -291,7 +291,7 @@ export async function togglePublic(generationId: string) {
       .limit(1);
 
     if (!current.length) {
-      return { success: false, error: 'Generation not found' };
+      return { success: false, error: '生成记录不存在' };
     }
 
     // Toggle the status
@@ -311,7 +311,7 @@ export async function togglePublic(generationId: string) {
     return { success: true, isPublic: !current[0].isPublic };
   } catch (error) {
     logger.actions.error('Failed to toggle public status', error);
-    return { success: false, error: 'Failed to update' };
+    return { success: false, error: '更新失败' };
   }
 }
 
@@ -324,7 +324,7 @@ export async function updateGenerationImage(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: '未授权访问' };
   }
 
   try {
@@ -345,6 +345,6 @@ export async function updateGenerationImage(
     return { success: true };
   } catch (error) {
     logger.actions.error('Failed to update generation image', error);
-    return { success: false, error: 'Failed to update' };
+    return { success: false, error: '更新失败' };
   }
 }
