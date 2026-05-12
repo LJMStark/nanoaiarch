@@ -29,17 +29,35 @@ import {
   nextLeaseExpiry,
 } from './project-message-internal';
 import {
-  recoverExpiredGeneratingMessages,
+  findExpiredGeneratingMessages as _findExpiredGeneratingMessages,
+  recoverExpiredGeneratingMessages as _recoverExpiredGeneratingMessages,
+  updateAssistantMessageDirect as _updateAssistantMessageDirect,
   settleDuomiTaskMessage,
 } from './project-message-recovery';
 
 // Re-export symbols moved into the recovery module so external callers
 // (cron sweeper, tests) can keep importing from `@/actions/project-message`.
-export {
-  findExpiredGeneratingMessages,
-  recoverExpiredGeneratingMessages,
-  updateAssistantMessageDirect,
-} from './project-message-recovery';
+//
+// IMPORTANT: Next.js 15 'use server' files reject `export { ... } from './x'`
+// re-export syntax even when the re-exported symbols are async functions —
+// the bundler treats the whole module as having "no exports at all" and
+// every downstream import then fails to resolve. Wrapping each one as a
+// thin local async function makes the export discoverable.
+export async function findExpiredGeneratingMessages(
+  ...args: Parameters<typeof _findExpiredGeneratingMessages>
+) {
+  return _findExpiredGeneratingMessages(...args);
+}
+export async function recoverExpiredGeneratingMessages(
+  ...args: Parameters<typeof _recoverExpiredGeneratingMessages>
+) {
+  return _recoverExpiredGeneratingMessages(...args);
+}
+export async function updateAssistantMessageDirect(
+  ...args: Parameters<typeof _updateAssistantMessageDirect>
+) {
+  return _updateAssistantMessageDirect(...args);
+}
 export type {
   MessageRole,
   ProjectMessageItem,
