@@ -10,6 +10,7 @@ import {
   createDuomiImageTask,
   generateImageWithDuomi,
 } from '@/ai/image/lib/duomi-client';
+import { classifyGenerationError } from '@/ai/image/lib/error-utils';
 import {
   editImageWithConversationGemini,
   editImageWithGemini,
@@ -486,10 +487,17 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error) {
+    // Never persist the raw error.message — it can leak stack frames, third
+    // party API paths, or model ids. Classify into a safe Chinese message and
+    // log the original error separately for server-side debugging.
+    const { errorCode, userMessage } = classifyGenerationError(error);
+    logger.ai.error(
+      `Generation failed [requestId=${requestId}, model=${resolvedModelId}, errorCode=${errorCode}]`,
+      error
+    );
     await persistFailedAssistantMessage(assistantMessageId, requestId, {
-      content: '生成失败，请稍后重试',
-      errorMessage:
-        error instanceof Error ? error.message : '生成失败，请稍后重试',
+      content: userMessage,
+      errorMessage: userMessage,
     });
     return createErrorResponse(error, requestId, resolvedModelId, 'generation');
   }

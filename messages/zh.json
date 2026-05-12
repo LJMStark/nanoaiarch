@@ -1478,7 +1478,12 @@
       "model": "模型",
       "recent": "最近",
       "settings": "设置",
-      "noHistory": "暂无生成记录"
+      "noHistory": "暂无生成记录",
+      "clearHistory": "清除全部历史",
+      "clearHistoryConfirmTitle": "确认清除全部历史？",
+      "clearHistoryConfirmDescription": "该操作不可撤销，所有历史记录将被永久删除。",
+      "clearHistoryCancel": "取消",
+      "clearHistoryConfirm": "确认清除"
     },
     "projects": {
       "new": "新建项目",

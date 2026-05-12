@@ -3,6 +3,17 @@
 // Recent generation history panel for sidebar
 // 侧边栏历史记录面板
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { Clock, ImageIcon, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -23,16 +34,16 @@ function formatRelativeTime(timestamp: number): string {
   const diff = now - timestamp;
 
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1) return '刚刚';
+  if (minutes < 60) return `${minutes} 分钟前`;
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours} 小时前`;
 
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
+  if (days < 7) return `${days} 天前`;
 
-  return new Date(timestamp).toLocaleDateString();
+  return new Date(timestamp).toLocaleDateString('zh-CN');
 }
 
 export function HistoryPanel({
@@ -61,13 +72,38 @@ export function HistoryPanel({
         <span className="text-xs font-medium text-muted-foreground">
           {t('sidebar.recent')}
         </span>
-        <button
-          type="button"
-          onClick={onClear}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Trash2 className="h-3 w-3" />
-        </button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button
+              type="button"
+              aria-label={t('sidebar.clearHistory')}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {t('sidebar.clearHistoryConfirmTitle')}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('sidebar.clearHistoryConfirmDescription')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>
+                {t('sidebar.clearHistoryCancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={onClear}
+                className="bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20"
+              >
+                {t('sidebar.clearHistoryConfirm')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* History items */}
@@ -92,6 +128,7 @@ function HistoryItem({
   item: GenerationHistoryItem;
   onClick: () => void;
 }) {
+  const t = useTranslations('ArchPage');
   const [imageError, setImageError] = useState(false);
 
   return (
@@ -113,7 +150,7 @@ function HistoryItem({
         ) : (
           <Image
             src={`data:image/png;base64,${item.outputImage}`}
-            alt="Generated"
+            alt={t('canvas.generatedImageAlt')}
             width={40}
             height={40}
             className="w-full h-full object-cover"

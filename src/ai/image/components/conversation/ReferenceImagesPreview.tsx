@@ -1,4 +1,6 @@
+import { useStableImageKeys } from '@/ai/image/hooks/use-stable-image-keys';
 import { Button } from '@/components/ui/button';
+import { logger } from '@/lib/logger';
 import { X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -15,6 +17,10 @@ export function ReferenceImagesPreview({
 }: ReferenceImagesPreviewProps) {
   const t = useTranslations('ArchPage');
 
+  // Stable React keys keyed by image data — prevents DOM reuse from
+  // misrendering the wrong <img> after a middle item is removed.
+  const keyedImages = useStableImageKeys(images);
+
   if (images.length === 0) {
     return null;
   }
@@ -22,7 +28,7 @@ export function ReferenceImagesPreview({
   return (
     <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
       <div className="flex gap-1">
-        {images.slice(0, 3).map((img, idx) => {
+        {keyedImages.slice(0, 3).map(({ id, data: img }, idx) => {
           let imageSrc = '';
           if (typeof img === 'string') {
             if (img.startsWith('http') || img.startsWith('data:')) {
@@ -32,17 +38,17 @@ export function ReferenceImagesPreview({
             }
           }
           if (!imageSrc) {
-            console.error('Invalid image data at index', idx, img);
+            logger.ai.warn('Invalid reference image data', { index: idx });
             return null;
           }
           return (
             <div
-              key={idx}
+              key={id}
               className="relative h-10 w-10 rounded overflow-hidden"
             >
               <img
                 src={imageSrc}
-                alt={`Reference ${idx + 1}`}
+                alt={t('upload.referenceImageAlt', { index: idx + 1 })}
                 className="h-full w-full object-cover"
               />
               <button

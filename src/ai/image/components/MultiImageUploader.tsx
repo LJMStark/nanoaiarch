@@ -7,6 +7,7 @@ import { ImageIcon, Loader2, Plus, Upload, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useCallback, useRef, useState } from 'react';
+import { useStableImageKeys } from '../hooks/use-stable-image-keys';
 import {
   ACCEPTED_IMAGE_TYPES,
   compressAcceptedImageFiles,
@@ -32,6 +33,11 @@ export function MultiImageUploader({
   const [isCompressing, setIsCompressing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Wrap raw base64 strings with stable IDs so removing a middle image
+  // doesn't cause React to reuse the wrong DOM node (and its decoded
+  // bitmap) for the surviving entries.
+  const keyedImages = useStableImageKeys(currentImages);
 
   const canAddMore = currentImages.length < maxImages;
 
@@ -127,9 +133,9 @@ export function MultiImageUploader({
       {/* 已上传的图片预览 */}
       {currentImages.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
-          {currentImages.map((image, index) => (
+          {keyedImages.map(({ id, data: image }, index) => (
             <div
-              key={index}
+              key={id}
               className="relative h-16 w-16 overflow-hidden rounded-lg border bg-muted"
             >
               <Image

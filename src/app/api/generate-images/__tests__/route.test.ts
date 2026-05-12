@@ -45,6 +45,10 @@ vi.mock('@/lib/logger', () => ({
       error: vi.fn(),
       info: vi.fn(),
     },
+    ai: {
+      error: vi.fn(),
+      info: vi.fn(),
+    },
   },
 }));
 
@@ -571,10 +575,12 @@ describe('/api/generate-images POST', () => {
     );
 
     expect(response.status).toBe(500);
+    // Raw `error.message` ("boom") must NOT be persisted. Unknown errors fall
+    // through to the INTERNAL_ERROR bucket with a safe Chinese message.
     expect(updateAssistantMessage).toHaveBeenCalledWith('assistant-1', {
-      content: '生成失败，请稍后重试',
+      content: '生成失败，请重试',
       status: 'failed',
-      errorMessage: 'boom',
+      errorMessage: '生成失败，请重试',
     });
     expect(createErrorResponse).toHaveBeenCalled();
   });

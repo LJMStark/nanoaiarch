@@ -16,7 +16,12 @@ import { Routes } from '@/routes';
 import { useProjectStore } from '@/stores/project-store';
 import { Check, Edit2, PanelLeftIcon, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+// Track whether the next blur on the input should skip the auto-save.
+// Cancel/Esc set this to 'cancel' so the upcoming (or already-fired) blur is a no-op.
+// Save sets this to 'save' so blur doesn't double-submit when the user clicks Save.
+type PendingAction = 'cancel' | 'save' | null;
 
 export function ConversationHeader() {
   const t = useTranslations('ArchPage');
@@ -29,6 +34,10 @@ export function ConversationHeader() {
   const [mounted, setMounted] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  // Snapshot of the title at edit-start so we can detect "no change" and rollback on failure.
+  const originalTitleRef = useRef<string>('');
+  const pendingActionRef = useRef<PendingAction>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -37,35 +46,90 @@ export function ConversationHeader() {
   const currentProject = projects.find((p) => p.id === currentProjectId);
 
   const handleStartEdit = () => {
-    setEditTitle(currentProject?.title ?? t('projects.untitled'));
+    const initial = currentProject?.title ?? t('projects.untitled');
+    originalTitleRef.current = initial;
+    pendingActionRef.current = null;
+    setEditTitle(initial);
     setIsEditing(true);
   };
 
-  const handleSaveTitle = async () => {
-    if (!currentProjectId || !editTitle.trim()) {
-      setIsEditing(false);
-      return;
-    }
-
-    const result = await updateImageProjectRequest(currentProjectId, {
-      title: editTitle.trim(),
-    });
-
-    if (result.success) {
-      updateProject(currentProjectId, { title: editTitle.trim() });
-    }
+  const exitEditMode = () => {
+    pendingActionRef.current = null;
     setIsEditing(false);
   };
 
+  const handleSaveTitle = async () => {
+    if (!currentProjectId) {
+      exitEditMode();
+      return;
+    }
+
+    const trimmed = editTitle.trim();
+
+    // Empty title => treat as cancel (preserve original)
+    if (!trimmed) {
+      setEditTitle(originalTitleRef.current);
+      exitEditMode();
+      return;
+    }
+
+    // No change => skip the network request, just close.
+    if (trimmed === originalTitleRef.current) {
+      exitEditMode();
+      return;
+    }
+
+    // Prevent duplicate submits while a request is in flight.
+    if (isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const result = await updateImageProjectRequest(currentProjectId, {
+        title: trimmed,
+      });
+
+      if (result.success) {
+        updateProject(currentProjectId, { title: trimmed });
+        exitEditMode();
+      } else {
+        // Failure rollback: revert to original and keep editor open so the user can retry.
+        setEditTitle(originalTitleRef.current);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleCancelEdit = () => {
+    pendingActionRef.current = 'cancel';
+    setEditTitle(originalTitleRef.current);
     setIsEditing(false);
-    setEditTitle('');
+  };
+
+  const handleBlur = () => {
+    // Cancel was clicked (or Esc fired) — do NOT save.
+    if (pendingActionRef.current === 'cancel') {
+      pendingActionRef.current = null;
+      return;
+    }
+    // Save button already handled it — avoid double submission.
+    if (pendingActionRef.current === 'save') {
+      pendingActionRef.current = null;
+      return;
+    }
+    // GitHub/Notion behavior: bare blur submits.
+    handleSaveTitle();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
+      pendingActionRef.current = 'save';
       handleSaveTitle();
     } else if (e.key === 'Escape') {
+      e.preventDefault();
       handleCancelEdit();
     }
   };
@@ -98,7 +162,9 @@ export function ConversationHeader() {
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 onKeyDown={handleKeyDown}
-                onBlur={handleSaveTitle}
+                onBlur={handleBlur}
+                maxLength={200}
+                disabled={isSaving}
                 className="h-7 w-48 text-sm"
                 autoFocus
               />
@@ -106,6 +172,14 @@ export function ConversationHeader() {
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
+                disabled={isSaving || !editTitle.trim()}
+                data-testid="project-title-save"
+                aria-label={ct('save')}
+                // onMouseDown fires BEFORE the input's blur; mark intent so blur
+                // doesn't double-submit, then let onClick run the actual save.
+                onMouseDown={() => {
+                  pendingActionRef.current = 'save';
+                }}
                 onClick={handleSaveTitle}
               >
                 <Check className="h-3 w-3" />
@@ -114,7 +188,16 @@ export function ConversationHeader() {
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={handleCancelEdit}
+                data-testid="project-title-cancel"
+                aria-label={ct('cancel')}
+                // Critical: preventDefault on mousedown stops focus from leaving
+                // the input, which prevents the blur->save race. We also run
+                // the cancel synchronously here (rather than waiting for click)
+                // so the rollback is immediate even if the click is missed.
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleCancelEdit();
+                }}
               >
                 <X className="h-3 w-3" />
               </Button>
