@@ -13,7 +13,7 @@ interface RelatedPostsProps {
 export function RelatedPosts({
   posts,
   locale,
-  title = 'Related Posts',
+  title = '相关文章',
 }: RelatedPostsProps) {
   if (!posts || posts.length === 0) return null;
 

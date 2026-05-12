@@ -13,7 +13,7 @@ export default function BuiltWithButton() {
         'border border-border px-4 rounded-md'
       )}
     >
-      <span>Built with</span>
+      <span>基于</span>
       <span>
         <MkSaaSLogo className="size-5 rounded-full" />
       </span>

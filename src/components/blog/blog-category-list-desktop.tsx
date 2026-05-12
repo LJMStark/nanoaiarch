@@ -23,7 +23,7 @@ export function BlogCategoryListDesktop({
         size="sm"
         type="single"
         value={slug || 'All'}
-        aria-label="Toggle blog category"
+        aria-label="切换博客分类"
         className="h-9 overflow-hidden rounded-md space-x-1 border bg-background p-1 *:h-7 *:text-muted-foreground"
       >
         <ToggleGroupItem
@@ -34,7 +34,7 @@ export function BlogCategoryListDesktop({
             'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground',
             'hover:bg-accent hover:text-accent-foreground'
           )}
-          aria-label={'Toggle all blog categories'}
+          aria-label="切换到全部博客分类"
         >
           <LocaleLink href={'/blog'} className="px-4">
             <h2>{t('all')}</h2>
@@ -50,7 +50,7 @@ export function BlogCategoryListDesktop({
               'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground',
               'hover:bg-accent hover:text-accent-foreground'
             )}
-            aria-label={`Toggle blog category of ${category.name}`}
+            aria-label={`切换到${category.name}分类`}
           >
             <LocaleLink
               href={`/blog/category/${category.slug}`}

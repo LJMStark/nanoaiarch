@@ -156,7 +156,7 @@ export function QuickActionCard({
                         ? referenceImage
                         : `data:image/png;base64,${referenceImage}`
                     }
-                    alt="Reference"
+                    alt={t('canvas.referenceImageAlt')}
                     width={48}
                     height={48}
                     className="w-full h-full object-cover"
@@ -251,7 +251,7 @@ export function QuickActionCard({
 
       {/* Subtle hint */}
       <p className="text-xs text-muted-foreground/60 mt-2">
-        Press Enter to generate, Shift+Enter for new line
+        {t('quickGenerate.shortcutHint')}
       </p>
     </BentoCard>
   );

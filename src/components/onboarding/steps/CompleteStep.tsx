@@ -53,7 +53,7 @@ export function CompleteStep() {
         <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted mb-6">
           <Image
             src={generatedImageUrl}
-            alt="Your first generation"
+            alt={t('complete.yourFirstCreation')}
             fill
             className="object-cover"
           />

@@ -25,10 +25,10 @@ export function heading(): ReactNode {
     <Wrapper>
       <div className="rounded-lg bg-fd-background p-4 prose-no-margin">
         <Heading id="preview" as="h3">
-          Hello World
+          示例标题
         </Heading>
         <Heading id="preview" as="h3">
-          Hello <code>World</code> Everyone!
+          你好，<code>世界</code>。
         </Heading>
       </div>
     </Wrapper>
@@ -42,8 +42,8 @@ export function card(): ReactNode {
         <Card
           href="#"
           icon={<Home />}
-          title="Hello World"
-          description="Learn More about Caching and Revalidation"
+          title="示例卡片"
+          description="了解缓存与重新验证"
         />
       </div>
     </Wrapper>
@@ -59,18 +59,14 @@ export function tabs(): ReactNode {
           persist
           items={['Javascript', 'Rust', 'Typescript']}
         >
-          <Tab value="Javascript">Hello World in Javascript</Tab>
-          <Tab value="Rust">Hello World in Rust</Tab>
-          <Tab value="Typescript">Also works if items are not the same</Tab>
+          <Tab value="Javascript">Javascript 示例</Tab>
+          <Tab value="Rust">Rust 示例</Tab>
+          <Tab value="Typescript">不同标签内容也可以正常工作</Tab>
         </Tabs>
 
         <Tabs groupId="language" persist items={['Javascript', 'Rust']}>
-          <Tab value="Javascript">
-            Value is shared! Try refresh and see if the value is persisted
-          </Tab>
-          <Tab value="Rust">
-            Value is shared! Try refresh and see if the value is persisted
-          </Tab>
+          <Tab value="Javascript">选中项会共享，刷新后仍会保留</Tab>
+          <Tab value="Rust">选中项会共享，刷新后仍会保留</Tab>
         </Tabs>
       </div>
     </Wrapper>
@@ -84,8 +80,7 @@ export function typeTable(): ReactNode {
         <TypeTable
           type={{
             percentage: {
-              description:
-                'The percentage of scroll position to display the roll button',
+              description: '显示滚动按钮所需的滚动位置比例',
               type: 'number',
               default: '0.2',
             },
@@ -100,7 +95,7 @@ export function zoomImage(): ReactNode {
   return (
     <Wrapper>
       <ImageZoom
-        alt="banner"
+        alt="文档横幅"
         src={BannerImage}
         className="!my-0 rounded-xl bg-fd-background"
         priority
@@ -113,11 +108,11 @@ export function accordion(): ReactNode {
   return (
     <Wrapper>
       <Accordions type="single" collapsible>
-        <Accordion id="what-is-fumadocs" title="What is Fumadocs?">
-          A framework for building documentations
+        <Accordion id="what-is-fumadocs" title="Fumadocs 是什么？">
+          一个用于构建文档站点的框架
         </Accordion>
-        <Accordion id="ux" title="What do we love?">
-          We love websites with a good user experience
+        <Accordion id="ux" title="我们重视什么？">
+          我们重视体验顺手的网站
         </Accordion>
       </Accordions>
     </Wrapper>
@@ -127,7 +122,7 @@ export function accordion(): ReactNode {
 export function callout(): ReactNode {
   return (
     <Wrapper>
-      <Callout title="Title">Hello World</Callout>
+      <Callout title="提示">示例内容</Callout>
     </Wrapper>
   );
 }
@@ -161,14 +156,14 @@ export function inlineTOC(): ReactNode {
     <Wrapper>
       <InlineTOC
         items={[
-          { title: 'Welcome', url: '#welcome', depth: 2 },
-          { title: 'Getting Started', url: '#getting-started', depth: 3 },
-          { title: 'Usage', url: '#usage', depth: 3 },
-          { title: 'Styling', url: '#styling', depth: 3 },
-          { title: 'Reference', url: '#reference', depth: 2 },
-          { title: 'Components', url: '#components', depth: 3 },
+          { title: '欢迎', url: '#welcome', depth: 2 },
+          { title: '入门', url: '#getting-started', depth: 3 },
+          { title: '用法', url: '#usage', depth: 3 },
+          { title: '样式', url: '#styling', depth: 3 },
+          { title: '参考', url: '#reference', depth: 2 },
+          { title: '组件', url: '#components', depth: 3 },
           { title: 'APIs', url: '#api', depth: 3 },
-          { title: 'Credits', url: '#credits', depth: 2 },
+          { title: '致谢', url: '#credits', depth: 2 },
         ]}
       />
     </Wrapper>
@@ -181,16 +176,16 @@ export function steps(): ReactNode {
       <div className="rounded-xl bg-fd-background p-3">
         <Steps>
           <Step>
-            <h4>Buy Coffee</h4>
-            <p>Some text here</p>
+            <h4>购买咖啡</h4>
+            <p>这里是一段示例文字</p>
           </Step>
           <Step>
-            <h4>Go to Office Some text here</h4>
-            <p>Some text here</p>
+            <h4>前往办公室</h4>
+            <p>这里是一段示例文字</p>
           </Step>
           <Step>
-            <h4>Have a meeting Some text here</h4>
-            <p>Some text here</p>
+            <h4>参加会议</h4>
+            <p>这里是一段示例文字</p>
           </Step>
         </Steps>
       </div>
@@ -206,13 +201,13 @@ export function rootToggle(): ReactNode {
           className="p-3"
           options={[
             {
-              title: 'Hello World',
-              description: 'The example item of root toggle',
+              title: '示例页面',
+              description: '根切换器的示例项目',
               url: '/docs/ui',
             },
             {
-              title: 'Other page',
-              description: 'The example item of root toggle',
+              title: '其他页面',
+              description: '根切换器的示例项目',
               url: '/docs/headless',
             },
           ]}
@@ -235,7 +230,7 @@ export function banner(): ReactNode {
     <Wrapper>
       <div className="flex flex-col gap-4">
         <Banner className="z-0" changeLayout={false}>
-          Be careful, Fumadocs v99 has released
+          注意，Fumadocs v99 已发布
         </Banner>
 
         <Banner
@@ -244,11 +239,11 @@ export function banner(): ReactNode {
           variant="rainbow"
           changeLayout={false}
         >
-          Using the <code>rainbow</code> variant
+          使用 <code>rainbow</code> 变体
         </Banner>
 
         <Banner className="z-0" id="test" changeLayout={false}>
-          Be careful, this banner can be closed
+          注意，这条横幅可以关闭
         </Banner>
       </div>
     </Wrapper>

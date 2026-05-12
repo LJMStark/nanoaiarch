@@ -1167,6 +1167,16 @@
         }
       }
     },
+    "templateShowcase": {
+      "badge": "模版",
+      "title": "从模版开始",
+      "description": "选择专业建筑可视化模版，快速生成适合方案汇报的效果图",
+      "viewAll": "查看全部模版",
+      "available": "共 {count} 个模版",
+      "cta": "免费试用",
+      "requiresInput": "+ 图片",
+      "useTemplate": "使用此模版"
+    },
     "features": {
       "title": "功能",
       "subtitle": "专业可视化工具",
@@ -1815,7 +1825,8 @@
       "cta": "尝试这个模板"
     },
     "quickGenerate": {
-      "title": "快速生成"
+      "title": "快速生成",
+      "shortcutHint": "按 Enter 生成，按 Shift+Enter 换行"
     }
   },
   "AIImagePage": {

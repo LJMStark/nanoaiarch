@@ -83,7 +83,7 @@ export function GenerateStep() {
         <div className="relative aspect-video rounded-lg overflow-hidden bg-muted mb-4">
           <Image
             src={selectedTemplatePreview}
-            alt={selectedTemplateName || 'Generated image'}
+            alt={selectedTemplateName || '生成图像'}
             fill
             className="object-cover"
           />

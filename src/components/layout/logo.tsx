@@ -24,8 +24,8 @@ export function Logo({ className }: { className?: string }) {
   return (
     <Image
       src={logo}
-      alt="Logo"
-      title="Logo"
+      alt="Arch AI 标志"
+      title="Arch AI 标志"
       width={96}
       height={96}
       sizes="32px"

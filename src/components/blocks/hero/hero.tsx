@@ -149,7 +149,7 @@ export default function HeroSection() {
                   <Image
                     className="hidden w-full rounded-[1.5rem] object-cover dark:block"
                     src={heroDashboardImage}
-                    alt="Arch AI Dashboard preview"
+                    alt="Arch AI 工作台预览"
                     priority
                     placeholder="blur"
                     sizes="(max-width: 1024px) 100vw, 52vw"
@@ -157,7 +157,7 @@ export default function HeroSection() {
                   <Image
                     className="w-full rounded-[1.5rem] border border-border/30 object-cover dark:hidden"
                     src={heroDashboardImage}
-                    alt="Arch AI Dashboard preview"
+                    alt="Arch AI 工作台预览"
                     priority
                     placeholder="blur"
                     sizes="(max-width: 1024px) 100vw, 52vw"

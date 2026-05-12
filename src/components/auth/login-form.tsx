@@ -226,7 +226,7 @@ export const LoginForm = ({
                       <Input
                         {...field}
                         disabled={isPending}
-                        placeholder="name@example.com"
+                        placeholder="邮箱地址"
                         type="email"
                       />
                     </FormControl>

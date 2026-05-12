@@ -90,7 +90,7 @@ async function readJson<T>(response: Response): Promise<T> {
 }
 
 function getTaskError(task: DuomiTaskResponse): string {
-  return task.error || task.message || '图片生成失败，请稍后重试';
+  return '图片生成失败，请稍后重试';
 }
 
 function extractImageUrl(task: DuomiTaskResponse): string | undefined {
@@ -158,7 +158,7 @@ export async function createDuomiImageTask(params: {
     if (!task.id) {
       return {
         success: false,
-        error: task.error || task.message || '创建图片生成任务失败',
+        error: '创建图片生成任务失败，请稍后重试',
       };
     }
 
@@ -175,7 +175,7 @@ export async function createDuomiImageTask(params: {
     logger.ai.error('[Duomi] Create task error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : '未知错误',
+      error: '创建图片生成任务失败，请稍后重试',
     };
   }
 }
@@ -325,7 +325,7 @@ export async function generateImageWithDuomi(
     if (!task.success || !task.taskId) {
       return {
         success: false,
-        error: task.error || '创建图片生成任务失败',
+        error: '创建图片生成任务失败，请稍后重试',
       };
     }
 
@@ -349,7 +349,7 @@ export async function generateImageWithDuomi(
     logger.ai.error('[Duomi] Request error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : '未知错误',
+      error: '图片生成失败，请稍后重试',
     };
   } finally {
     clearTimeout(timeoutId);

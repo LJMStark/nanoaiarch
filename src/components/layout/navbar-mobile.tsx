@@ -109,7 +109,7 @@ export function NavbarMobile({
             variant="ghost"
             size="icon"
             aria-expanded={open}
-            aria-label="Toggle Mobile Menu"
+            aria-label="切换移动端菜单"
             onClick={handleToggleMobileMenu}
             className="size-11 cursor-pointer border border-border/70 bg-background/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] backdrop-blur-sm"
           >

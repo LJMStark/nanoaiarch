@@ -23,10 +23,10 @@ Fumadocs 为 MDX（一种标记语言）提供了许多有用的扩展。以下�
 
 #### Heading
 
-Hello World, **Bold**, _Italic_, ~~Hidden~~
+你好，世界, **Bold**, _Italic_, ~~Hidden~~
 
 ```js
-console.log('Hello World');
+console.log('你好，世界');
 ```
 
 1. First
@@ -135,20 +135,20 @@ import { HomeIcon } from 'lucide-react';
 对于添加提示/警告很有用，默认包含。
 
 ```mdx
-<Callout>Hello World</Callout>
+<Callout>你好，世界</Callout>
 ```
 
-<Callout>Hello World</Callout>
+<Callout>你好，世界</Callout>
 
 #### 标题
 
 指定提示框标题。
 
 ```mdx
-<Callout title="Title">Hello World</Callout>
+<Callout title="标题">你好，世界</Callout>
 ```
 
-<Callout title="Title">Hello World</Callout>
+<Callout title="标题">你好，世界</Callout>
 
 #### 类型
 
@@ -159,13 +159,13 @@ import { HomeIcon } from 'lucide-react';
 - `error`
 
 ```mdx
-<Callout title="Title" type="error">
-  Hello World
+<Callout title="标题" type="error">
+  你好，世界
 </Callout>
 ```
 
-<Callout title="Title" type="error">
-  Hello World
+<Callout title="标题" type="error">
+  你好，世界
 </Callout>
 
 ### 自定义组件
@@ -174,7 +174,7 @@ import { HomeIcon } from 'lucide-react';
 
 ## 标题
 
-每个标题会自动应用锚点，它会清理空格等无效字符。（例如，`Hello World` 变为 `hello-world`）
+每个标题会自动应用锚点，它会清理空格等无效字符。（例如，`你好，世界` 变为 `hello-world`）
 
 ```md
 # Hello `World`
@@ -220,10 +220,10 @@ Like headings rendered in a React component:
 
 ```mdx
 ---
-title: Hello World
+title: 示例标题
 ---
 
-## Title
+## 标题
 ```
 
 有关前言可用属性的列表，请参见[页面约定](/docs/page-conventions#frontmatter)。
@@ -234,15 +234,15 @@ title: Hello World
 
 ````mdx
 ```js
-console.log('Hello World');
+console.log('你好，世界');
 ```
 ````
 
 您可以为代码块添加标题。
 
 ````mdx
-```js title="My Title"
-console.log('Hello World');
+```js title="我的标题"
+console.log('你好，世界');
 ```
 ````
 
@@ -250,10 +250,10 @@ console.log('Hello World');
 
 ````md
 ```tsx
-<div>Hello World</div>  // [\!code highlight]
-<div>Hello World</div>
+<div>你好，世界</div>  // [\!code highlight]
+<div>你好，世界</div>
 <div>Goodbye</div>
-<div>Hello World</div>
+<div>你好，世界</div>
 ```
 ````
 

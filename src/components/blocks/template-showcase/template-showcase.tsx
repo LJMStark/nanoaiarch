@@ -19,7 +19,7 @@ import { useRef } from 'react';
 const FEATURED_TEMPLATES = ARCH_TEMPLATES.filter((t) => t.featured);
 
 export default function TemplateShowcaseSection() {
-  const t = useTranslations('HomePage');
+  const t = useTranslations();
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(containerRef, { once: true, margin: '-100px' });
@@ -51,14 +51,15 @@ export default function TemplateShowcaseSection() {
         >
           <div className="surface-panel mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">Templates</span>
+            <span className="text-sm font-medium text-primary">
+              {t('HomePage.templateShowcase.badge')}
+            </span>
           </div>
           <h2 className="font-bricolage-grotesque text-4xl tracking-[-0.05em] md:text-5xl">
-            Start with a Template
+            {t('HomePage.templateShowcase.title')}
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-muted-foreground">
-            Choose from our collection of professional architectural templates
-            to jumpstart your visualization
+            {t('HomePage.templateShowcase.description')}
           </p>
         </motion.div>
 
@@ -114,9 +115,13 @@ export default function TemplateShowcaseSection() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 transition-colors group-hover:bg-primary/20">
                   <ArrowRight className="h-6 w-6 text-primary group-hover:translate-x-1 transition-transform" />
                 </div>
-                <span className="font-medium">View All Templates</span>
+                <span className="font-medium">
+                  {t('HomePage.templateShowcase.viewAll')}
+                </span>
                 <span className="text-sm text-muted-foreground">
-                  {ARCH_TEMPLATES.length} templates available
+                  {t('HomePage.templateShowcase.available', {
+                    count: ARCH_TEMPLATES.length,
+                  })}
                 </span>
               </button>
             </motion.div>
@@ -135,7 +140,7 @@ export default function TemplateShowcaseSection() {
             onClick={() => router.push(AI_IMAGE_NEW_PROJECT_ROUTE)}
             className="gap-2"
           >
-            Try It Free
+            {t('HomePage.templateShowcase.cta')}
             <ArrowRight className="h-4 w-4" />
           </Button>
         </motion.div>
@@ -157,6 +162,7 @@ function TemplateCard({
   isInView,
   onClick,
 }: TemplateCardProps) {
+  const t = useTranslations();
   const category = TEMPLATE_CATEGORIES[template.categoryId];
 
   return (
@@ -180,25 +186,25 @@ function TemplateCard({
         {/* Category badge */}
         {category && (
           <div className="absolute left-5 top-5 rounded-full border border-white/20 bg-black/35 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md">
-            {category.id}
+            {t(category.labelKey as any)}
           </div>
         )}
 
         {/* Input required badge */}
         {template.requiresInput && (
           <div className="absolute right-5 top-5 rounded-full bg-white/90 px-2 py-1 text-xs font-medium text-black">
-            + Image
+            {t('HomePage.templateShowcase.requiresInput')}
           </div>
         )}
 
         {/* Template info */}
         <div className="absolute bottom-0 left-0 right-0 p-4">
           <h3 className="text-white font-semibold text-lg mb-1 capitalize">
-            {template.id.replace(/-/g, ' ')}
+            {t(template.titleKey as any)}
           </h3>
           <div className="flex items-center gap-2 text-white/80 text-sm">
             <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            <span>Use this template</span>
+            <span>{t('HomePage.templateShowcase.useTemplate')}</span>
           </div>
         </div>
       </div>

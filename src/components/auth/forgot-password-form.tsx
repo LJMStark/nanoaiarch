@@ -140,7 +140,7 @@ export const ForgotPasswordForm = ({ className }: { className?: string }) => {
                     <Input
                       {...field}
                       disabled={isPending}
-                      placeholder="name@example.com"
+                      placeholder="邮箱地址"
                       type="email"
                     />
                   </FormControl>

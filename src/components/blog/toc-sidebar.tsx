@@ -12,10 +12,7 @@ interface TOCSidebarProps {
   title?: string;
 }
 
-export function TOCSidebar({
-  toc,
-  title = 'Table of Contents',
-}: TOCSidebarProps) {
+export function TOCSidebar({ toc, title = '目录' }: TOCSidebarProps) {
   const [activeId, setActiveId] = useState<string>('');
 
   useEffect(() => {

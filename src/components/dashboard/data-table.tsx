@@ -111,6 +111,50 @@ export const schema = z.object({
   reviewer: z.string(),
 });
 
+const columnLabels: Record<string, string> = {
+  header: '标题',
+  type: '章节类型',
+  status: '状态',
+  target: '目标',
+  limit: '上限',
+  reviewer: '审核人',
+};
+
+const typeLabels: Record<string, string> = {
+  'Table of Contents': '目录',
+  'Executive Summary': '执行摘要',
+  'Technical Approach': '技术方案',
+  Design: '设计',
+  Capabilities: '能力',
+  'Focus Documents': '重点文档',
+  Narrative: '叙述',
+  'Cover Page': '封面',
+};
+
+const statusLabels: Record<string, string> = {
+  Done: '完成',
+  'In Progress': '进行中',
+  'Not Started': '未开始',
+};
+
+const reviewerLabels: Record<string, string> = {
+  'Eddie Lake': '王一',
+  'Jamik Tashpulatov': '李明',
+  'Emily Whalen': '陈安',
+};
+
+function getTypeLabel(type: string): string {
+  return typeLabels[type] ?? type;
+}
+
+function getStatusLabel(status: string): string {
+  return statusLabels[status] ?? status;
+}
+
+function getReviewerLabel(reviewer: string): string {
+  return reviewerLabels[reviewer] ?? reviewer;
+}
+
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
   const { attributes, listeners } = useSortable({
@@ -126,7 +170,7 @@ function DragHandle({ id }: { id: number }) {
       className="text-muted-foreground size-7 hover:bg-transparent"
     >
       <GripVertical className="text-muted-foreground size-3" />
-      <span className="sr-only">Drag to reorder</span>
+      <span className="sr-only">拖拽排序</span>
     </Button>
   );
 }
@@ -147,7 +191,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
             (table.getIsSomePageRowsSelected() && 'indeterminate')
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
+          aria-label="全选"
         />
       </div>
     ),
@@ -156,7 +200,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
+          aria-label="选择行"
         />
       </div>
     ),
@@ -165,7 +209,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: 'header',
-    header: 'Header',
+    header: '标题',
     cell: ({ row }) => {
       return <TableCellViewer item={row.original} />;
     },
@@ -173,18 +217,18 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: 'type',
-    header: 'Section Type',
+    header: '章节类型',
     cell: ({ row }) => (
       <div className="w-32">
         <Badge variant="outline" className="text-muted-foreground px-1.5">
-          {row.original.type}
+          {getTypeLabel(row.original.type)}
         </Badge>
       </div>
     ),
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: '状态',
     cell: ({ row }) => (
       <Badge variant="outline" className="text-muted-foreground px-1.5">
         {row.original.status === 'Done' ? (
@@ -192,26 +236,26 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         ) : (
           <Loader2 className="animate-spin" />
         )}
-        {row.original.status}
+        {getStatusLabel(row.original.status)}
       </Badge>
     ),
   },
   {
     accessorKey: 'target',
-    header: () => <div className="w-full text-right">Target</div>,
+    header: () => <div className="w-full text-right">目标</div>,
     cell: ({ row }) => (
       <form
         onSubmit={(e) => {
           e.preventDefault();
           toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Saving ${row.original.header}`,
-            success: 'Done',
-            error: 'Error',
+            loading: `正在保存 ${row.original.header}`,
+            success: '已完成',
+            error: '保存失败',
           });
         }}
       >
         <Label htmlFor={`${row.original.id}-target`} className="sr-only">
-          Target
+          目标
         </Label>
         <Input
           className="hover:bg-input/30 focus-visible:bg-background dark:hover:bg-input/30 dark:focus-visible:bg-input/30 h-8 w-16 border-transparent bg-transparent text-right shadow-none focus-visible:border dark:bg-transparent"
@@ -223,20 +267,20 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: 'limit',
-    header: () => <div className="w-full text-right">Limit</div>,
+    header: () => <div className="w-full text-right">上限</div>,
     cell: ({ row }) => (
       <form
         onSubmit={(e) => {
           e.preventDefault();
           toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Saving ${row.original.header}`,
-            success: 'Done',
-            error: 'Error',
+            loading: `正在保存 ${row.original.header}`,
+            success: '已完成',
+            error: '保存失败',
           });
         }}
       >
         <Label htmlFor={`${row.original.id}-limit`} className="sr-only">
-          Limit
+          上限
         </Label>
         <Input
           className="hover:bg-input/30 focus-visible:bg-background dark:hover:bg-input/30 dark:focus-visible:bg-input/30 h-8 w-16 border-transparent bg-transparent text-right shadow-none focus-visible:border dark:bg-transparent"
@@ -248,18 +292,18 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: 'reviewer',
-    header: 'Reviewer',
+    header: '审核人',
     cell: ({ row }) => {
       const isAssigned = row.original.reviewer !== 'Assign reviewer';
 
       if (isAssigned) {
-        return row.original.reviewer;
+        return getReviewerLabel(row.original.reviewer);
       }
 
       return (
         <>
           <Label htmlFor={`${row.original.id}-reviewer`} className="sr-only">
-            Reviewer
+            审核人
           </Label>
           <Select>
             <SelectTrigger
@@ -267,13 +311,11 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
               size="sm"
               id={`${row.original.id}-reviewer`}
             >
-              <SelectValue placeholder="Assign reviewer" />
+              <SelectValue placeholder="分配审核人" />
             </SelectTrigger>
             <SelectContent align="end">
-              <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
-              <SelectItem value="Jamik Tashpulatov">
-                Jamik Tashpulatov
-              </SelectItem>
+              <SelectItem value="Eddie Lake">王一</SelectItem>
+              <SelectItem value="Jamik Tashpulatov">李明</SelectItem>
             </SelectContent>
           </Select>
         </>
@@ -291,15 +333,15 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
             size="icon"
           >
             <MoreVertical />
-            <span className="sr-only">Open menu</span>
+            <span className="sr-only">打开菜单</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-          <DropdownMenuItem>Make a copy</DropdownMenuItem>
-          <DropdownMenuItem>Favorite</DropdownMenuItem>
+          <DropdownMenuItem>编辑</DropdownMenuItem>
+          <DropdownMenuItem>复制</DropdownMenuItem>
+          <DropdownMenuItem>收藏</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+          <DropdownMenuItem variant="destructive">删除</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
@@ -403,7 +445,7 @@ export function DataTable({
     >
       <div className="flex items-center justify-between px-4 lg:px-6">
         <Label htmlFor="view-selector" className="sr-only">
-          View
+          视图
         </Label>
         <Select defaultValue="outline">
           <SelectTrigger
@@ -411,32 +453,32 @@ export function DataTable({
             size="sm"
             id="view-selector"
           >
-            <SelectValue placeholder="Select a view" />
+            <SelectValue placeholder="选择视图" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="outline">Outline</SelectItem>
-            <SelectItem value="past-performance">Past Performance</SelectItem>
-            <SelectItem value="key-personnel">Key Personnel</SelectItem>
-            <SelectItem value="focus-documents">Focus Documents</SelectItem>
+            <SelectItem value="outline">大纲</SelectItem>
+            <SelectItem value="past-performance">过往表现</SelectItem>
+            <SelectItem value="key-personnel">核心成员</SelectItem>
+            <SelectItem value="focus-documents">重点文档</SelectItem>
           </SelectContent>
         </Select>
         <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
-          <TabsTrigger value="outline">Outline</TabsTrigger>
+          <TabsTrigger value="outline">大纲</TabsTrigger>
           <TabsTrigger value="past-performance">
-            Past Performance <Badge variant="secondary">3</Badge>
+            过往表现 <Badge variant="secondary">3</Badge>
           </TabsTrigger>
           <TabsTrigger value="key-personnel">
-            Key Personnel <Badge variant="secondary">2</Badge>
+            核心成员 <Badge variant="secondary">2</Badge>
           </TabsTrigger>
-          <TabsTrigger value="focus-documents">Focus Documents</TabsTrigger>
+          <TabsTrigger value="focus-documents">重点文档</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <Columns3 />
-                <span className="hidden lg:inline">Customize Columns</span>
-                <span className="lg:hidden">Columns</span>
+                <span className="hidden lg:inline">自定义列</span>
+                <span className="lg:hidden">列</span>
                 <ChevronDown />
               </Button>
             </DropdownMenuTrigger>
@@ -458,7 +500,7 @@ export function DataTable({
                         column.toggleVisibility(!!value)
                       }
                     >
-                      {column.id}
+                      {columnLabels[column.id] ?? column.id}
                     </DropdownMenuCheckboxItem>
                   );
                 })}
@@ -466,7 +508,7 @@ export function DataTable({
           </DropdownMenu>
           <Button variant="outline" size="sm">
             <Plus />
-            <span className="hidden lg:inline">Add Section</span>
+            <span className="hidden lg:inline">添加章节</span>
           </Button>
         </div>
       </div>
@@ -517,7 +559,7 @@ export function DataTable({
                       colSpan={columns.length}
                       className="h-24 text-center"
                     >
-                      No results.
+                      无结果。
                     </TableCell>
                   </TableRow>
                 )}
@@ -527,13 +569,13 @@ export function DataTable({
         </div>
         <div className="flex items-center justify-between px-4">
           <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} of{' '}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
+            {table.getFilteredSelectedRowModel().rows.length} 条已选，共{' '}
+            {table.getFilteredRowModel().rows.length} 条。
           </div>
           <div className="flex w-full items-center gap-8 lg:w-fit">
             <div className="hidden items-center gap-2 lg:flex">
               <Label htmlFor="rows-per-page" className="text-sm font-medium">
-                Rows per page
+                每页行数
               </Label>
               <Select
                 value={`${table.getState().pagination.pageSize}`}
@@ -556,8 +598,8 @@ export function DataTable({
               </Select>
             </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{' '}
-              {table.getPageCount()}
+              第 {table.getState().pagination.pageIndex + 1} 页，共{' '}
+              {table.getPageCount()} 页
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <Button
@@ -566,7 +608,7 @@ export function DataTable({
                 onClick={() => table.setPageIndex(0)}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">Go to first page</span>
+                <span className="sr-only">第一页</span>
                 <ChevronsLeft />
               </Button>
               <Button
@@ -576,7 +618,7 @@ export function DataTable({
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">Go to previous page</span>
+                <span className="sr-only">上一页</span>
                 <ChevronLeft />
               </Button>
               <Button
@@ -586,7 +628,7 @@ export function DataTable({
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">Go to next page</span>
+                <span className="sr-only">下一页</span>
                 <ChevronRight />
               </Button>
               <Button
@@ -596,7 +638,7 @@ export function DataTable({
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">Go to last page</span>
+                <span className="sr-only">最后一页</span>
                 <ChevronsRight />
               </Button>
             </div>
@@ -623,21 +665,21 @@ export function DataTable({
 }
 
 const chartData = [
-  { month: 'January', desktop: 186, mobile: 80 },
-  { month: 'February', desktop: 305, mobile: 200 },
-  { month: 'March', desktop: 237, mobile: 120 },
-  { month: 'April', desktop: 73, mobile: 190 },
-  { month: 'May', desktop: 209, mobile: 130 },
-  { month: 'June', desktop: 214, mobile: 140 },
+  { month: '1 月', desktop: 186, mobile: 80 },
+  { month: '2 月', desktop: 305, mobile: 200 },
+  { month: '3 月', desktop: 237, mobile: 120 },
+  { month: '4 月', desktop: 73, mobile: 190 },
+  { month: '5 月', desktop: 209, mobile: 130 },
+  { month: '6 月', desktop: 214, mobile: 140 },
 ];
 
 const chartConfig = {
   desktop: {
-    label: 'Desktop',
+    label: '桌面端',
     color: 'var(--primary)',
   },
   mobile: {
-    label: 'Mobile',
+    label: '移动端',
     color: 'var(--primary)',
   },
 } satisfies ChartConfig;
@@ -655,9 +697,7 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
       <DrawerContent>
         <DrawerHeader className="gap-1">
           <DrawerTitle>{item.header}</DrawerTitle>
-          <DrawerDescription>
-            Showing total visitors for the last 6 months
-          </DrawerDescription>
+          <DrawerDescription>显示最近 6 个月的总访客数</DrawerDescription>
         </DrawerHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
           {!isMobile && (
@@ -705,13 +745,11 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
               <Separator />
               <div className="grid gap-2">
                 <div className="flex gap-2 leading-none font-medium">
-                  Trending up by 5.2% this month{' '}
-                  <TrendingUp className="size-4" />
+                  本月增长 5.2% <TrendingUp className="size-4" />
                 </div>
                 <div className="text-muted-foreground">
-                  Showing total visitors for the last 6 months. This is just
-                  some random text to test the layout. It spans multiple lines
-                  and should wrap around.
+                  显示最近 6
+                  个月的总访客数。这是一段用于测试布局的示例文字，会跨多行并自动换行。
                 </div>
               </div>
               <Separator />
@@ -719,81 +757,71 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
           )}
           <form className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
-              <Label htmlFor="header">Header</Label>
+              <Label htmlFor="header">标题</Label>
               <Input id="header" defaultValue={item.header} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="type">Type</Label>
+                <Label htmlFor="type">类型</Label>
                 <Select defaultValue={item.type}>
                   <SelectTrigger id="type" className="w-full">
-                    <SelectValue placeholder="Select a type" />
+                    <SelectValue placeholder="选择类型" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Table of Contents">
-                      Table of Contents
-                    </SelectItem>
-                    <SelectItem value="Executive Summary">
-                      Executive Summary
-                    </SelectItem>
-                    <SelectItem value="Technical Approach">
-                      Technical Approach
-                    </SelectItem>
-                    <SelectItem value="Design">Design</SelectItem>
-                    <SelectItem value="Capabilities">Capabilities</SelectItem>
-                    <SelectItem value="Focus Documents">
-                      Focus Documents
-                    </SelectItem>
-                    <SelectItem value="Narrative">Narrative</SelectItem>
-                    <SelectItem value="Cover Page">Cover Page</SelectItem>
+                    <SelectItem value="Table of Contents">目录</SelectItem>
+                    <SelectItem value="Executive Summary">执行摘要</SelectItem>
+                    <SelectItem value="Technical Approach">技术方案</SelectItem>
+                    <SelectItem value="Design">设计</SelectItem>
+                    <SelectItem value="Capabilities">能力</SelectItem>
+                    <SelectItem value="Focus Documents">重点文档</SelectItem>
+                    <SelectItem value="Narrative">叙述</SelectItem>
+                    <SelectItem value="Cover Page">封面</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex flex-col gap-3">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">状态</Label>
                 <Select defaultValue={item.status}>
                   <SelectTrigger id="status" className="w-full">
-                    <SelectValue placeholder="Select a status" />
+                    <SelectValue placeholder="选择状态" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Done">Done</SelectItem>
-                    <SelectItem value="In Progress">In Progress</SelectItem>
-                    <SelectItem value="Not Started">Not Started</SelectItem>
+                    <SelectItem value="Done">完成</SelectItem>
+                    <SelectItem value="In Progress">进行中</SelectItem>
+                    <SelectItem value="Not Started">未开始</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="target">Target</Label>
+                <Label htmlFor="target">目标</Label>
                 <Input id="target" defaultValue={item.target} />
               </div>
               <div className="flex flex-col gap-3">
-                <Label htmlFor="limit">Limit</Label>
+                <Label htmlFor="limit">上限</Label>
                 <Input id="limit" defaultValue={item.limit} />
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <Label htmlFor="reviewer">Reviewer</Label>
+              <Label htmlFor="reviewer">审核人</Label>
               <Select defaultValue={item.reviewer}>
                 <SelectTrigger id="reviewer" className="w-full">
-                  <SelectValue placeholder="Select a reviewer" />
+                  <SelectValue placeholder="选择审核人" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
-                  <SelectItem value="Jamik Tashpulatov">
-                    Jamik Tashpulatov
-                  </SelectItem>
-                  <SelectItem value="Emily Whalen">Emily Whalen</SelectItem>
+                  <SelectItem value="Eddie Lake">王一</SelectItem>
+                  <SelectItem value="Jamik Tashpulatov">李明</SelectItem>
+                  <SelectItem value="Emily Whalen">陈安</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </form>
         </div>
         <DrawerFooter>
-          <Button>Submit</Button>
+          <Button>提交</Button>
           <DrawerClose asChild>
-            <Button variant="outline">Done</Button>
+            <Button variant="outline">完成</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>

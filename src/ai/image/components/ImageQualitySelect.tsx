@@ -1,7 +1,7 @@
 'use client';
 
 // 画质选择器
-// Image quality selector for Duomi API
+// Image quality selector for async image generation
 
 import {
   DEFAULT_IMAGE_QUALITY,

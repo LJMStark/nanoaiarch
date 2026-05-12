@@ -59,7 +59,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
                   <AvatarImage
                     className="rounded-full border-4 border-gray-200"
                     src="/logo.png"
-                    alt="Avatar"
+                    alt="Arch AI 头像"
                   />
                   <AvatarFallback>
                     <div className="size-32 text-muted-foreground" />

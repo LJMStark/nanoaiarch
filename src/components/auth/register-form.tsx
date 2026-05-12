@@ -315,7 +315,7 @@ export const RegisterForm = ({
                       <Input
                         {...field}
                         disabled={isPending}
-                        placeholder="name"
+                        placeholder="姓名"
                       />
                     </FormControl>
                     <FormMessage />
@@ -332,7 +332,7 @@ export const RegisterForm = ({
                       <Input
                         {...field}
                         disabled={isPending}
-                        placeholder="name@example.com"
+                        placeholder="邮箱地址"
                         type="email"
                       />
                     </FormControl>
