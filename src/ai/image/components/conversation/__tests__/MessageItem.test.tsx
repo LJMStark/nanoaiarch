@@ -137,7 +137,10 @@ describe('MessageItem', () => {
   it('triggers edit by setting draft image', () => {
     render(<MessageItem message={createAssistantMessage()} isLast={true} />);
 
-    const editButton = screen.getByLabelText('canvas.edit');
+    // Desktop hover overlay + mobile action row both expose an Edit button
+    // with the same aria-label; either one wires to handleEdit, so pick
+    // the first match.
+    const [editButton] = screen.getAllByLabelText('canvas.edit');
     fireEvent.click(editButton);
 
     expect(mockSetDraftImage).toHaveBeenCalledWith(

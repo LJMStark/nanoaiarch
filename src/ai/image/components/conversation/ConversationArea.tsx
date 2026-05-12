@@ -7,30 +7,27 @@ import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
 import { ChevronDown } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MessageList } from './MessageList';
+import { MessageList, type MessageListHandle } from './MessageList';
 import { TemplateShowcase } from './TemplateShowcase';
 
 export function ConversationArea() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const messageListRef = useRef<MessageListHandle>(null);
   const [showJumpToBottom, setShowJumpToBottom] = useState(false);
   const { currentProjectId } = useProjectStore();
   const { messages, isLoadingMessages, isGenerating } = useConversationStore();
 
   const hasMessages = messages.length > 0;
+  // Delegates to the virtualizer's scrollToIndex so the scroll position
+  // stays correct after measureElement resolves real row heights — a raw
+  // viewport.scrollTo(scrollHeight) would jitter when the initial size
+  // estimate differs from the measured height.
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     setTimeout(() => {
-      const viewport = viewportRef.current;
-      if (!viewport) {
-        return;
-      }
-
-      viewport.scrollTo({
-        top: viewport.scrollHeight,
-        behavior,
-      });
+      messageListRef.current?.scrollToBottom(behavior);
       setShowJumpToBottom(false);
-    }, 100); // 延迟执行以确保React渲染和Framer Motion动画完成
+    }, 100);
   }, []);
 
   const updateScrollState = useCallback(() => {
@@ -110,7 +107,7 @@ export function ConversationArea() {
       <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
         <div className="p-4">
           <div className="max-w-3xl mx-auto">
-            <MessageList />
+            <MessageList ref={messageListRef} scrollViewportRef={viewportRef} />
           </div>
         </div>
       </ScrollArea>

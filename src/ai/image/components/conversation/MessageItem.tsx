@@ -53,7 +53,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 
 const GenerationParamsSchema = z.object({
@@ -68,13 +68,20 @@ interface MessageItemProps {
   isLast: boolean;
 }
 
-export function MessageItem({ message, isLast }: MessageItemProps) {
+// memo: virtualized rows in MessageList re-render on every scroll tick;
+// without memo the entire MessageItem subtree (incl. images + tooltips)
+// reconciles unnecessarily. Zustand keeps individual message refs stable
+// when other messages mutate, so default shallow comparison is correct.
+export const MessageItem = memo(function MessageItem({
+  message,
+  isLast,
+}: MessageItemProps) {
   if (message.role === 'user') {
     return <UserMessage message={message} />;
   }
 
   return <AssistantMessage message={message} isLast={isLast} />;
-}
+});
 
 function UserMessage({ message }: { message: ProjectMessageItem }) {
   const t = useTranslations('ArchPage');
@@ -547,6 +554,41 @@ function AssistantMessage({
                   )}
                 </TooltipProvider>
               </div>
+            </div>
+
+            <div className="mt-2 flex items-center gap-2 sm:hidden">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void handleDownload()}
+                aria-label={t('canvas.download')}
+                className="h-9 gap-1.5"
+              >
+                <Download className="h-4 w-4" />
+                <span className="text-xs">{t('canvas.download')}</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void handleShare()}
+                aria-label={t('canvas.share')}
+                className="h-9 gap-1.5"
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="text-xs">{t('canvas.share')}</span>
+              </Button>
+              {isLast && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEdit}
+                  aria-label={t('canvas.edit')}
+                  className="h-9 gap-1.5"
+                >
+                  <Edit3 className="h-4 w-4" />
+                  <span className="text-xs">{t('canvas.edit')}</span>
+                </Button>
+              )}
             </div>
 
             {message.generationTime && (
