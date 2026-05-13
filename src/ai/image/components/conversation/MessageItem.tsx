@@ -20,7 +20,6 @@ import {
   getOptionalInputImages,
   resolveInputImages,
 } from '@/ai/image/lib/input-images';
-import { getGenerationCssAspectRatio } from '@/ai/image/lib/message-aspect-ratio';
 import { updateAssistantMessageRequest } from '@/ai/image/lib/workspace-client';
 import type {
   GenerationParams,
@@ -521,21 +520,14 @@ function AssistantMessage({
           <div className="max-w-lg space-y-2">
             <button
               type="button"
-              className="relative block w-full cursor-zoom-in overflow-hidden rounded-xl border bg-muted"
-              style={{
-                aspectRatio: getGenerationCssAspectRatio(
-                  message.generationParams
-                ),
-              }}
+              className="block cursor-zoom-in"
               onClick={() => setIsPreviewOpen(true)}
               aria-label={t('canvas.openPreview')}
             >
-              <Image
+              <img
                 src={getImageSrc(message.outputImage)}
                 alt={t('canvas.generatedImageAlt')}
-                fill
-                sizes="(max-width: 640px) 100vw, 512px"
-                className="object-contain"
+                className="block h-auto w-auto max-w-full rounded-xl"
               />
             </button>
 
