@@ -70,3 +70,6 @@ next-env.d.ts
 !.dev.vars.example
 .gstack/
 ChatGPT Web Screens.zip
+
+# Ad-hoc local diagnostic scripts (the canonical SQL versions live in scripts/)
+scripts/credit-ledger-legacy-audit.ts
