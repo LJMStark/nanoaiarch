@@ -11,7 +11,15 @@ const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const DEFAULT_MODEL: GeminiImageModelId =
   (process.env.GEMINI_DEFAULT_MODEL as GeminiImageModelId) ||
   'gemini-3-pro-image-preview';
-const REQUEST_TIMEOUT_MS = 120_000; // 120s - synchronous API, no polling
+const REQUEST_TIMEOUT_MS = 120_000; // 120s per attempt - synchronous API
+
+// Retry policy: 503/502/504 and undici "fetch failed" are transient on the
+// Gemini side. 4xx (validation, auth, quota) are caller errors and must not
+// retry. Backoff stays small because Gemini counts retries against the RPM/RPD
+// quota; aggressive retries can deplete the quota during regional outages.
+const RETRYABLE_HTTP_STATUSES = new Set([502, 503, 504]);
+const MAX_RETRY_ATTEMPTS = 3;
+const BASE_BACKOFF_MS = 1000;
 // Older builds injected the documented dummy signature
 // "context_engineering_is_the_way to_go" (base64) as a fallback when the real
 // signature was missing. Gemini now rejects any signature that wasn't produced
@@ -435,8 +443,75 @@ function dedupeAdjacentTurnImages(
   }
 }
 
+function nextBackoffMs(attempt: number): number {
+  const base = BASE_BACKOFF_MS * 2 ** attempt;
+  const jitter = base * 0.3 * (Math.random() * 2 - 1);
+  return Math.max(0, Math.floor(base + jitter));
+}
+
+function isRetryableNetworkError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  if (error.name === 'AbortError') return false;
+  // Undici raises `TypeError: fetch failed` for DNS / connection-reset blips.
+  return error.name === 'TypeError' && error.message.includes('fetch failed');
+}
+
+function sleepWithSignal(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+async function fetchGeminiOnce(
+  url: string,
+  apiKey: string,
+  requestBody: Record<string, unknown>,
+  callerSignal?: AbortSignal
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const handleAbort = () => controller.abort();
+
+  if (callerSignal) {
+    if (callerSignal.aborted) {
+      controller.abort();
+    } else {
+      callerSignal.addEventListener('abort', handleAbort, { once: true });
+    }
+  }
+
+  try {
+    return await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+    callerSignal?.removeEventListener('abort', handleAbort);
+  }
+}
+
 /**
- * Core API call to Gemini generateContent endpoint
+ * Core API call to Gemini generateContent endpoint with bounded retry on
+ * transient failures (502/503/504 + undici network errors). Per-attempt
+ * 120s timeout; up to 3 retries with exponential backoff + jitter.
  */
 async function callGeminiApi(
   model: string,
@@ -444,67 +519,114 @@ async function callGeminiApi(
   signal?: AbortSignal
 ): Promise<GenerateImageResult> {
   const apiKey = getGeminiApiKey();
+  const url = `${GEMINI_API_BASE}/models/${model}:generateContent`;
+  logger.ai.debug(`[Gemini] Calling API [model=${model}]`);
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  const handleAbort = () => controller.abort();
+  let lastError: { status?: number; errorText?: string; cause?: Error } = {};
 
-  if (signal) {
-    if (signal.aborted) {
-      controller.abort();
-    } else {
-      signal.addEventListener('abort', handleAbort, { once: true });
-    }
-  }
+  for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+    try {
+      const response = await fetchGeminiOnce(url, apiKey, requestBody, signal);
 
-  try {
-    logger.ai.debug(`[Gemini] Calling API [model=${model}]`);
-
-    const response = await fetch(
-      `${GEMINI_API_BASE}/models/${model}:generateContent`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal,
+      if (response.ok) {
+        const data = await response.json();
+        return extractImageFromResponse(data);
       }
-    );
 
-    clearTimeout(timeoutId);
-    signal?.removeEventListener('abort', handleAbort);
-
-    if (!response.ok) {
       const errorText = await response.text();
+      lastError = { status: response.status, errorText };
+
+      if (
+        RETRYABLE_HTTP_STATUSES.has(response.status) &&
+        attempt < MAX_RETRY_ATTEMPTS
+      ) {
+        const backoffMs = nextBackoffMs(attempt);
+        logger.ai.warn(
+          `[Gemini] HTTP ${response.status}, retry ${attempt + 1}/${MAX_RETRY_ATTEMPTS} in ${backoffMs}ms`
+        );
+        try {
+          await sleepWithSignal(backoffMs, signal);
+        } catch {
+          logger.ai.info('[Gemini] Request aborted by caller during backoff');
+          return { success: false, error: '生成已取消' };
+        }
+        continue;
+      }
+
       logger.ai.error(`[Gemini] API error: ${response.status} - ${errorText}`);
       return {
         success: false,
         error: getGeminiApiErrorMessage(response.status, errorText),
       };
-    }
-
-    const data = await response.json();
-    return extractImageFromResponse(data);
-  } catch (error) {
-    clearTimeout(timeoutId);
-    signal?.removeEventListener('abort', handleAbort);
-    if (error instanceof Error && error.name === 'AbortError') {
+    } catch (error) {
       if (signal?.aborted) {
         logger.ai.info('[Gemini] Request aborted by caller');
         return { success: false, error: '生成已取消' };
       }
 
-      logger.ai.error('[Gemini] Request timeout');
-      return { success: false, error: '请求超时，请重试' };
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Per-attempt timeout fires AbortError without callerSignal.aborted.
+        // Treat as transient: the server didn't respond in 120s, worth one
+        // more shot if we have retries left.
+        if (attempt < MAX_RETRY_ATTEMPTS) {
+          const backoffMs = nextBackoffMs(attempt);
+          logger.ai.warn(
+            `[Gemini] Request timeout, retry ${attempt + 1}/${MAX_RETRY_ATTEMPTS} in ${backoffMs}ms`
+          );
+          try {
+            await sleepWithSignal(backoffMs, signal);
+          } catch {
+            return { success: false, error: '生成已取消' };
+          }
+          continue;
+        }
+        logger.ai.error('[Gemini] Request timeout');
+        return { success: false, error: '请求超时，请重试' };
+      }
+
+      if (isRetryableNetworkError(error) && attempt < MAX_RETRY_ATTEMPTS) {
+        const backoffMs = nextBackoffMs(attempt);
+        const message = error instanceof Error ? error.message : String(error);
+        logger.ai.warn(
+          `[Gemini] Network error (${message}), retry ${attempt + 1}/${MAX_RETRY_ATTEMPTS} in ${backoffMs}ms`
+        );
+        lastError = {
+          cause: error instanceof Error ? error : new Error(message),
+        };
+        try {
+          await sleepWithSignal(backoffMs, signal);
+        } catch {
+          return { success: false, error: '生成已取消' };
+        }
+        continue;
+      }
+
+      logger.ai.error('[Gemini] Request error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '未知错误',
+      };
     }
-    logger.ai.error('[Gemini] Request error:', error);
+  }
+
+  // All retries exhausted on a transient HTTP error.
+  if (lastError.status !== undefined && lastError.errorText !== undefined) {
+    logger.ai.error(
+      `[Gemini] API error after ${MAX_RETRY_ATTEMPTS} retries: ${lastError.status} - ${lastError.errorText}`
+    );
     return {
       success: false,
-      error: error instanceof Error ? error.message : '未知错误',
+      error: getGeminiApiErrorMessage(lastError.status, lastError.errorText),
     };
   }
+  logger.ai.error(
+    `[Gemini] Request failed after ${MAX_RETRY_ATTEMPTS} retries`,
+    lastError.cause
+  );
+  return {
+    success: false,
+    error: lastError.cause?.message ?? '请求失败，请稍后重试',
+  };
 }
 
 // ============================================

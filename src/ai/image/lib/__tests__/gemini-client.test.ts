@@ -337,6 +337,174 @@ describe('generateImageWithGemini', () => {
     });
   });
 
+  describe('retry on transient errors', () => {
+    function makeOkResponse() {
+      return {
+        ok: true,
+        json: async () => ({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    inlineData: { data: 'base64-image', mimeType: 'image/png' },
+                  },
+                ],
+              },
+              finishReason: 'STOP',
+            },
+          ],
+        }),
+      };
+    }
+
+    function makeHttpErrorResponse(status: number, body = '{}') {
+      return {
+        ok: false,
+        status,
+        text: async () => body,
+      };
+    }
+
+    it('retries on HTTP 503 and succeeds on second attempt', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(
+          makeHttpErrorResponse(503, 'Service Unavailable')
+        )
+        .mockResolvedValueOnce(makeOkResponse());
+      global.fetch = fetchMock as typeof fetch;
+
+      // Patch the backoff to zero so the test runs instantly. Math.random
+      // jitter at 0.5 keeps backoff = base * 2^attempt = 1000ms; mock it to
+      // collapse the wait.
+      const setTimeoutSpy = vi
+        .spyOn(global, 'setTimeout')
+        .mockImplementation((cb: any) => {
+          cb();
+          return 0 as unknown as NodeJS.Timeout;
+        });
+
+      const result = await generateImageWithGemini({
+        prompt: 'test',
+        aspectRatio: '1:1',
+        imageSize: '1K',
+      });
+
+      setTimeoutSpy.mockRestore();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(result.success).toBe(true);
+    });
+
+    it('gives up after MAX_RETRY_ATTEMPTS retries on persistent 503', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(makeHttpErrorResponse(503, 'Service Unavailable'));
+      global.fetch = fetchMock as typeof fetch;
+
+      const setTimeoutSpy = vi
+        .spyOn(global, 'setTimeout')
+        .mockImplementation((cb: any) => {
+          cb();
+          return 0 as unknown as NodeJS.Timeout;
+        });
+
+      const result = await generateImageWithGemini({
+        prompt: 'test',
+        aspectRatio: '1:1',
+        imageSize: '1K',
+      });
+
+      setTimeoutSpy.mockRestore();
+      // 1 initial + 3 retries = 4 calls
+      expect(fetchMock).toHaveBeenCalledTimes(4);
+      expect(result).toEqual({
+        success: false,
+        error: 'Gemini API 错误 (503)，请稍后重试',
+      });
+    });
+
+    it('does not retry on HTTP 429 (quota)', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(makeHttpErrorResponse(429, 'Quota Exceeded'));
+      global.fetch = fetchMock as typeof fetch;
+
+      const result = await generateImageWithGemini({
+        prompt: 'test',
+        aspectRatio: '1:1',
+        imageSize: '1K',
+      });
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(result.success).toBe(false);
+    });
+
+    it('does not retry on HTTP 400 (validation)', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(makeHttpErrorResponse(400, 'Bad Request'));
+      global.fetch = fetchMock as typeof fetch;
+
+      const result = await generateImageWithGemini({
+        prompt: 'test',
+        aspectRatio: '1:1',
+        imageSize: '1K',
+      });
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(result.success).toBe(false);
+    });
+
+    it('retries on undici "fetch failed" network error', async () => {
+      const networkError = new TypeError('fetch failed');
+      const fetchMock = vi
+        .fn()
+        .mockRejectedValueOnce(networkError)
+        .mockResolvedValueOnce(makeOkResponse());
+      global.fetch = fetchMock as typeof fetch;
+
+      const setTimeoutSpy = vi
+        .spyOn(global, 'setTimeout')
+        .mockImplementation((cb: any) => {
+          cb();
+          return 0 as unknown as NodeJS.Timeout;
+        });
+
+      const result = await generateImageWithGemini({
+        prompt: 'test',
+        aspectRatio: '1:1',
+        imageSize: '1K',
+      });
+
+      setTimeoutSpy.mockRestore();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(result.success).toBe(true);
+    });
+
+    it('aborts immediately when caller signal is already aborted', async () => {
+      const fetchMock = vi.fn().mockImplementation(async (_url, init) => {
+        if (init?.signal?.aborted) {
+          throw new DOMException('Aborted', 'AbortError');
+        }
+        return makeOkResponse();
+      });
+      global.fetch = fetchMock as typeof fetch;
+
+      const controller = new AbortController();
+      controller.abort();
+
+      const result = await generateImageWithGemini({
+        prompt: 'test',
+        aspectRatio: '1:1',
+        imageSize: '1K',
+        signal: controller.signal,
+      });
+
+      expect(result).toEqual({ success: false, error: '生成已取消' });
+    });
+  });
+
   it('serializes multiple user reference images in a single conversation turn', async () => {
     await editImageWithConversationGemini({
       model: 'gemini-3-pro-image-preview',
