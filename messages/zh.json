@@ -1508,6 +1508,8 @@
       "credits": "{count} 积分",
       "today": "今天",
       "yesterday": "昨天",
+      "last7Days": "过去 7 天",
+      "older": "更早",
       "daysAgo": "{count} 天前",
       "pin": "置顶",
       "unpin": "取消置顶",

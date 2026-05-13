@@ -70,10 +70,17 @@
   --shadow-2xl: var(--shadow-2xl);
 
   /* fonts */
-  --font-sans: var(--font-noto-sans);
-  --font-mono: var(--font-noto-sans-mono);
-  --font-serif: var(--font-noto-serif);
+  --font-sans: var(--font-noto-sans), "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
+  --font-mono: var(--font-noto-sans-mono), "SF Mono", Menlo, Consolas,
+    "PingFang SC", monospace;
+  --font-serif: var(--font-noto-serif), "Songti SC", "SimSun",
+    "Source Han Serif SC", serif;
   --font-bricolage-grotesque: var(--font-bricolage-grotesque);
+
+  /* easing — single source of truth for the whole app */
+  --ease-out-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-expressive: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* animate */
   --animate-shiny-text: shiny-text 8s infinite;
@@ -219,9 +226,12 @@
   --sidebar-accent-foreground: oklch(0.34 0.04 151);
   --sidebar-border: oklch(0.877 0.011 84);
   --sidebar-ring: oklch(0.57 0.057 150);
-  --font-sans: var(--font-noto-sans);
-  --font-serif: var(--font-noto-serif);
-  --font-mono: var(--font-noto-sans-mono);
+  --font-sans: var(--font-noto-sans), "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
+  --font-serif: var(--font-noto-serif), "Songti SC", "SimSun",
+    "Source Han Serif SC", serif;
+  --font-mono: var(--font-noto-sans-mono), "SF Mono", Menlo, Consolas,
+    "PingFang SC", monospace;
   --radius: 1.15rem;
   --shadow-2xs: 0 4px 10px rgb(47 57 39 / 0.04);
   --shadow-xs: 0 6px 18px rgb(47 57 39 / 0.06);
@@ -271,9 +281,12 @@
   --sidebar-accent-foreground: oklch(0.89 0.016 88);
   --sidebar-border: oklch(0.34 0.011 154);
   --sidebar-ring: oklch(0.71 0.086 150);
-  --font-sans: var(--font-noto-sans);
-  --font-serif: var(--font-noto-serif);
-  --font-mono: var(--font-noto-sans-mono);
+  --font-sans: var(--font-noto-sans), "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
+  --font-serif: var(--font-noto-serif), "Songti SC", "SimSun",
+    "Source Han Serif SC", serif;
+  --font-mono: var(--font-noto-sans-mono), "SF Mono", Menlo, Consolas,
+    "PingFang SC", monospace;
   --radius: 1.15rem;
   --shadow-2xs: 0 4px 10px rgb(0 0 0 / 0.14);
   --shadow-xs: 0 8px 18px rgb(0 0 0 / 0.18);
@@ -331,6 +344,14 @@
       ), linear-gradient(180deg, rgb(255 255 255 / 0.12), transparent 22%);
     font-feature-settings: "ss01" 1;
     position: relative;
+    transition: background-color 200ms var(--ease-out-standard), color 200ms
+      var(--ease-out-standard);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body {
+      transition: none;
+    }
   }
 
   body::before {

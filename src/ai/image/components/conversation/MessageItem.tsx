@@ -43,10 +43,43 @@ import {
   RefreshCw,
   Share2,
 } from 'lucide-react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
+
+// Entry animation only for messages that were appended *recently* — i.e.
+// during this session, not historical messages re-mounting on project
+// switch / page refresh. We gate on (1) isLast (only the bottom item) and
+// (2) createdAt freshness within ENTRY_FRESHNESS_WINDOW_MS. The window is
+// generous enough to cover a slow first paint after generation completes
+// but short enough that opening an old project never replays animations.
+const ENTRY_FRESHNESS_WINDOW_MS = 5000;
+
+function MessageEnter({
+  isLast,
+  createdAt,
+  children,
+}: {
+  isLast: boolean;
+  createdAt: string | Date;
+  children: React.ReactNode;
+}) {
+  const shouldReduceMotion = useReducedMotion();
+  const isFresh =
+    Date.now() - new Date(createdAt).getTime() < ENTRY_FRESHNESS_WINDOW_MS;
+  const shouldAnimate = isLast && isFresh && !shouldReduceMotion;
+  return (
+    <motion.div
+      initial={shouldAnimate ? { opacity: 0, y: 4 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 const GenerationParamsSchema = z.object({
   prompt: z.string(),
@@ -127,13 +160,19 @@ export const MessageItem = memo(function MessageItem({
   isLast,
 }: MessageItemProps) {
   if (message.role === 'user') {
-    return <UserMessage message={message} />;
+    return <UserMessage message={message} isLast={isLast} />;
   }
 
   return <AssistantMessage message={message} isLast={isLast} />;
 });
 
-function UserMessage({ message }: { message: ProjectMessageItem }) {
+function UserMessage({
+  message,
+  isLast,
+}: {
+  message: ProjectMessageItem;
+  isLast: boolean;
+}) {
   const t = useTranslations('ArchPage');
   const userInputImages = resolveInputImages(
     message.inputImages,
@@ -141,31 +180,33 @@ function UserMessage({ message }: { message: ProjectMessageItem }) {
   );
 
   return (
-    <div className="flex w-full justify-end px-2 py-2">
-      <div className="flex max-w-[85%] flex-col gap-2 rounded-2xl bg-muted/60 px-4 py-2.5 sm:max-w-[75%]">
-        <p className="break-words whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
-          {message.content}
-        </p>
-        {userInputImages.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {userInputImages.map((inputImage, index) => (
-              <div
-                key={`${message.id}-input-${index}`}
-                className="relative aspect-square w-24 overflow-hidden rounded-lg border sm:w-32"
-              >
-                <Image
-                  src={getImageSrc(inputImage)}
-                  alt={`${t('canvas.referenceImageAlt')} ${index + 1}`}
-                  fill
-                  sizes="128px"
-                  className="object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        )}
+    <MessageEnter isLast={isLast} createdAt={message.createdAt}>
+      <div className="flex w-full justify-end px-2 py-2">
+        <div className="flex max-w-[85%] flex-col gap-2 rounded-2xl bg-muted/60 px-4 py-2.5 sm:max-w-[75%]">
+          <p className="break-words whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
+            {message.content}
+          </p>
+          {userInputImages.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {userInputImages.map((inputImage, index) => (
+                <div
+                  key={`${message.id}-input-${index}`}
+                  className="relative aspect-square w-24 overflow-hidden rounded-lg border sm:w-32"
+                >
+                  <Image
+                    src={getImageSrc(inputImage)}
+                    alt={`${t('canvas.referenceImageAlt')} ${index + 1}`}
+                    fill
+                    sizes="128px"
+                    className="object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </MessageEnter>
   );
 }
 
@@ -493,97 +534,99 @@ function AssistantMessage({
   }
 
   return (
-    <div className="flex w-full justify-start px-2 py-2">
-      <div className="min-w-0 flex-1 space-y-4 max-w-[90%] sm:max-w-[85%]">
-        {isFailed ? (
-          <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-            <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
-            <span className="flex-1 text-sm text-destructive">
-              {message.errorMessage || t('errors.generationFailed')}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRetry}
-              disabled={isRetrying || isGenerating}
-              className="flex-shrink-0"
-            >
-              {isRetrying ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-1 h-4 w-4" />
-              )}
-              {t('canvas.retry')}
-            </Button>
-          </div>
-        ) : message.outputImage ? (
-          <div className="max-w-lg space-y-2">
-            <button
-              type="button"
-              className="block cursor-zoom-in"
-              onClick={() => setIsPreviewOpen(true)}
-              aria-label={t('canvas.openPreview')}
-            >
-              <img
-                src={getImageSrc(message.outputImage)}
-                alt={t('canvas.generatedImageAlt')}
-                className="block h-auto w-auto max-w-full rounded-xl"
-              />
-            </button>
-
-            <ImageActionRow
-              variant="outline"
-              containerClassName="flex flex-wrap items-center gap-2"
-              buttonClassName="h-9 gap-1.5"
-              showEdit={isLast}
-              onDownload={() => void handleDownload()}
-              onShare={() => void handleShare()}
-              onEdit={handleEdit}
-            />
-
-            {message.generationTime && (
-              <div className="text-xs text-muted-foreground">
-                {t('canvas.generatedIn', {
-                  seconds: (message.generationTime / 1000).toFixed(1),
-                })}
-                {message.creditsUsed &&
-                  ` · ${t('projects.credits', { count: message.creditsUsed })}`}
-              </div>
-            )}
-
-            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-              <DialogContent className="!max-w-[95vw] sm:!max-w-[95vw] w-fit !p-0 !border-0 !bg-transparent !shadow-none !gap-3">
-                <DialogTitle className="sr-only">
-                  {t('canvas.generatedImageAlt')}
-                </DialogTitle>
-                <DialogDescription className="sr-only">
-                  {t('canvas.previewDescription')}
-                </DialogDescription>
+    <MessageEnter isLast={isLast} createdAt={message.createdAt}>
+      <div className="flex w-full justify-start px-2 py-2">
+        <div className="min-w-0 flex-1 space-y-4 max-w-[90%] sm:max-w-[85%]">
+          {isFailed ? (
+            <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+              <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
+              <span className="flex-1 text-sm text-destructive">
+                {message.errorMessage || t('errors.generationFailed')}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetry}
+                disabled={isRetrying || isGenerating}
+                className="flex-shrink-0"
+              >
+                {isRetrying ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-1 h-4 w-4" />
+                )}
+                {t('canvas.retry')}
+              </Button>
+            </div>
+          ) : message.outputImage ? (
+            <div className="max-w-lg space-y-2">
+              <button
+                type="button"
+                className="block cursor-zoom-in"
+                onClick={() => setIsPreviewOpen(true)}
+                aria-label={t('canvas.openPreview')}
+              >
                 <img
                   src={getImageSrc(message.outputImage)}
                   alt={t('canvas.generatedImageAlt')}
-                  className="block h-auto w-auto max-h-[85vh] max-w-[95vw] rounded-lg object-contain shadow-2xl"
+                  className="block h-auto w-auto max-w-full rounded-xl"
                 />
-                <ImageActionRow
-                  variant="ghost"
-                  containerClassName="mx-auto flex flex-wrap items-center justify-center gap-1.5 rounded-full bg-background/95 px-2.5 py-1.5 shadow-lg backdrop-blur"
-                  buttonClassName="h-8 gap-1.5"
-                  showEdit={isLast}
-                  onDownload={() => void handleDownload()}
-                  onShare={() => void handleShare()}
-                  onEdit={handleEdit}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
-        ) : null}
+              </button>
 
-        {message.content && (
-          <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
-            {message.content}
-          </p>
-        )}
+              <ImageActionRow
+                variant="outline"
+                containerClassName="flex flex-wrap items-center gap-2"
+                buttonClassName="h-9 gap-1.5"
+                showEdit={isLast}
+                onDownload={() => void handleDownload()}
+                onShare={() => void handleShare()}
+                onEdit={handleEdit}
+              />
+
+              {message.generationTime && (
+                <div className="text-xs text-muted-foreground">
+                  {t('canvas.generatedIn', {
+                    seconds: (message.generationTime / 1000).toFixed(1),
+                  })}
+                  {message.creditsUsed &&
+                    ` · ${t('projects.credits', { count: message.creditsUsed })}`}
+                </div>
+              )}
+
+              <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+                <DialogContent className="!max-w-[95vw] sm:!max-w-[95vw] w-fit !p-0 !border-0 !bg-transparent !shadow-none !gap-3">
+                  <DialogTitle className="sr-only">
+                    {t('canvas.generatedImageAlt')}
+                  </DialogTitle>
+                  <DialogDescription className="sr-only">
+                    {t('canvas.previewDescription')}
+                  </DialogDescription>
+                  <img
+                    src={getImageSrc(message.outputImage)}
+                    alt={t('canvas.generatedImageAlt')}
+                    className="block h-auto w-auto max-h-[85vh] max-w-[95vw] rounded-lg object-contain shadow-2xl"
+                  />
+                  <ImageActionRow
+                    variant="ghost"
+                    containerClassName="mx-auto flex flex-wrap items-center justify-center gap-1.5 rounded-full bg-background/95 px-2.5 py-1.5 shadow-lg backdrop-blur"
+                    buttonClassName="h-8 gap-1.5"
+                    showEdit={isLast}
+                    onDownload={() => void handleDownload()}
+                    onShare={() => void handleShare()}
+                    onEdit={handleEdit}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+          ) : null}
+
+          {message.content && (
+            <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
+              {message.content}
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+    </MessageEnter>
   );
 }

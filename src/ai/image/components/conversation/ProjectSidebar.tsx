@@ -98,6 +98,28 @@ export function ProjectSidebar() {
   const pinnedProjects = projects.filter((p) => p.isPinned);
   const recentProjects = projects.filter((p) => !p.isPinned);
 
+  // ChatGPT-style time bucketing: today / yesterday / past 7 days / older.
+  // Computed inline since the project list is small (typically <100) and the
+  // buckets must re-evaluate when projects mutate.
+  const timeGroups = (() => {
+    const dayMs = 1000 * 60 * 60 * 24;
+    const today: ImageProjectItem[] = [];
+    const yesterday: ImageProjectItem[] = [];
+    const last7Days: ImageProjectItem[] = [];
+    const older: ImageProjectItem[] = [];
+    const now = Date.now();
+    for (const project of recentProjects) {
+      const diffDays = Math.floor(
+        (now - new Date(project.lastActiveAt).getTime()) / dayMs
+      );
+      if (diffDays <= 0) today.push(project);
+      else if (diffDays === 1) yesterday.push(project);
+      else if (diffDays < 7) last7Days.push(project);
+      else older.push(project);
+    }
+    return { today, yesterday, last7Days, older };
+  })();
+
   const isSearching = searchQuery.trim().length > 0;
   const filteredProjects = isSearching
     ? projects.filter((p) =>
@@ -293,7 +315,7 @@ export function ProjectSidebar() {
                     setSearchQuery('');
                     searchInputRef.current?.focus();
                   }}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded-sm hover:bg-accent text-muted-foreground"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded-sm hover:bg-accent active:scale-90 transition-[background-color,transform] duration-150 text-muted-foreground"
                   aria-label="清空搜索"
                 >
                   <X className="h-3 w-3" />
@@ -363,36 +385,60 @@ export function ProjectSidebar() {
                 </SidebarGroup>
               )}
 
-              <SidebarGroup>
-                <SidebarGroupLabel>{t('projects.recent')}</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {recentProjects.length === 0 ? (
-                      <div className="px-3 py-8 text-center text-sm text-muted-foreground">
-                        <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p>{t('projects.emptyTitle')}</p>
-                        <p className="text-xs mt-1">
-                          {t('projects.emptyDescription')}
-                        </p>
-                      </div>
-                    ) : (
-                      recentProjects.map((project) => (
-                        <ProjectListItem
-                          key={project.id}
-                          project={project}
-                          isActive={currentProjectId === project.id}
-                          onSelect={() => selectProject(project.id)}
-                          onTogglePin={(e) => handleTogglePin(project, e)}
-                          onRename={(e) => handleRename(project, e)}
-                          onArchive={(e) => handleArchive(project, e)}
-                          onDelete={(e) => handleDelete(project, e)}
-                          isBusy={busyProjectIds.has(project.id)}
-                        />
-                      ))
-                    )}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
+              {recentProjects.length === 0 ? (
+                <SidebarGroup>
+                  <SidebarGroupLabel>{t('projects.recent')}</SidebarGroupLabel>
+                  <SidebarGroupContent>
+                    <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+                      <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>{t('projects.emptyTitle')}</p>
+                      <p className="text-xs mt-1">
+                        {t('projects.emptyDescription')}
+                      </p>
+                    </div>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              ) : (
+                (
+                  [
+                    ['today', t('projects.today'), timeGroups.today],
+                    [
+                      'yesterday',
+                      t('projects.yesterday'),
+                      timeGroups.yesterday,
+                    ],
+                    [
+                      'last7Days',
+                      t('projects.last7Days'),
+                      timeGroups.last7Days,
+                    ],
+                    ['older', t('projects.older'), timeGroups.older],
+                  ] as const
+                )
+                  .filter(([, , list]) => list.length > 0)
+                  .map(([key, label, list]) => (
+                    <SidebarGroup key={key}>
+                      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {list.map((project) => (
+                            <ProjectListItem
+                              key={project.id}
+                              project={project}
+                              isActive={currentProjectId === project.id}
+                              onSelect={() => selectProject(project.id)}
+                              onTogglePin={(e) => handleTogglePin(project, e)}
+                              onRename={(e) => handleRename(project, e)}
+                              onArchive={(e) => handleArchive(project, e)}
+                              onDelete={(e) => handleDelete(project, e)}
+                              isBusy={busyProjectIds.has(project.id)}
+                            />
+                          ))}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </SidebarGroup>
+                  ))
+              )}
             </>
           )}
         </SidebarContent>

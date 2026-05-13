@@ -206,7 +206,7 @@ export function ConversationHeader() {
             <button
               type="button"
               onClick={handleStartEdit}
-              className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors group"
+              className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted active:scale-[0.97] transition-[background-color,transform] duration-150 group"
             >
               <span className="font-medium text-sm">
                 {currentProject.title}
