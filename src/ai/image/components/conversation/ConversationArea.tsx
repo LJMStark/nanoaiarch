@@ -11,13 +11,12 @@ import { MessageList, type MessageListHandle } from './MessageList';
 import { TemplateShowcase } from './TemplateShowcase';
 
 export function ConversationArea() {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const messageListRef = useRef<MessageListHandle>(null);
   const [showJumpToBottom, setShowJumpToBottom] = useState(false);
-  // TanStack Virtual reads getScrollElement once at init; if the ref is
-  // still null then, it never recovers. Gate MessageList rendering on a
-  // confirmed viewport so the virtualizer initializes with a real element.
+  // TanStack Virtual reads getScrollElement once on mount; if the ref is
+  // still null at that moment it never recovers. We gate MessageList on
+  // viewportReady so the virtualizer always sees a real DOM node.
   const [viewportReady, setViewportReady] = useState(false);
   const { currentProjectId } = useProjectStore();
   const { messages, isLoadingMessages, isGenerating } = useConversationStore();
@@ -45,32 +44,32 @@ export function ConversationArea() {
     setShowJumpToBottom(distanceToBottom > 96);
   }, []);
 
-  useEffect(() => {
-    const viewport = scrollRef.current?.querySelector<HTMLDivElement>(
-      '[data-slot="scroll-area-viewport"]'
-    );
-    viewportRef.current = viewport ?? null;
+  // Callback ref — bound to the DOM node's lifecycle, not the parent
+  // component's mount cycle. Fires every time ConversationArea swaps
+  // between TemplateShowcase (no ScrollArea) and the message-list branch
+  // (Radix Viewport mounts/unmounts) without us having to maintain a
+  // brittle useEffect deps list against ref+querySelector.
+  // Pattern: https://tkdodo.eu/blog/avoiding-use-effect-with-callback-refs
+  const setViewport = useCallback(
+    (node: HTMLDivElement | null) => {
+      const prev = viewportRef.current;
+      if (prev && prev !== node) {
+        prev.removeEventListener('scroll', updateScrollState);
+      }
 
-    if (!viewport) {
-      // ScrollArea hasn't mounted yet — happens when ConversationArea
-      // first renders the TemplateShowcase branch (no messages yet) and
-      // only later swaps to the ScrollArea once the user submits.
-      setViewportReady(false);
-      return;
-    }
+      viewportRef.current = node;
 
-    setViewportReady(true);
-    updateScrollState();
-    viewport.addEventListener('scroll', updateScrollState, { passive: true });
+      if (!node) {
+        setViewportReady(false);
+        return;
+      }
 
-    return () => {
-      viewport.removeEventListener('scroll', updateScrollState);
-    };
-    // hasMessages / isLoadingMessages / currentProjectId are listed so the
-    // effect re-runs every time the parent flips between TemplateShowcase
-    // and the ScrollArea branches; otherwise the viewport ref stays null
-    // forever after the first empty mount and MessageList never renders.
-  }, [updateScrollState, hasMessages, isLoadingMessages, currentProjectId]);
+      setViewportReady(true);
+      updateScrollState();
+      node.addEventListener('scroll', updateScrollState, { passive: true });
+    },
+    [updateScrollState]
+  );
 
   useEffect(() => {
     if (!showJumpToBottom) {
@@ -78,17 +77,8 @@ export function ConversationArea() {
     }
   }, [isGenerating, messages, scrollToBottom, showJumpToBottom]);
 
-  // 没有选中项目时显示全屏瀑布流画廊
-  if (!currentProjectId && !isLoadingMessages) {
-    return (
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <TemplateShowcase showFullView />
-      </div>
-    );
-  }
-
-  // 有项目但没有消息时也显示瀑布流（用户可以选择模板开始）
-  if (!hasMessages && !isLoadingMessages) {
+  // 没有选中项目或项目无消息时都显示全屏瀑布流（用户可选择模板开始）
+  if (!isLoadingMessages && (!currentProjectId || !hasMessages)) {
     return (
       <div className="flex-1 min-h-0 overflow-hidden">
         <TemplateShowcase showFullView />
@@ -117,7 +107,7 @@ export function ConversationArea() {
   // 有消息时显示消息列表
   return (
     <div className="relative flex flex-1 min-h-0 flex-col">
-      <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
+      <ScrollArea viewportRef={setViewport} className="flex-1 min-h-0">
         <div className="p-4">
           <div className="max-w-3xl mx-auto">
             {viewportReady && (
