@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-> **Last verified**: 2026-05-11 against commit `3f18de62`
+> **Last verified**: 2026-05-13 against commit `cdd1efa4`
 > **Maintenance rule**: 任何 PR 修改了支付/认证/AI Provider/i18n 配置时，必须同步更新本文件并刷新顶部时间戳与 commit hash。
 
 本文件为 Claude Code (claude.ai/code) 在此仓库内工作时提供项目级上下文。
@@ -83,6 +83,7 @@
 - `src/stores/conversation-store.ts` — 消息历史（带持久化）
 - `src/stores/project-store.ts` — 项目配置和草稿状态
 - 已知问题：`currentProjectId` 在两个 store 并行维护，存在不一致风险（参见 `docs/baselines/` 重构计划）
+- **持久化白名单**（`project-store` v4）：只持久 `imageQuality` 和 `selectedModel`。`currentProjectId` 故意**不**进 localStorage——见上文"工作台入口策略"。新增持久字段必须先扩 `PersistedProjectState`，否则 `partialize` 类型检查就会报错
 
 **Components**（位于 `src/ai/image/components/`）
 - `ArchPlayground.tsx` — 主 playground 页面
@@ -104,6 +105,14 @@
 - 从 localStorage 恢复 generating 状态
 - 防止"卡住的 generating"孤儿消息
 - ⚠️ 已知缺陷：失败判定过于激进（找不到消息立刻 markFailed），重构计划在 Week 4
+
+**工作台入口策略 (Week 5)**
+- 访问 `/ai/image`（无 query）→ **永远显示 TemplateShowcase 空状态**，不自动恢复上次项目
+- `?new=1` → 服务端创建空项目并进入
+- `?template=xxx` → 打开模板详情 modal，不自动选项目
+- 进入具体项目只能通过：sidebar 点击、`?new=1` CTA、未来可能加的 URL projectId 参数
+- 实现层面：`ConversationLayout` 默认 mode 为 `'blank'`；`useConversationInit` 永远传 `null` 给 `getConversationInitData`；后者不再有"无 requestedProjectId 时 fallback 到 `existingProjects[0]`"的兜底
+- 副作用：刷新工作台会失去当前项目（需重新从 sidebar 点入），这是与 ChatGPT / Linear / Figma 等产品对齐的有意取舍
 
 #### 2. Server Actions 模式 (`src/actions/`)
 
@@ -129,8 +138,14 @@ export async function actionName(params) {
 
 **关键 Server Actions**：
 - `src/actions/project-message.ts` — 对话消息 CRUD
+- `src/actions/project-message-recovery.ts` — lease-expiry 扫尾 + Duomi 异步任务结算（从 project-message.ts 拆出，避免单文件超过 1500 行）
+- `src/actions/project-message-internal.ts` — 上面两个模块共享的类型与小工具
 - `src/actions/image-project.ts` — 项目管理
 - `src/actions/check-payment-completion.ts` — 支付完成验证
+
+⚠️ **Next.js `'use server'` 重新导出陷阱**（Zeabur 生产构建会失败）：
+不要在 `'use server'` 文件里写 `export { x } from './other'`——即使被导出的是 async 函数，Next.js 打包器也会把整个模块认成"完全没有 exports"，所有下游 import 全 resolve 失败。
+正确做法：包成本地的薄 async wrapper。`project-message.ts:46-60` 是参考实现。
 
 #### 3. 数据库 Schema (`src/db/schema.ts`)
 
@@ -196,6 +211,10 @@ const t = useTranslations('PageName');
 - 注册礼积分（一次性，50 积分，30 天有效）
 - 一次性购买积分包（basic/standard/pro × month/quarter/year，9 个 SKU）
 - 流水记录在 `creditTransaction` 表
+- 模块拆分（避免单文件 800+ 行）：
+  - `credits.ts` — 公共入口、重新导出
+  - `credits-hold.ts` — hold 生命周期（reserve → confirm/release）
+  - `credits-internal.ts` — 两个文件共享的 ledger/balance 工具
 
 **zpay 集成** (`src/payment/provider/zpay.ts`)：
 - ⚠️ **仅支持一次性付款**，不支持订阅
@@ -402,13 +421,15 @@ describe('ComponentName', () => {
 
 | 优先级 | 问题 | 计划修复 |
 |---|---|---|
-| CRITICAL | `holdCredits` 并发缝隙 | Week 1 |
-| CRITICAL | Lifetime webhook 月度积分错发 | Week 1 |
-| CRITICAL | 文档与代码失同步 | Week 1（本次） |
-| ~~CRITICAL~~ | ~~缺生产错误监控 (Sentry)~~ | 已取消 — Week 1+2 修完静默失败路径后紧迫性降低，看部署平台自带日志即可 |
+| ~~CRITICAL~~ | ~~`holdCredits` 并发缝隙~~ | 已修复（Week 1） |
+| ~~CRITICAL~~ | ~~Lifetime webhook 月度积分错发~~ | 已修复（Week 1） |
+| ~~CRITICAL~~ | ~~文档与代码失同步~~ | 已修复（Week 1） |
+| ~~CRITICAL~~ | ~~缺生产错误监控 (Sentry)~~ | 已取消 — 看部署平台自带日志即可 |
 | HIGH | `busyProjectId` 防护失效 | Week 2 |
 | HIGH | 双 store `currentProjectId` 不同步 | Week 2 |
-| HIGH | `MessageItem.tsx` 重复代码 | Week 2 |
+| ~~HIGH~~ | ~~`MessageItem.tsx` 重复代码~~ | 已修复（Week 5，提取 `ImageActionRow`） |
 | HIGH | Admin bypass 无审计 | Week 2 |
 | HIGH | CI 不跑 lint/typecheck/build | Week 3 |
 | HIGH | 无 E2E、无真 DB 集成测试 | Week 3 |
+| ~~MEDIUM~~ | ~~`/ai/image` 默默恢复上次项目~~ | 已修复（Week 5，见"工作台入口策略"） |
+| ~~MEDIUM~~ | ~~新建项目时短暂 skeleton 闪烁~~ | 已修复（Week 5，temp→real ID 跳过 refetch） |
