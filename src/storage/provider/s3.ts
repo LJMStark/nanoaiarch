@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { logger } from '@/lib/logger';
-import { s3mini } from 's3mini';
+import { S3mini } from 's3mini';
 import { storageConfig } from '../config/storage-config';
 import {
   ConfigurationError,
@@ -12,30 +12,25 @@ import {
   type UploadFileResult,
 } from '../types';
 
-type S3MiniSignedRequest = (
-  method: 'PUT',
-  key: string,
-  options: {
-    body?: string | Buffer;
-    headers?: Record<string, string | number | undefined>;
-    tolerated?: number[];
-  }
-) => Promise<Response>;
+// S3mini's public `additionalHeaders` parameter is typed to only accept
+// `x-amz-*` keys, but the runtime accepts arbitrary headers and forwards them
+// to the signed request. Cache-Control is a standard S3 object header, so we
+// pass it through this widened type.
+type S3MiniExtraHeaders = Record<string, string>;
 
 /**
- * Amazon S3 storage provider implementation using s3mini
+ * Amazon S3 storage provider implementation using S3mini
  *
  * docs:
  * https://mksaas.com/docs/storage
  *
- * This provider works with Amazon S3 and compatible services like Cloudflare R2
- * using s3mini for better Cloudflare Workers compatibility
+ * Works with Amazon S3 and compatible services like Cloudflare R2.
  * https://github.com/good-lly/s3mini
  * https://developers.cloudflare.com/r2/
  */
 export class S3Provider implements StorageProvider {
   private config: StorageConfig;
-  private s3Client: s3mini | null = null;
+  private s3Client: S3mini | null = null;
 
   constructor(config: StorageConfig = storageConfig) {
     this.config = config;
@@ -51,7 +46,7 @@ export class S3Provider implements StorageProvider {
   /**
    * Get the S3 client instance
    */
-  private getS3Client(): s3mini {
+  private getS3Client(): S3mini {
     if (this.s3Client) {
       return this.s3Client;
     }
@@ -68,18 +63,18 @@ export class S3Provider implements StorageProvider {
     }
 
     if (!endpoint) {
-      throw new ConfigurationError('Storage endpoint is required for s3mini');
+      throw new ConfigurationError('Storage endpoint is required for S3mini');
     }
 
     if (!bucketName) {
       throw new ConfigurationError('Storage bucket name is not configured');
     }
 
-    // s3mini client configuration
-    // The bucket name needs to be included in the endpoint URL for s3mini
+    // S3mini client configuration
+    // The bucket name needs to be included in the endpoint URL for S3mini
     const endpointWithBucket = `${endpoint.replace(/\/$/, '')}/${bucketName}`;
 
-    this.s3Client = new s3mini({
+    this.s3Client = new S3mini({
       accessKeyId,
       secretAccessKey,
       endpoint: endpointWithBucket,
@@ -96,49 +91,6 @@ export class S3Provider implements StorageProvider {
     const extension = originalFilename.split('.').pop() || '';
     const uuid = randomUUID();
     return `${uuid}${extension ? `.${extension}` : ''}`;
-  }
-
-  /**
-   * s3mini's public putObject API doesn't expose object headers yet.
-   * Use its signed request helper so immutable uploads carry CDN cache metadata.
-   */
-  private async putObjectWithHeaders(
-    s3: s3mini,
-    key: string,
-    fileContent: Buffer | string,
-    contentType: string,
-    cacheControl?: string
-  ): Promise<Response> {
-    if (!cacheControl) {
-      return s3.putObject(key, fileContent, contentType);
-    }
-
-    const signedRequest = (
-      s3 as unknown as {
-        _signedRequest?: S3MiniSignedRequest;
-      }
-    )._signedRequest;
-
-    if (!signedRequest) {
-      logger.storage.warn(
-        's3mini signed request helper unavailable; uploading without cache-control',
-        { key }
-      );
-      return s3.putObject(key, fileContent, contentType);
-    }
-
-    return signedRequest.call(s3, 'PUT', key, {
-      body: fileContent,
-      headers: {
-        'Content-Length':
-          typeof fileContent === 'string'
-            ? Buffer.byteLength(fileContent)
-            : fileContent.length,
-        'Content-Type': contentType,
-        'Cache-Control': cacheControl,
-      },
-      tolerated: [200],
-    });
   }
 
   /**
@@ -161,13 +113,17 @@ export class S3Provider implements StorageProvider {
         fileContent = file;
       }
 
-      // Upload the file using s3mini
-      const response = await this.putObjectWithHeaders(
-        s3,
+      const cacheControl = params.cacheControl ?? this.config.cacheControl;
+      const extraHeaders: S3MiniExtraHeaders | undefined = cacheControl
+        ? { 'Cache-Control': cacheControl }
+        : undefined;
+
+      const response = await s3.putObject(
         key,
         fileContent,
         contentType,
-        params.cacheControl ?? this.config.cacheControl
+        undefined,
+        extraHeaders as Parameters<S3mini['putObject']>[4]
       );
 
       if (!response.ok) {
@@ -183,7 +139,7 @@ export class S3Provider implements StorageProvider {
         url = `${publicUrl.replace(/\/$/, '')}/${key}`;
         logger.storage.debug('uploadFile using public url', { url });
       } else {
-        // For s3mini, we construct the URL manually
+        // For S3mini, we construct the URL manually
         // Since bucket is included in endpoint, we just append the key
         const baseUrl = this.config.endpoint?.replace(/\/$/, '') || '';
         url = `${baseUrl}/${key}`;

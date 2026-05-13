@@ -288,8 +288,8 @@ importers:
         specifier: ^4.4.1
         version: 4.4.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       s3mini:
-        specifier: ^0.2.0
-        version: 0.2.0
+        specifier: ^0.9.4
+        version: 0.9.4
       shiki:
         specifier: ^2.4.2
         version: 2.5.0
@@ -6976,8 +6976,8 @@ packages:
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
 
-  s3mini@0.2.0:
-    resolution: {integrity: sha512-wEiPibnyGN8B/1vJiOQGZbaF/t5A356RjAH4ch75UZi5e04LM9qaRh3A5KXk2Eq/qdU7I/2qXtigk1ifFl6yEA==}
+  s3mini@0.9.4:
+    resolution: {integrity: sha512-lA6p6JY0+lbcz/NJL8O/BKU8q96iA3f+wDO/QCg4QxOooEJwe0fomHZoeDJhs8TDDRTA40OVNY2E9wOQgAoAVw==}
     engines: {node: '>=20'}
 
   safe-buffer@5.2.1:
@@ -14203,7 +14203,7 @@ snapshots:
     dependencies:
       queue-microtask: 1.2.3
 
-  s3mini@0.2.0: {}
+  s3mini@0.9.4: {}
 
   safe-buffer@5.2.1: {}
 
