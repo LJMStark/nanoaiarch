@@ -4,20 +4,54 @@ import {
   isGeminiLocationUnsupported,
 } from './gemini-error-utils';
 
+const MAX_TITLE_LENGTH = 24;
+const FALLBACK_TITLE_LENGTH = 12;
+const DEFAULT_TITLE = '未命名项目';
+
+const TITLE_PROMPT_TEMPLATE = `把下面的图片生成请求总结为一个 4-8 个汉字的简短中文标题，像 ChatGPT 对话标题那样精炼。
+
+要求：
+- 只用名词短语或"动词+名词"结构
+- 抓核心意图，不要复述细节
+- 不要标点、引号、"标题："等前缀
+- 无论输入是什么语言，标题必须是中文
+
+示例：
+请求：把这张草图渲染成北欧风格客厅，强调原木质感 → 北欧风客厅
+请求：白模转夜景效果图，玻璃幕墙反射霓虹 → 夜景玻璃幕墙
+请求：平面图生成3D等轴鸟瞰 → 3D鸟瞰图
+请求：translate this floor plan into a modern minimalist living room → 现代极简客厅
+
+请求：__USER_MESSAGE__
+标题：`;
+
+function buildFallbackTitle(userMessage: string): string {
+  const trimmed = userMessage.trim();
+  if (!trimmed) {
+    return DEFAULT_TITLE;
+  }
+  return trimmed.slice(0, FALLBACK_TITLE_LENGTH);
+}
+
+function sanitizeGeneratedTitle(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^标题[:：]\s*/, '')
+    .replace(/^["'「『《]+|["'」』》]+$/g, '')
+    .replace(/[。！？.!?]+$/, '')
+    .trim()
+    .slice(0, MAX_TITLE_LENGTH);
+}
+
 /**
- * Generate a short title (10-30 characters) from user message using AI
- * Falls back to truncating the message if AI generation fails
+ * Generate a short conversation-style title (target 4-8 Chinese characters)
+ * from a user message via Gemini. Falls back to a short truncation of the
+ * original message on any failure.
  */
 export async function generateProjectTitle(
   userMessage: string
 ): Promise<string> {
-  // Fallback: use first 30 characters if message is short
-  const fallbackTitle = userMessage.slice(0, 30).trim();
-
-  // If message is already short enough, use it directly
-  if (userMessage.length <= 30) {
-    return fallbackTitle;
-  }
+  const fallbackTitle = buildFallbackTitle(userMessage);
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -28,9 +62,8 @@ export async function generateProjectTitle(
       return fallbackTitle;
     }
 
-    // Use Gemini API to generate title
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     const response = await fetch(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
@@ -46,14 +79,17 @@ export async function generateProjectTitle(
             {
               parts: [
                 {
-                  text: `请用中文将以下图片生成描述总结为一个10-30字的简短中文标题。无论输入是什么语言，标题必须是中文。只返回标题文本，不要引号或其他内容。\n\n描述：${userMessage}`,
+                  text: TITLE_PROMPT_TEMPLATE.replace(
+                    '__USER_MESSAGE__',
+                    userMessage
+                  ),
                 },
               ],
             },
           ],
           generationConfig: {
-            maxOutputTokens: 50,
-            temperature: 0.7,
+            maxOutputTokens: 20,
+            temperature: 0.3,
           },
         }),
       }
@@ -88,11 +124,14 @@ export async function generateProjectTitle(
       return fallbackTitle;
     }
 
-    // Remove quotes if present
-    const cleanTitle = generatedTitle.replace(/^["']|["']$/g, '').trim();
+    const finalTitle = sanitizeGeneratedTitle(generatedTitle);
 
-    // Limit to 60 characters max (database constraint)
-    const finalTitle = cleanTitle.slice(0, 60);
+    if (!finalTitle) {
+      logger.ai.warn(
+        '[Title Generator] Sanitized title was empty, using fallback'
+      );
+      return fallbackTitle;
+    }
 
     logger.ai.info(
       `[Title Generator] Generated title: "${finalTitle}" from message: "${userMessage.slice(0, 50)}..."`
