@@ -219,17 +219,7 @@ export async function recoverExpiredGeneratingMessages(opts: {
         continue;
       }
 
-      const exactHold = await findHoldRecordByIdempotencyKey(
-        `gen-hold:${row.id}`,
-        row.userId
-      );
-      const hold =
-        exactHold?.holdStatus === HOLD_STATUS.PENDING
-          ? exactHold
-          : ((await findLatestHoldRecordByIdempotencyKeyPrefix(
-              `gen-hold:${row.id}:`,
-              row.userId
-            )) ?? exactHold);
+      const hold = await findLatestHoldForMessage(row.id, row.userId);
       const holdId = hold?.id ?? null;
 
       if (hold?.holdStatus === HOLD_STATUS.PENDING) {
