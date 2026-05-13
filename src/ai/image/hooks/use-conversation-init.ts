@@ -41,7 +41,7 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
   // mode so genuine route transitions re-initialize, while spurious
   // re-renders within the same mode stay no-op.
   const initializedModeRef = useRef<ConversationInitMode | null>(null);
-  const mode = options?.mode ?? 'resume';
+  const mode = options?.mode ?? 'blank';
 
   const { setProjects, setLoadingProjects, selectProject } = useProjectStore();
 
@@ -62,13 +62,11 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
       setLoadingProjects(true);
       setLoadingMessages(true);
 
-      // Get persisted project ID from store
-      const persistedProjectId =
-        mode === 'resume' ? useProjectStore.getState().currentProjectId : null;
-
-      const result = await fetchConversationInitData(persistedProjectId, {
-        mode,
-      });
+      // Workbench entry never auto-restores the previously open project.
+      // Both 'blank' (default plain /ai/image entry) and 'new-project'
+      // (?new=1 CTA) bootstrap from a clean slate; the server only ever
+      // selects a project when the caller explicitly requests one.
+      const result = await fetchConversationInitData(null, { mode });
 
       if (result.success) {
         const {
@@ -77,7 +75,6 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
           currentProjectId: resolvedProjectId,
         } = result.data;
 
-        // Update projects
         setProjects(projects);
 
         if (!resolvedProjectId) {
@@ -88,13 +85,7 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
           return;
         }
 
-        // Update current project if different
-        if (resolvedProjectId && resolvedProjectId !== persistedProjectId) {
-          selectProject(resolvedProjectId);
-        }
-
-        // Update messages — reset transient conversation state for the new
-        // project before populating with server data.
+        selectProject(resolvedProjectId);
         resetForProject();
         setMessages(messages);
         syncRecoveredGenerationState(

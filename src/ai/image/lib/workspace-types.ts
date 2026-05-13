@@ -93,7 +93,7 @@ export type ConversationInitData = {
   currentProjectId: string | null;
 };
 
-export type ConversationInitMode = 'resume' | 'blank' | 'new-project';
+export type ConversationInitMode = 'blank' | 'new-project';
 
 export type MessageStatusItem = {
   id: string;

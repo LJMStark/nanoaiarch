@@ -20,7 +20,7 @@ export interface ConversationInitData {
   currentProjectId: string | null;
 }
 
-export type ConversationInitMode = 'resume' | 'blank' | 'new-project';
+export type ConversationInitMode = 'blank' | 'new-project';
 
 function normalizeConversationProject(
   project: ImageProjectItem
@@ -57,7 +57,7 @@ export async function getConversationInitData(
   try {
     const db = await getDb();
     const userId = session.user.id;
-    const mode = options?.mode ?? 'resume';
+    const mode = options?.mode ?? 'blank';
 
     const existingProjects = (
       (await db
@@ -101,22 +101,21 @@ export async function getConversationInitData(
       };
     }
 
-    // Determine which project to load messages for
+    // Determine which project to load messages for. Honors the caller's
+    // explicit requestedProjectId only — never auto-restores the user's most
+    // recent project on a no-hint workbench entry. Entering /ai/image from
+    // the marketing homepage, a logo click, or any external link should
+    // land on the empty TemplateShowcase, not silently reopen wherever the
+    // user last was.
     let currentProjectId: string | null = null;
 
     if (requestedProjectId) {
-      // Verify the requested project belongs to the user
       const validProject = existingProjects.find(
         (p) => p.id === requestedProjectId
       );
       if (validProject) {
         currentProjectId = requestedProjectId;
       }
-    }
-
-    // If no valid requested project, use the first project
-    if (!currentProjectId && existingProjects.length > 0) {
-      currentProjectId = existingProjects[0].id;
     }
 
     // Fetch messages for the current project

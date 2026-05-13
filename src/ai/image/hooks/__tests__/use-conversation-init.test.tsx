@@ -172,16 +172,16 @@ describe('useConversationInit', () => {
     });
 
     const { rerender } = renderHook(
-      ({ mode }: { mode: 'resume' }) => useConversationInit({ mode } as any),
-      { initialProps: { mode: 'resume' } }
+      ({ mode }: { mode: 'blank' }) => useConversationInit({ mode } as any),
+      { initialProps: { mode: 'blank' } }
     );
 
     await waitFor(() => {
       expect(fetchConversationInitDataMock).toHaveBeenCalledTimes(1);
     });
 
-    rerender({ mode: 'resume' });
-    rerender({ mode: 'resume' });
+    rerender({ mode: 'blank' });
+    rerender({ mode: 'blank' });
 
     // Still exactly one fetch — same-mode re-renders are no-ops.
     expect(fetchConversationInitDataMock).toHaveBeenCalledTimes(1);
@@ -203,7 +203,7 @@ describe('useConversationInit', () => {
       },
     });
 
-    renderHook(() => useConversationInit({ mode: 'resume' } as any));
+    renderHook(() => useConversationInit({ mode: 'new-project' } as any));
 
     await waitFor(() => {
       expect(setMessagesMock).toHaveBeenCalledWith([

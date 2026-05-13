@@ -5,7 +5,6 @@ import {
   type ImageQuality,
 } from '@/ai/image/lib/image-constants';
 import type { GeminiModelId } from '@/ai/image/lib/provider-config';
-import { isTemporaryId } from '@/ai/image/lib/temp-ids';
 import type { ImageProjectItem } from '@/ai/image/lib/workspace-types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
@@ -29,7 +28,7 @@ import { persist } from 'zustand/middleware';
 /** Whitelist of fields that survive a page reload. Keep this list small. */
 type PersistedProjectState = Pick<
   ProjectState,
-  'currentProjectId' | 'imageQuality' | 'selectedModel'
+  'imageQuality' | 'selectedModel'
 >;
 
 interface ProjectState {
@@ -191,14 +190,11 @@ export const useProjectStore = create<ProjectState>()(
     }),
     {
       name: 'project-store',
-      version: 3,
+      version: 4,
       // Explicit return type forces the partialize body to stay aligned
       // with the persistence whitelist. Adding a new field here without
       // first extending PersistedProjectState is a type error — by design.
       partialize: (state): PersistedProjectState => ({
-        currentProjectId: isTemporaryId(state.currentProjectId)
-          ? null
-          : state.currentProjectId,
         imageQuality: state.imageQuality,
         selectedModel: state.selectedModel,
       }),
@@ -222,6 +218,14 @@ export const useProjectStore = create<ProjectState>()(
 
         if (version < 3) {
           const { aspectRatio, ...rest } = nextState;
+          nextState = rest;
+        }
+
+        if (version < 4) {
+          // Workbench entry no longer auto-restores the last project; drop
+          // any lingering persisted currentProjectId so it can't quietly
+          // resurface via direct store reads.
+          const { currentProjectId, ...rest } = nextState;
           nextState = rest;
         }
 

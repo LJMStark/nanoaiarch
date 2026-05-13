@@ -57,14 +57,17 @@ describe('project-store', () => {
     expect(nextState.draftPrompt).toBe('draw a chair');
   });
 
-  it('does not persist optimistic temp project ids', () => {
+  it('does not persist the current project id', () => {
+    // Workbench entry never auto-restores the previously open project, so
+    // currentProjectId is intentionally absent from the persistence whitelist
+    // regardless of whether the user selected a real or optimistic temp id.
     const store = useProjectStore.getState();
 
     store.selectProject('temp-project-1');
 
     const persisted = localStorage.getItem('project-store');
     expect(persisted).not.toBeNull();
-    expect(JSON.parse(persisted!).state.currentProjectId).toBeNull();
+    expect(JSON.parse(persisted!).state).not.toHaveProperty('currentProjectId');
   });
 
   it('replaces a temporary project without clearing draft state', () => {

@@ -56,13 +56,21 @@ export function ConversationLayout() {
   // Use unified template apply hook
   const { applyTemplateWithProject } = useTemplateApply();
 
-  // Use optimized conversation init hook (single request for projects + messages)
+  // Use optimized conversation init hook (single request for projects + messages).
+  // Plain /ai/image always boots into the clean TemplateShowcase view; the only
+  // way to land directly inside a project is via the ?new=1 CTA, which forces
+  // a fresh project on the server.
   useConversationInit({
-    mode: startNewProject ? 'new-project' : templateId ? 'blank' : 'resume',
+    mode: startNewProject ? 'new-project' : 'blank',
   });
 
   const { currentProjectId } = useProjectStore();
   const prevProjectIdRef = useRef<string | null>(null);
+  // Separate boolean — `prevProjectIdRef === null` cannot double as the
+  // first-run signal now that bootstrap legitimately leaves currentProjectId
+  // null (no auto-restore). Without this, the first sidebar click after entry
+  // would be eaten by the "initial load handled by useConversationInit" guard.
+  const hasInitializedRef = useRef(false);
   const loadRequestIdRef = useRef(0);
 
   const {
@@ -111,12 +119,11 @@ export function ConversationLayout() {
 
   // Load messages when project changes (after initial load)
   useEffect(() => {
-    // Skip if this is the initial load (handled by useConversationInit)
-    if (prevProjectIdRef.current === null) {
+    // Skip the very first run — initial bootstrap is handled by
+    // useConversationInit (which also resets transient state).
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
       prevProjectIdRef.current = currentProjectId;
-      if (!currentProjectId || isTemporaryId(currentProjectId)) {
-        clearTransientProjectState();
-      }
       return;
     }
 
