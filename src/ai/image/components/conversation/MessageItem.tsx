@@ -33,14 +33,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { logger } from '@/lib/logger';
-import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useProjectStore } from '@/stores/project-store';
 import {
@@ -66,6 +59,64 @@ const GenerationParamsSchema = z.object({
 interface MessageItemProps {
   message: ProjectMessageItem;
   isLast: boolean;
+}
+
+interface ImageActionRowProps {
+  variant: 'outline' | 'ghost';
+  containerClassName: string;
+  buttonClassName: string;
+  showEdit: boolean;
+  onDownload: () => void;
+  onShare: () => void;
+  onEdit: (event: React.MouseEvent) => void;
+}
+
+function ImageActionRow({
+  variant,
+  containerClassName,
+  buttonClassName,
+  showEdit,
+  onDownload,
+  onShare,
+  onEdit,
+}: ImageActionRowProps): React.JSX.Element {
+  const t = useTranslations('ArchPage');
+  return (
+    <div className={containerClassName}>
+      <Button
+        variant={variant}
+        size="sm"
+        onClick={onDownload}
+        aria-label={t('canvas.download')}
+        className={buttonClassName}
+      >
+        <Download className="h-4 w-4" />
+        <span className="text-xs">{t('canvas.download')}</span>
+      </Button>
+      <Button
+        variant={variant}
+        size="sm"
+        onClick={onShare}
+        aria-label={t('canvas.share')}
+        className={buttonClassName}
+      >
+        <Share2 className="h-4 w-4" />
+        <span className="text-xs">{t('canvas.share')}</span>
+      </Button>
+      {showEdit && (
+        <Button
+          variant={variant}
+          size="sm"
+          onClick={onEdit}
+          aria-label={t('canvas.edit')}
+          className={buttonClassName}
+        >
+          <Edit3 className="h-4 w-4" />
+          <span className="text-xs">{t('canvas.edit')}</span>
+        </Button>
+      )}
+    </div>
+  );
 }
 
 // memo: virtualized rows in MessageList re-render on every scroll tick;
@@ -126,7 +177,6 @@ function AssistantMessage({
   message: ProjectMessageItem;
   isLast: boolean;
 }) {
-  const [isHovered, setIsHovered] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const isMountedRef = useRef(true);
@@ -468,131 +518,39 @@ function AssistantMessage({
             </Button>
           </div>
         ) : message.outputImage ? (
-          <div
-            className="group relative max-w-lg"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-          >
-            <div className="relative overflow-hidden rounded-xl border bg-muted">
-              <button
-                type="button"
-                className="relative block w-full cursor-zoom-in"
-                style={{
-                  aspectRatio: getGenerationCssAspectRatio(
-                    message.generationParams
-                  ),
-                }}
-                onClick={() => setIsPreviewOpen(true)}
-                aria-label={t('canvas.openPreview')}
-              >
-                <Image
-                  src={getImageSrc(message.outputImage)}
-                  alt={t('canvas.generatedImageAlt')}
-                  fill
-                  sizes="(max-width: 640px) 100vw, 512px"
-                  className="object-contain"
-                />
-              </button>
-              <div
-                className={cn(
-                  'pointer-events-none absolute inset-0 hidden items-center justify-center gap-2 bg-black/50 transition-opacity sm:flex',
-                  isHovered ? 'opacity-100' : 'opacity-0'
-                )}
-              >
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void handleDownload();
-                        }}
-                        className="pointer-events-auto h-10 w-10"
-                        aria-label={t('canvas.download')}
-                      >
-                        <Download className="h-5 w-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{t('canvas.download')}</TooltipContent>
-                  </Tooltip>
+          <div className="max-w-lg space-y-2">
+            <button
+              type="button"
+              className="relative block w-full cursor-zoom-in overflow-hidden rounded-xl border bg-muted"
+              style={{
+                aspectRatio: getGenerationCssAspectRatio(
+                  message.generationParams
+                ),
+              }}
+              onClick={() => setIsPreviewOpen(true)}
+              aria-label={t('canvas.openPreview')}
+            >
+              <Image
+                src={getImageSrc(message.outputImage)}
+                alt={t('canvas.generatedImageAlt')}
+                fill
+                sizes="(max-width: 640px) 100vw, 512px"
+                className="object-contain"
+              />
+            </button>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void handleShare();
-                        }}
-                        className="pointer-events-auto h-10 w-10"
-                        aria-label={t('canvas.share')}
-                      >
-                        <Share2 className="h-5 w-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{t('canvas.share')}</TooltipContent>
-                  </Tooltip>
-
-                  {isLast && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          className="pointer-events-auto h-10 w-10"
-                          onClick={handleEdit}
-                          aria-label={t('canvas.edit')}
-                        >
-                          <Edit3 className="h-5 w-5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{t('canvas.edit')}</TooltipContent>
-                    </Tooltip>
-                  )}
-                </TooltipProvider>
-              </div>
-            </div>
-
-            <div className="mt-2 flex items-center gap-2 sm:hidden">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void handleDownload()}
-                aria-label={t('canvas.download')}
-                className="h-9 gap-1.5"
-              >
-                <Download className="h-4 w-4" />
-                <span className="text-xs">{t('canvas.download')}</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void handleShare()}
-                aria-label={t('canvas.share')}
-                className="h-9 gap-1.5"
-              >
-                <Share2 className="h-4 w-4" />
-                <span className="text-xs">{t('canvas.share')}</span>
-              </Button>
-              {isLast && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleEdit}
-                  aria-label={t('canvas.edit')}
-                  className="h-9 gap-1.5"
-                >
-                  <Edit3 className="h-4 w-4" />
-                  <span className="text-xs">{t('canvas.edit')}</span>
-                </Button>
-              )}
-            </div>
+            <ImageActionRow
+              variant="outline"
+              containerClassName="flex flex-wrap items-center gap-2"
+              buttonClassName="h-9 gap-1.5"
+              showEdit={isLast}
+              onDownload={() => void handleDownload()}
+              onShare={() => void handleShare()}
+              onEdit={handleEdit}
+            />
 
             {message.generationTime && (
-              <div className="mt-1 text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground">
                 {t('canvas.generatedIn', {
                   seconds: (message.generationTime / 1000).toFixed(1),
                 })}
@@ -602,48 +560,27 @@ function AssistantMessage({
             )}
 
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-              <DialogContent className="max-w-5xl overflow-hidden p-0">
+              <DialogContent className="!max-w-[95vw] sm:!max-w-[95vw] w-fit !p-0 !border-0 !bg-transparent !shadow-none !gap-3">
                 <DialogTitle className="sr-only">
                   {t('canvas.generatedImageAlt')}
                 </DialogTitle>
                 <DialogDescription className="sr-only">
                   {t('canvas.previewDescription')}
                 </DialogDescription>
-                <div className="border-b bg-background/95 px-4 py-3">
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => void handleDownload()}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      {t('canvas.download')}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => void handleShare()}
-                    >
-                      <Share2 className="mr-2 h-4 w-4" />
-                      {t('canvas.share')}
-                    </Button>
-                    {isLast && (
-                      <Button variant="outline" size="sm" onClick={handleEdit}>
-                        <Edit3 className="mr-2 h-4 w-4" />
-                        {t('canvas.edit')}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <div className="relative h-[80vh] w-full bg-black">
-                  <Image
-                    src={getImageSrc(message.outputImage)}
-                    alt={t('canvas.generatedImageAlt')}
-                    fill
-                    sizes="100vw"
-                    className="object-contain"
-                  />
-                </div>
+                <img
+                  src={getImageSrc(message.outputImage)}
+                  alt={t('canvas.generatedImageAlt')}
+                  className="block h-auto w-auto max-h-[85vh] max-w-[95vw] rounded-lg object-contain shadow-2xl"
+                />
+                <ImageActionRow
+                  variant="ghost"
+                  containerClassName="mx-auto flex flex-wrap items-center justify-center gap-1.5 rounded-full bg-background/95 px-2.5 py-1.5 shadow-lg backdrop-blur"
+                  buttonClassName="h-8 gap-1.5"
+                  showEdit={isLast}
+                  onDownload={() => void handleDownload()}
+                  onShare={() => void handleShare()}
+                  onEdit={handleEdit}
+                />
               </DialogContent>
             </Dialog>
           </div>
