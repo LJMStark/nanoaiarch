@@ -318,7 +318,11 @@ describe('holdCredits', () => {
     });
   });
 
-  it('creates a reconciled ledger entry when legacy balance has no transactions', async () => {
+  it('throws when ledger is inconsistent with user balance (no fallback)', async () => {
+    // Pre-2026-05 behavior fabricated a BALANCE_RECONCILIATION row inline.
+    // After migration 0026 backfilled every legacy user, this state should
+    // be unreachable — surfacing it as an error catches future regressions
+    // where balance gets credited without a matching ledger row.
     const db = createMockDb();
     const tx = createMockTx();
 
@@ -331,31 +335,14 @@ describe('holdCredits', () => {
 
     mocks.getDb.mockResolvedValue(db);
 
-    await holdCredits({
-      userId: 'user-1',
-      amount: 1,
-      idempotencyKey: 'legacy-balance-hold',
-      description: 'test hold',
-    });
-
-    expect(tx.__insertValues).toHaveBeenCalledWith(
-      expect.objectContaining({
+    await expect(
+      holdCredits({
         userId: 'user-1',
-        type: CREDIT_TRANSACTION_TYPE.BALANCE_RECONCILIATION,
         amount: 1,
-        remainingAmount: 0,
+        idempotencyKey: 'legacy-balance-hold',
+        description: 'test hold',
       })
-    );
-
-    const holdRecord = tx.__insertValues.mock.calls.at(-1)?.[0];
-    expect(JSON.parse(holdRecord.metadata)).toEqual({
-      allocations: [
-        {
-          transactionId: expect.any(String),
-          amount: 1,
-        },
-      ],
-    });
+    ).rejects.toThrow(/Credit ledger is inconsistent/);
   });
 
   it('throws when atomic balance reservation does not update a row', async () => {

@@ -2,7 +2,6 @@
 // extracted credits-hold.ts. Lives in its own file so credits-hold.ts can
 // import these without creating a circular dep with credits.ts.
 
-import { randomUUID } from 'crypto';
 import { creditTransaction, userCredit } from '@/db/schema';
 import { logger } from '@/lib/logger';
 import { and, asc, eq, gt, gte, isNull, not, or, sql } from 'drizzle-orm';
@@ -27,28 +26,6 @@ export type HoldAllocation = {
  */
 export function serializeAdminBypassMetadata(): string {
   return JSON.stringify({ adminBypass: true });
-}
-
-export function buildBalanceReconciliationTransaction({
-  userId,
-  amount,
-  now,
-}: {
-  userId: string;
-  amount: number;
-  now: Date;
-}) {
-  return {
-    id: randomUUID(),
-    userId,
-    type: CREDIT_TRANSACTION_TYPE.BALANCE_RECONCILIATION,
-    amount,
-    remainingAmount: 0,
-    description: `Reconciled legacy credit balance: ${amount}`,
-    metadata: JSON.stringify({ reason: 'legacy_balance_without_ledger' }),
-    createdAt: now,
-    updatedAt: now,
-  };
 }
 
 export async function reserveUserCreditBalance({
@@ -152,26 +129,25 @@ export async function allocateCreditLedgerEntries({
   }
 
   if (remainingToDeduct > 0) {
-    const reconciledTransaction = buildBalanceReconciliationTransaction({
-      userId,
-      amount: remainingToDeduct,
-      now,
-    });
-
-    await tx.insert(creditTransaction).values(reconciledTransaction);
-    allocations.push({
-      transactionId: reconciledTransaction.id,
-      amount: remainingToDeduct,
-    });
-
-    logger.credits.warn(
-      'allocateCreditLedgerEntries reconciled legacy balance',
+    // Historically we fabricated a BALANCE_RECONCILIATION row here to absorb
+    // the difference between user_credit.current_credits and the ledger sum.
+    // That path silently papered over data inconsistency.
+    //
+    // Migration 0026_backfill_legacy_credit_ledger backfilled every existing
+    // pre-ledger user, so this branch should now be unreachable. If it fires,
+    // a credit accrual path created balance without writing a ledger row —
+    // that's the bug to investigate, not patch over.
+    logger.credits.error(
+      'allocateCreditLedgerEntries: credit ledger inconsistent with user balance',
       {
         userId,
         amount,
         remainingToDeduct,
         availableTransactions: transactions.length,
       }
+    );
+    throw new Error(
+      `Credit ledger is inconsistent: balance and ledger out of sync for user ${userId}`
     );
   }
 

@@ -183,6 +183,13 @@
       "when": 1778337422464,
       "tag": "0025_wise_the_enforcers",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1778400000000,
+      "tag": "0026_backfill_legacy_credit_ledger",
+      "breakpoints": true
     }
   ]
 }
