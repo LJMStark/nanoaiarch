@@ -52,6 +52,10 @@ export function ConversationArea() {
     viewportRef.current = viewport ?? null;
 
     if (!viewport) {
+      // ScrollArea hasn't mounted yet — happens when ConversationArea
+      // first renders the TemplateShowcase branch (no messages yet) and
+      // only later swaps to the ScrollArea once the user submits.
+      setViewportReady(false);
       return;
     }
 
@@ -62,7 +66,11 @@ export function ConversationArea() {
     return () => {
       viewport.removeEventListener('scroll', updateScrollState);
     };
-  }, [updateScrollState]);
+    // hasMessages / isLoadingMessages / currentProjectId are listed so the
+    // effect re-runs every time the parent flips between TemplateShowcase
+    // and the ScrollArea branches; otherwise the viewport ref stays null
+    // forever after the first empty mount and MessageList never renders.
+  }, [updateScrollState, hasMessages, isLoadingMessages, currentProjectId]);
 
   useEffect(() => {
     if (!showJumpToBottom) {
