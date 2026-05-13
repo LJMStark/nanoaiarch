@@ -125,10 +125,19 @@ export function ConversationLayout() {
       return;
     }
 
+    const wasTemporary = isTemporaryId(prevProjectIdRef.current);
     prevProjectIdRef.current = currentProjectId;
 
     if (!currentProjectId || isTemporaryId(currentProjectId)) {
       clearTransientProjectState();
+      return;
+    }
+
+    // Temp -> real transition is the same logical project getting its server-
+    // assigned id after createImageProject resolves. Messages were already
+    // cleared on the initial temp select; refetching would only cause a
+    // skeleton flash before landing back on the empty TemplateShowcase view.
+    if (wasTemporary) {
       return;
     }
 
