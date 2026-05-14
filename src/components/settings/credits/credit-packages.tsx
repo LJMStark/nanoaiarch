@@ -115,7 +115,6 @@ export function CreditPackages() {
 
                 {/* purchase button using checkout */}
                 <CreditCheckoutButton
-                  userId={currentUser?.id ?? ''}
                   packageId={creditPackage.id}
                   priceId={creditPackage.price.priceId}
                   className="w-full cursor-pointer mt-2"

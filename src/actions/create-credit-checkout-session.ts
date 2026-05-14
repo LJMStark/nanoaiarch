@@ -16,7 +16,6 @@ import { z } from 'zod';
 // Credit checkout schema for validation
 // metadata is optional, and may contain referral information if you need
 const creditCheckoutSchema = z.object({
-  userId: z.string().min(1, { error: '用户 ID 不能为空' }),
   packageId: z.string().min(1, { error: '套餐 ID 不能为空' }),
   priceId: z.string().min(1, { error: '价格 ID 不能为空' }),
   metadata: z.record(z.string(), z.string()).optional(),

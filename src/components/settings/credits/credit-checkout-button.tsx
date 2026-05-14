@@ -9,7 +9,6 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 interface CreditCheckoutButtonProps {
-  userId: string;
   packageId: string;
   priceId: string;
   metadata?: Record<string, string>;
@@ -36,7 +35,6 @@ interface CreditCheckoutButtonProps {
  * NOTICE: Login is required when using this button.
  */
 export function CreditCheckoutButton({
-  userId,
   packageId,
   priceId,
   metadata,
@@ -84,7 +82,6 @@ export function CreditCheckoutButton({
 
       // Create checkout session using server action
       const result = await createCreditCheckoutSession({
-        userId,
         packageId,
         priceId,
         metadata:
