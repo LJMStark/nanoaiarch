@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
+import { applyTestBaseUrl } from './env';
 
 function createStorageMock(): Storage {
   const store = new Map<string, string>();
@@ -28,30 +29,10 @@ const sessionStorageMock = createStorageMock();
 
 vi.stubGlobal('localStorage', localStorageMock);
 vi.stubGlobal('sessionStorage', sessionStorageMock);
+applyTestBaseUrl();
 
-// 每个测试后自动清理
 afterEach(() => {
   localStorageMock.clear();
   sessionStorageMock.clear();
   cleanup();
 });
-
-// Mock next-intl
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
-  useLocale: () => 'zh',
-}));
-
-// Mock Next.js router
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    prefetch: vi.fn(),
-  }),
-  usePathname: () => '/',
-  useSearchParams: () => new URLSearchParams(),
-}));
-
-// Mock environment variables
-process.env.NEXT_PUBLIC_BASE_URL = 'http://localhost:3000';

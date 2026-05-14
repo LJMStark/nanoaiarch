@@ -7,6 +7,7 @@ const {
   updateAssistantMessageRequestMock,
   storeState,
   useConversationStoreMock,
+  setGenerationStageMock,
   setGeneratingMock,
   updateMessageMock,
 } = vi.hoisted(() => {
@@ -20,11 +21,13 @@ const {
         : null;
     }
   );
+  const setGenerationStageMock = vi.fn();
   const updateMessageMock = vi.fn();
   const useConversationStoreMock = Object.assign(
     vi.fn(() => ({
       generatingMessageId: storeState.generatingMessageId,
       setGenerating: setGeneratingMock,
+      setGenerationStage: setGenerationStageMock,
       updateMessage: updateMessageMock,
     })),
     {
@@ -37,6 +40,7 @@ const {
     updateAssistantMessageRequestMock: vi.fn(),
     storeState,
     useConversationStoreMock,
+    setGenerationStageMock,
     setGeneratingMock,
     updateMessageMock,
   };
@@ -88,6 +92,9 @@ describe('useGenerationRecovery', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(5000);
     });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
 
     await vi.waitFor(() => {
       expect(updateMessageMock).toHaveBeenCalledWith('assistant-1', {
@@ -97,15 +104,18 @@ describe('useGenerationRecovery', () => {
       });
     });
 
+    await vi.waitFor(() => {
+      expect(updateAssistantMessageRequestMock).toHaveBeenCalledWith(
+        'assistant-1',
+        {
+          status: 'failed',
+          content: '生成任务状态已丢失，请重试',
+          errorMessage: '生成任务状态已丢失，请重试',
+        }
+      );
+    });
+
     expect(fetchMessageStatusMock.mock.calls.length).toBeGreaterThanOrEqual(3);
-    expect(updateAssistantMessageRequestMock).toHaveBeenCalledWith(
-      'assistant-1',
-      {
-        status: 'failed',
-        content: '生成任务状态已丢失，请重试',
-        errorMessage: '生成任务状态已丢失，请重试',
-      }
-    );
     expect(setGeneratingMock).toHaveBeenCalledWith(false);
 
     vi.useRealTimers();
