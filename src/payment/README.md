@@ -58,15 +58,19 @@ This module provides payment integration with Zpay (Alipay for China market), su
 The following environment variables are required:
 
 ```
-ZPAY_APPID=your_zpay_app_id
-ZPAY_SECRET=your_zpay_secret
+ZPAY_PID=your_zpay_pid
+ZPAY_KEY=your_zpay_key
+ZPAY_NOTIFY_URL=https://your-domain.com/api/webhooks/zpay
+ZPAY_RETURN_URL=https://your-domain.com/payment
 
-# Zpay Price IDs
-NEXT_PUBLIC_ZPAY_PRICE_LIFETIME=zpay_lifetime
-NEXT_PUBLIC_ZPAY_PRICE_CREDITS_SMALL=zpay_credits_small
-NEXT_PUBLIC_ZPAY_PRICE_CREDITS_MEDIUM=zpay_credits_medium
-NEXT_PUBLIC_ZPAY_PRICE_CREDITS_LARGE=zpay_credits_large
-NEXT_PUBLIC_ZPAY_PRICE_CREDITS_XLARGE=zpay_credits_xlarge
+# Zpay CNY prices
+ZPAY_PRICE_LIFETIME=199
+ZPAY_PRICE_BASIC_MONTH=59
+ZPAY_PRICE_BASIC_YEAR=99
+ZPAY_PRICE_STANDARD_MONTH=89
+ZPAY_PRICE_STANDARD_YEAR=229
+ZPAY_PRICE_PRO_MONTH=129
+ZPAY_PRICE_PRO_YEAR=499
 ```
 
 ## Payment Plans
@@ -89,9 +93,10 @@ export const pricingConfig = {
       prices: [
         {
           type: PaymentTypes.ONE_TIME,
-          priceId: process.env.NEXT_PUBLIC_ZPAY_PRICE_LIFETIME || 'zpay_lifetime',
+          priceId: 'zpay_lifetime',
           amount: 99900,  // CNY in cents (999 CNY)
           currency: "CNY",
+          zpayAmount: 199,
         },
       ],
       isFree: false,
@@ -121,7 +126,7 @@ export const createCheckoutAction = userActionClient
 #### `/actions/create-credit-checkout-session.ts`
 ```typescript
 // Create a checkout session for credit packages
-export const createCreditCheckoutAction = userActionClient
+export const createCreditCheckoutSession = userActionClient
   .schema(creditCheckoutSchema)
   .action(async ({ parsedInput, ctx }) => {
     // Creates Zpay checkout session for credit purchases
@@ -197,10 +202,8 @@ Creates a Zpay checkout session and redirects the user:
 
 ```tsx
 <CheckoutButton
-  userId="user_123"
   planId="lifetime"
-  priceId={process.env.NEXT_PUBLIC_ZPAY_PRICE_LIFETIME!}
-  metadata={{ userId: "user_123" }}
+  priceId="zpay_lifetime"
   variant="default"
   size="default"
 >
@@ -213,10 +216,8 @@ Creates a Zpay checkout session for credit packages:
 
 ```tsx
 <CreditCheckoutButton
-  userId="user_123"
-  packageId="credits_100"
-  priceId={process.env.NEXT_PUBLIC_ZPAY_PRICE_CREDITS_SMALL!}
-  metadata={{ userId: "user_123" }}
+  packageId="basic_month"
+  priceId="zpay_basic_month"
   variant="default"
   size="default"
 >
@@ -231,7 +232,6 @@ Displays all pricing plans:
 
 ```tsx
 <PricingTable
-  metadata={{ userId: "user_123" }}
   currentPlan="lifetime"
 />
 ```
@@ -243,7 +243,6 @@ Displays a single pricing plan with checkout button:
 <PricingCard
   plan={plan}
   paymentType="ONE_TIME"
-  metadata={{ userId: "user_123" }}
   isCurrentPlan={false}
 />
 ```
@@ -396,7 +395,7 @@ handleWebhookEvent(payload: string, signature: string): Promise<void>;
 
 ### Credit Purchase Flow
 1. User clicks `CreditCheckoutButton` with package details
-2. `createCreditCheckoutAction` creates Zpay checkout session
+2. `createCreditCheckoutSession` creates Zpay checkout session
 3. User is redirected to Alipay payment page
 4. After payment, user is redirected to `/payment` page
 5. `PaymentCard` component polls `checkPaymentCompletionAction`
