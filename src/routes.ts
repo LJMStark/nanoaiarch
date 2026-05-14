@@ -29,6 +29,7 @@ export enum Routes {
   // dashboard routes
   Dashboard = '/dashboard',
   AdminUsers = '/admin/users',
+  AdminTest = '/admin/test',
   SettingsProfile = '/settings/profile',
   SettingsBilling = '/settings/billing',
   SettingsCredits = '/settings/credits',
@@ -67,6 +68,7 @@ export const protectedRoutes = [
   Routes.AIImage,
   Routes.Gallery,
   Routes.AdminUsers,
+  Routes.AdminTest,
   Routes.SettingsProfile,
   Routes.SettingsBilling,
   Routes.SettingsCredits,

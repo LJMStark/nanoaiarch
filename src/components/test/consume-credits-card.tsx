@@ -13,10 +13,8 @@ export function ConsumeCreditsCard() {
   const consumeCreditsMutation = useConsumeCredits();
   const [loading, setLoading] = useState(false);
 
-  const hasEnoughCredits = (amount: number) => balance >= amount;
-
-  const handleConsume = async () => {
-    if (!hasEnoughCredits(CONSUME_CREDITS)) {
+  async function handleConsume(): Promise<void> {
+    if (balance < CONSUME_CREDITS) {
       toast.error('积分不足，请购买更多积分');
       return;
     }
@@ -32,10 +30,10 @@ export function ConsumeCreditsCard() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="p-4 border rounded-lg space-y-4">
+    <div className="space-y-4 rounded-lg border p-4">
       <h3 className="text-lg font-semibold">积分消耗测试</h3>
 
       <div className="space-y-2">
@@ -52,7 +50,7 @@ export function ConsumeCreditsCard() {
           }
           size="sm"
         >
-          <CoinsIcon className="w-4 h-4 mr-2" />
+          <CoinsIcon className="mr-2 size-4" />
           消耗 {CONSUME_CREDITS} 积分
         </Button>
       </div>

@@ -827,6 +827,9 @@
           "error": "解除封禁失败"
         },
         "close": "关闭"
+      },
+      "test": {
+        "title": "测试工具"
       }
     },
     "settings": {
