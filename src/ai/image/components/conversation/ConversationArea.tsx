@@ -77,8 +77,12 @@ export function ConversationArea() {
     }
   }, [isGenerating, messages, scrollToBottom, showJumpToBottom]);
 
-  // 没有选中项目或项目无消息时都显示全屏瀑布流（用户可选择模板开始）
-  if (!isLoadingMessages && (!currentProjectId || !hasMessages)) {
+  // No project selected → always render TemplateShowcase. The skeleton
+  // below is for *message hydration of a real project*; gating
+  // TemplateShowcase behind it would mean blank entry (and any project
+  // switch back to null) flashes a meaningless skeleton while the init
+  // API roundtrips, even though no messages are being loaded.
+  if (!currentProjectId) {
     return (
       <div className="flex-1 min-h-0 overflow-hidden">
         <TemplateShowcase showFullView />
@@ -100,6 +104,15 @@ export function ConversationArea() {
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  // Project selected but has no messages yet (new or empty project).
+  if (!hasMessages) {
+    return (
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <TemplateShowcase showFullView />
       </div>
     );
   }

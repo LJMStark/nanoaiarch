@@ -60,7 +60,16 @@ export function useConversationInit(options?: { mode?: ConversationInitMode }) {
 
     const loadInitialData = async () => {
       setLoadingProjects(true);
-      setLoadingMessages(true);
+      // Blank entry never hydrates any project messages; flipping the flag
+      // would force ConversationArea to render a skeleton in place of
+      // TemplateShowcase for the full init-API roundtrip, which is the
+      // exact "not smooth" entry experience this hook tries to avoid.
+      // new-project mode keeps the flag because the server-created project
+      // will become the active one and its (empty) message list needs to
+      // be hydrated before the area swaps off TemplateShowcase.
+      if (mode === 'new-project') {
+        setLoadingMessages(true);
+      }
 
       // Workbench entry never auto-restores the previously open project.
       // Both 'blank' (default plain /ai/image entry) and 'new-project'
