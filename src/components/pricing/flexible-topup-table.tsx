@@ -134,7 +134,6 @@ export function FlexibleTopupTable({
                   <div className="mt-auto">
                     {mounted && currentUser ? (
                       <CreditCheckoutButton
-                        userId={currentUser.id}
                         packageId={pkg.id}
                         priceId={pkg.price.priceId}
                         className="w-full"

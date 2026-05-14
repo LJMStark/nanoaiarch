@@ -15,6 +15,10 @@ vi.mock('@/i18n/navigation', () => ({
   }),
 }));
 
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+}));
+
 describe('LayoutError', () => {
   beforeEach(() => {
     pushMock.mockReset();

@@ -1,0 +1,23 @@
+.claude
+.conductor
+.content-collections
+.cursor
+.git
+.github
+.gstack
+.kiro
+.next
+.open-next
+.playwright
+.source
+.vscode
+.wrangler
+coverage
+node_modules
+**/node_modules
+playwright-report
+test-results
+.env*
+.DS_Store
+Dockerfile
+doc/nano saas

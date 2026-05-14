@@ -12,13 +12,13 @@ describe('configuration contract', () => {
   it('uses NEXT_PUBLIC_BASE_URL in CI and Playwright config', () => {
     const workflow = readRepoFile('.github/workflows/test.yml');
     const playwright = readRepoFile('playwright.config.ts');
-    const setup = readRepoFile('src/test/setup.ts');
+    const testEnv = readRepoFile('src/test/env.ts');
     const deprecatedBaseUrlEnv = `NEXT_PUBLIC_${'APP_URL'}`;
 
     expect(workflow).toContain('NEXT_PUBLIC_BASE_URL');
     expect(playwright).toContain('NEXT_PUBLIC_BASE_URL');
-    expect(setup).toContain('NEXT_PUBLIC_BASE_URL');
-    expect(`${workflow}\n${playwright}\n${setup}`).not.toContain(
+    expect(testEnv).toContain('NEXT_PUBLIC_BASE_URL');
+    expect(`${workflow}\n${playwright}\n${testEnv}`).not.toContain(
       deprecatedBaseUrlEnv
     );
   });

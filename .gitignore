@@ -73,3 +73,6 @@ ChatGPT Web Screens.zip
 
 # Ad-hoc local diagnostic scripts (the canonical SQL versions live in scripts/)
 scripts/credit-ledger-legacy-audit.ts
+
+# Local-only documentation drafts
+doc/nano saas/

@@ -47,6 +47,15 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+  useLocale: () => 'zh',
+}));
+
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 vi.mock('../social-login-button', () => ({
   SocialLoginButton: () => null,
 }));

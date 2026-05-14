@@ -66,6 +66,10 @@ vi.mock('@/i18n/navigation', () => ({
   LocaleLink: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+}));
+
 describe('ConversationHeader title inline edit', () => {
   beforeEach(() => {
     vi.clearAllMocks();

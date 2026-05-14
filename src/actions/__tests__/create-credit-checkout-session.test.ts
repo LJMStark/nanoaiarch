@@ -82,7 +82,6 @@ describe('createCreditCheckoutSession', () => {
 
     const result = await createCreditCheckoutSession({
       parsedInput: {
-        userId: 'user-1',
         packageId: 'pkg-basic',
         priceId: 'price-other',
       },
@@ -114,7 +113,6 @@ describe('createCreditCheckoutSession', () => {
 
     const result = await createCreditCheckoutSession({
       parsedInput: {
-        userId: 'user-1',
         packageId: 'pkg-basic',
         priceId: 'price-basic',
       },

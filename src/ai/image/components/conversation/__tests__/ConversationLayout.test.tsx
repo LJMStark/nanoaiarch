@@ -40,6 +40,10 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(searchParamsState.value),
 }));
 
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+}));
+
 vi.mock('@/ai/image/hooks/use-conversation-init', () => ({
   useConversationInit: useConversationInitMock,
 }));

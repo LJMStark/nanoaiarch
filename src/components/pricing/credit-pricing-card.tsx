@@ -142,7 +142,6 @@ export function CreditPricingCard({
       <div className="mt-6">
         {mounted && currentUser ? (
           <CreditCheckoutButton
-            userId={currentUser.id}
             packageId={pkg.id}
             priceId={pkg.price.priceId}
             size="lg"

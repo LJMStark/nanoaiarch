@@ -50,7 +50,12 @@ vi.mock('@/stores/conversation-store', () => ({
 }));
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: Record<string, unknown>) => {
+    if (key === 'upload.referenceImageAlt') {
+      return `Reference ${values?.index}`;
+    }
+    return key;
+  },
 }));
 
 const VALID_PNG_BASE64 =
